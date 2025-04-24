@@ -1,0 +1,163 @@
+/* Main dashboard styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    color: #333;
+}
+
+/* Custom header styling */
+.stApp header {
+    background-color: #0A2647;
+}
+
+/* Sidebar styling */
+.sidebar .sidebar-content {
+    background-color: #0A2647;
+    color: white;
+}
+
+/* Main page header */
+h1 {
+    color: #0A2647;
+    font-weight: 700;
+}
+
+h2, h3 {
+    color: #144272;
+    font-weight: 600;
+}
+
+/* Metric styling */
+[data-testid="stMetricValue"] {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2C74B3;
+}
+
+[data-testid="stMetricDelta"] {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Table styling */
+[data-testid="stTable"] th {
+    background-color: #144272;
+    color: white;
+    font-weight: 500;
+}
+
+[data-testid="stTable"] td {
+    font-size: 0.95rem;
+}
+
+/* Card-like containers */
+.card-container {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styling */
+.stButton > button {
+    background-color: #2C74B3;
+    color: white;
+    border-radius: 0.3rem;
+    border: none;
+    padding: 0.3rem 1rem;
+    font-weight: 500;
+}
+
+.stButton > button:hover {
+    background-color: #144272;
+}
+
+/* Navigation styling */
+.sidebar .sidebar-content [data-testid="stVerticalBlock"] {
+    gap: 0.2rem;
+}
+
+/* Main section buttons */
+.sidebar .stButton > button[key^="section_"] {
+    background-color: #2C74B3;
+    color: white;
+    text-align: left;
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.3rem 0.3rem 0 0;
+    margin-bottom: 0;
+    font-weight: 600;
+    border-left: 5px solid #0A2647;
+}
+
+.sidebar .stButton > button[key^="section_"]:hover {
+    background-color: #3384C3;
+    border-left: 5px solid #2C74B3;
+}
+
+/* Subsection buttons (pages) */
+.sidebar .stButton > button[key^="page_"] {
+    background-color: #f0f2f6;
+    color: #333;
+    text-align: left;
+    padding: 0.4rem 0.8rem 0.4rem 1.5rem;
+    border-radius: 0;
+    margin-top: 0;
+    font-weight: 400;
+    font-size: 0.9rem;
+    border-left: 5px solid #144272;
+}
+
+.sidebar .stButton > button[key^="page_"]:hover {
+    background-color: #e0e2e6;
+    border-left: 5px solid #2C74B3;
+}
+
+/* Active section/page */
+.sidebar .stButton > button.active {
+    background-color: #0A2647;
+    border-left: 5px solid #fff;
+}
+
+/* Tab styling */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 2px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background-color: #f0f2f6;
+    color: #0A2647;
+    border-radius: 4px 4px 0 0;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e6e9ef;
+    border-bottom: none;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: #2C74B3;
+    color: white;
+}
+
+/* Expander styling */
+.streamlit-expanderHeader {
+    font-weight: 600;
+    color: #144272;
+}
+
+/* Input field styling */
+[data-baseweb="input"] {
+    border-radius: 0.3rem;
+}
+
+/* Selectbox styling */
+[data-baseweb="select"] > div {
+    border-radius: 0.3rem;
+}
+
+/* Slider styling */
+[data-testid="stSlider"] > div {
+    padding-top: 0.5rem;
+}
+
+/* Info box styling */
+.stAlert {
+    border-radius: 0.5rem !important;
+} 
