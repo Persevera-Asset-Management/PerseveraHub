@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from persevera_tools.data import get_series
-from utils.chart_helpers import extract_codes_from_config, organize_charts_by_group, render_chart_group
+from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
+from configs.pages.reuniao_brasil_asset import CHARTS_BRASIL_ASSET
+
 
 st.set_page_config(
     page_title="Brasil Asset III | Persevera",
@@ -23,128 +25,7 @@ def load_data(codes, start_date):
         return pd.DataFrame()
 
 # Chart configurations
-chart_configs = {
-    "curva_juros_pre": {
-        "title": "#### Curva de Juros Pré",
-        "chart_config": {
-            "columns": ["br_pre_1y", "br_pre_2y", "br_pre_5y", "br_generic_10y"],
-            "names": ["1Y", "2Y", "5Y", "10Y"],
-            "chart_type": "line",
-            "title": "Curva de Juros Pré",
-            "y_axis_title": "Taxa (%)",
-        },
-        "width": 6,
-        "group": "renda_fixa"
-    },
-    "curva_juros_ipca": {
-        "title": "#### Curva de Juros IPCA",
-        "chart_config": {
-            "columns": ["br_ipca_1y", "br_ipca_2y", "br_ipca_5y", "br_ipca_10y"],
-            "names": ["1Y", "2Y", "5Y", "10Y"],
-            "chart_type": "line",
-            "title": "Curva de Juros IPCA",
-            "y_axis_title": "Taxa (%)",
-        },
-        "width": 6,
-        "group": "renda_fixa"
-    },
-    "bolsas_ibov": {
-        "title": "#### Ibovespa",
-        "chart_config": {
-            "columns": "br_ibovespa",
-            "names": "Ibovespa",
-            "chart_type": "line",
-            "title": "Ibovespa",
-            "y_axis_title": "Pontos",
-        },
-        "width": 6,
-        "group": "renda_variavel"
-    },
-    "bolsas_sp500": {
-        "title": "#### S&P 500",
-        "chart_config": {
-            "columns": "us_sp500",
-            "names": "S&P 500",
-            "chart_type": "line",
-            "title": "S&P 500",
-            "y_axis_title": "Pontos",
-        },
-        "width": 6,
-        "group": "renda_variavel"
-    },
-    "bolsas_euro_stoxx": {
-        "title": "#### Euro Stoxx 50",
-        "chart_config": {
-            "columns": "euro_stoxx50",
-            "names": "Euro Stoxx 50",
-            "chart_type": "line",
-            "title": "Euro Stoxx 50",
-            "y_axis_title": "Pontos",
-        },
-        "width": 6,
-        "group": "renda_variavel"
-    },
-    "bolsas_china_csi1000": {
-        "title": "#### CSI 1000",
-        "chart_config": {
-            "columns": "china_csi1000",
-            "names": "CSI 1000",
-            "chart_type": "line",
-            "title": "CSI 1000",
-            "y_axis_title": "Pontos",
-        },
-        "width": 6,
-        "group": "renda_variavel"
-    },
-    "moedas_dxy": {
-        "title": "#### DXY",
-        "chart_config": {
-            "columns": "dxy_index",
-            "names": "DXY",
-            "chart_type": "line",
-            "title": "DXY",
-            "y_axis_title": "Pontos",
-        },
-        "width": 6,
-        "group": "moedas"
-    },
-    "moedas_eurusd": {
-        "title": "#### EUR/USD",
-        "chart_config": {
-            "columns": "eur_usd",
-            "names": "EUR/USD",
-            "chart_type": "line",
-            "title": "EUR/USD",
-            "y_axis_title": "Taxa",
-        },
-        "width": 6,
-        "group": "moedas"
-    },
-    "moedas_usdbrl": {
-        "title": "#### BRL/USD",
-        "chart_config": {
-            "columns": "brl_usd",
-            "names": "BRL/USD",
-            "chart_type": "line",
-            "title": "BRL/USD",
-            "y_axis_title": "Taxa",
-        },
-        "width": 6,
-        "group": "moedas"
-    },
-    "moedas_mxnusd": {
-        "title": "#### MXN/USD",
-        "chart_config": {
-            "columns": "mxn_usd",
-            "names": "MXN/USD",
-            "chart_type": "line",
-            "title": "MXN/USD",
-            "y_axis_title": "Taxa",
-        },
-        "width": 6,
-        "group": "moedas"
-    },
-}
+chart_configs = CHARTS_BRASIL_ASSET
 
 # Extract all unique column codes
 CODES = extract_codes_from_config(chart_configs)
@@ -162,10 +43,23 @@ with st.spinner("Carregando dados de mercado..."):
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
-    # Organize charts by group
-    charts_by_group = organize_charts_by_group(chart_configs)
+    # Organize charts by context and group
+    charts_by_context = organize_charts_by_context(chart_configs)
+        
+    # Create tabs for different regions
+    tabs = st.tabs(["Títulos Públicos", "Renda Variável", "Moedas"])
     
-    # Render each group of charts
-    for group_name in ["renda_fixa", "renda_variavel", "moedas"]:
-        if group_name in charts_by_group:
-            render_chart_group(data, chart_configs, group_name, charts_by_group)
+    # Tab 1: Títulos Públicos
+    with tabs[0]:
+        st.header("Títulos Públicos")
+        render_chart_group_with_context(data, chart_configs, "Títulos Públicos", "Curvas de Juros", charts_by_context)
+
+    # Tab 2: Renda Variável
+    with tabs[1]:
+        st.header("Renda Variável")
+        render_chart_group_with_context(data, chart_configs, "Renda Variável", "Índices", charts_by_context)
+
+    # Tab 3: Moedas
+    with tabs[2]:
+        st.header("Moedas")
+        render_chart_group_with_context(data, chart_configs, "Moedas", "Índices e Taxas de Câmbio", charts_by_context)
