@@ -58,6 +58,9 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
             elif transform_type == "monthly_variation":
                 new_col_name = f"{original_col_name}_mom"
                 break
+            elif transform_type == "quarterly_variation":
+                new_col_name = f"{original_col_name}_qoq"
+                break
             elif transform_type == "monthly_difference":
                 new_col_name = f"{original_col_name}_mom_diff"
                 break

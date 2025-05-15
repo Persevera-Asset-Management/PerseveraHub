@@ -27,6 +27,7 @@ CHARTS_ECONOMIA = {
         "group": "PIB",
         "block_title": "PIB"
     },
+    
     # Indústria
     "us_bloomberg_industry_surprise_index": {
         "chart_config": {
@@ -44,16 +45,17 @@ CHARTS_ECONOMIA = {
     "us_industrial_production": {
         "chart_config": {
             "columns": ["us_industrial_production_index", "us_capacity_utilization_index"],
-            "names": "Produção Industrial e Utilização de Capacidade",
-            "chart_type": "line_two_yaxis",
+            "names": ["Produção Industrial", "Utilização de Capacidade"],
+            "chart_type": "dual_axis_line",
             "title": "Industrial Production & Capacity Utilization",
-            "y_axis_title": "Valor",
+            "y_axis_title": ["Valor", "Taxa (%)"],
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Indústria",
-        "block_title": ""
+        "block_title": "Industrial Production & Capacity Utilization"
     },
+    
     # Varejo
     "us_bloomberg_retail_surprise_index": {
         "chart_config": {
@@ -72,14 +74,14 @@ CHARTS_ECONOMIA = {
         "chart_config": {
             "columns": ["us_advance_retail_sales_total", "us_advance_retail_sales_ex_auto_total"],
             "names": ["Total", "Total (Ex Autos)"],
-            "chart_type": "line",
+            "chart_type": "dual_axis_line",
             "title": "Retail Sales",
-            "y_axis_title": "US$ Mil",
+            "y_axis_title": ["US$ Mil", "US$ Mil"],
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Varejo",
-        "block_title": "Retail Sales"
+        "block_title": "Advance Retail Sales"
     },
     "us_advance_retail_sales_yoy": {
         "chart_config": {
@@ -93,7 +95,7 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Estados Unidos",
         "group": "Varejo",
-        "block_title": "Retail Sales"
+        "block_title": "Advance Retail Sales"
     },
     "us_advance_retail_sales_mom": {
         "chart_config": {
@@ -107,8 +109,9 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Estados Unidos",
         "group": "Varejo",
-        "block_title": "Retail Sales"
+        "block_title": "Advance Retail Sales"
     },
+    
     # Construção e Vendas
     "us_bloomberg_housing_surprise_index": {
          "chart_config": {
@@ -149,22 +152,35 @@ CHARTS_ECONOMIA = {
         "group": "Housing",
         "block_title": "Preços"
     },
+    
     # Crédito
     "us_delinquency_rates": {
         "chart_config": {
             "columns": ["us_delinquency_rates_consumer_loans", "us_delinquency_rates_credit_cards", "us_delinquency_rates_business_loans"],
-            "names": "Inadimplência",
+            "names": ["Consumidor", "Cartão de Crédito", "Empresas"],
             "chart_type": "line",
-            "title": "Crédito",
+            "title": "Inadimplência",
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Crédito",
-        "block_title": ""
+        "block_title": "Inadimplência e Juros"
     },
-    # Sentimento
-     "us_sloos_cni": {
+    "us_commercial_bank_interest_rates": {
+        "chart_config": {
+            "columns": ["us_commercial_bank_interest_rates_credit_card_plans"],
+            "names": ["Juros"],
+            "chart_type": "line",
+            "title": "Juros de Bancos Comerciais em Cartão de Crédito",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Crédito",
+        "block_title": "Inadimplência e Juros"
+    },
+    "us_sloos_cni": {
         "chart_config": {
             "columns": ["us_sloos_net_pct_banks_tightening_cni_loans_large", "us_sloos_net_pct_banks_tightening_cni_loans_small"],
             "names": "Net Percent of Domestic Respondents Tightening Standards for Commercial and Industrial Loans",
@@ -190,6 +206,7 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": ""
     },
+    # Sentimento
     "us_bloomberg_business_cycle_surprise_index": {
          "chart_config": {
             "columns": "us_bloomberg_business_cycle_surprise_index",
@@ -201,51 +218,90 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Estados Unidos",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "Bloomberg Data Surprise"
     },
-    "us_pmi_composite": {
+    "us_pmi": {
          "chart_config": {
             "columns": "us_pmi_composite",
-            "names": "PMI Composite",
+            "names": "Composto",
             "chart_type": "line",
-            "title": "PMI (S&P Global)",
+            "title": "PMI",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "PMI (S&P Global)"
     },
     "us_ism_composites": {
         "chart_config": {
             "columns": ["us_ism_manufacting", "us_ism_services"],
-            "names": "ISM Composites",
+            "names": ["Manufacturing", "Services"],
             "chart_type": "line",
-            "title": "Institute for Supply Management (ISM)",
+            "title": "ISM Composites",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "Institute for Supply Management (ISM)"
+    },
+    "us_ism_manufacting": {
+        "chart_config": {
+            "columns": ["us_ism_manufacturing_new_orders", "us_ism_manufacturing_inventories", "us_ism_manufacturing_prices_paid", "us_ism_manufacturing_employment"],
+            "names": ["New Orders", "Inventories", "Prices Paid", "Employment"],
+            "chart_type": "line",
+            "title": "ISM Manufacturing",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Sentimento",
+        "block_title": "Institute for Supply Management (ISM)"
+    },
+    "us_ism_services": {
+        "chart_config": {
+            "columns": ["us_ism_services_new_orders", "us_ism_services_prices_paid", "us_ism_services_employment"],
+            "names": ["New Orders", "Prices Paid", "Employment"],
+            "chart_type": "line",
+            "title": "ISM Services",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Sentimento",
+        "block_title": "Institute for Supply Management (ISM)"
     },
     "us_cb_business_conditions": {
         "chart_config": {
             "columns": ["us_cb_consumer_confidence_business_worse_6m", "us_cb_consumer_confidence_business_better_6m"],
-            "names": "Business Conditions",
+            "names": ["Pior", "Melhor"],
             "chart_type": "line",
-            "title": "Conference Board",
+            "title": "Condições de Negócios (Próximos 6 Meses)",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "Conference Board"
+    },
+    "us_cb_jobs_conditions": {
+        "chart_config": {
+            "columns": ["us_cb_consumer_confidence_more_jobs_6m", "us_cb_consumer_confidence_fewer_jobs_6m"],
+            "names": ["Mais Empregos", "Menos Empregos"],
+            "chart_type": "line",
+            "title": "Condições de Emprego (Próximos 6 Meses)",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Sentimento",
+        "block_title": "Conference Board"
     },
     "us_nfib_sentiment": {
         "chart_config": {
             "columns": ["us_nfib_small_business_optimism_index", "us_nfib_small_business_uncertainty_index"],
-            "names": "Índices de Sentimento",
+            "names": ["Índice de Otimismo", "Índice de Incerteza"],
             "chart_type": "line",
             "title": "Sentimento de Pequenas Empresas (NFIB)",
             "y_axis_title": "Valor",
@@ -253,8 +309,48 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Estados Unidos",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "Sentimento de Pequenas Empresas (NFIB)"
     },
+    "us_nfib_expansion": {
+        "chart_config": {
+            "columns": ["us_nfib_small_business_good_time_to_expand", "us_nfib_small_business_plans_increase_capex", "us_nfib_small_business_hiring_plans"],
+            "names": ["Boa Hora para Expandir", "Aumentar Capex", "Contratar"],
+            "chart_type": "line",
+            "title": "Condições de Negócios",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Sentimento",
+        "block_title": "Sentimento de Pequenas Empresas (NFIB)"
+    },
+    "us_nfib_prices": {
+        "chart_config": {
+            "columns": ["us_nfib_small_business_higher_prices"],
+            "names": ["Maior Preço"],
+            "chart_type": "line",
+            "title": "Condições de Preços",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Sentimento",
+        "block_title": "Sentimento de Pequenas Empresas (NFIB)"
+    },
+    "us_nfib_credit_conditions": {
+        "chart_config": {
+            "columns": ["us_nfib_small_business_credit_conditions_availability_of_loans"],
+            "names": ["Disponibilidade de Crédito"],
+            "chart_type": "line",
+            "title": "Condições de Crédito",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Sentimento",
+        "block_title": "Sentimento de Pequenas Empresas (NFIB)"
+    },
+    
     # Emprego
     "us_bloomberg_labor_surprise_index": {
          "chart_config": {
@@ -459,9 +555,10 @@ CHARTS_ECONOMIA = {
         "group": "Emprego",
         "block_title": "Indeed Job Postings"
     },
+    
     # Inflação
-     "us_bloomberg_inflation_surprise_index": {
-         "chart_config": {
+    "us_bloomberg_inflation_surprise_index": {
+        "chart_config": {
             "columns": "us_bloomberg_inflation_surprise_index",
             "names": "Bloomberg Inflation Data Surprise Index",
             "chart_type": "area",
@@ -473,7 +570,7 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Bloomberg Data Surprise"
     },
-     "us_cpi_yoy": {
+    "us_cpi_yoy": {
         "chart_config": {
             "columns": ["us_cpi_index", "us_cpi_core_index"],
             "names": ["CPI", "Core CPI"],
@@ -487,7 +584,7 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Consumidor"
     },
-     "us_pce_yoy": {
+    "us_pce_yoy": {
         "chart_config": {
             "columns": ["us_pce_index", "us_pce_core_index"],
             "names": ["PCE", "Core PCE"],
@@ -521,7 +618,7 @@ CHARTS_ECONOMIA = {
             "names": [["CPI"], ["Philadelphia Fed", "New York Fed"]],
             "chart_type": "dual_axis_line",
             "title": "CPI vs Price Paid Surveys",
-            "y_axis_title": ("Taxa", "Índice"),
+            "y_axis_title": ("Taxa (%)", "Índice"),
         },
         "transformations": [{"type": "yearly_variation", "column": "us_cpi_index", "frequency": "MS"}],
         "width": 6,
@@ -531,10 +628,11 @@ CHARTS_ECONOMIA = {
     },
 
     # === Brasil ===
+    # IBC-Br
     "br_ibcbr": {
         "chart_config": {
             "columns": "br_ibcbr_index",
-            "names": "IBC-Br",
+            "names": "Índice",
             "chart_type": "line",
             "title": "IBC-Br",
             "y_axis_title": "Valor",
@@ -542,22 +640,41 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Brasil",
         "group": "IBC-Br",
-        "block_title": ""
+        "block_title": "IBC-Br"
     },
+    
+    # PIB
     "br_gdp_qoq": {
          "chart_config": {
             "columns": "br_gdp_index",
             "names": "PIB (% QoQ)",
             "chart_type": "column",
-            "title": "PIB",
+            "title": "PIB (% QoQ)",
             "y_axis_title": "Taxa (%)",
         },
+        "transformations": [{"type": "quarterly_variation", "column": "br_gdp_index", "frequency": "QS"}],
         "width": 6,
         "context": "Brasil",
         "group": "PIB",
-        "block_title": ""
+        "block_title": "PIB"
     },
-     "br_pms_services_volume": {
+    "br_gdp_yoy": {
+         "chart_config": {
+            "columns": "br_gdp_index_nsa",
+            "names": "PIB (% YoY)",
+            "chart_type": "column",
+            "title": "PIB (% YoY)",
+            "y_axis_title": "Taxa (%)",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_gdp_index_nsa", "frequency": "QS", "periods": 4}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "PIB",
+        "block_title": "PIB"
+    },
+    
+    # Serviços
+    "br_pms_services_volume": {
         "chart_config": {
             "columns": "br_pms_services_volume_total_index",
             "names": "Volume de Serviços",
@@ -596,57 +713,99 @@ CHARTS_ECONOMIA = {
         "group": "Varejo",
         "block_title": ""
     },
-     "br_pmi_composite": {
+    
+    # Sentimento
+    "br_pmi": {
         "chart_config": {
-            "columns": "br_pmi_composite",
-            "names": "Composite",
+            "columns": ["br_pmi_composite", "br_pmi_services"],
+            "names": ["Composto", "Serviços"],
             "chart_type": "line",
-            "title": "PMI (S&P Global)",
+            "title": "PMI",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "PMI (S&P Global)"
     },
-     "br_fgv_consumer_confidence": {
+    "br_fgv_consumer_confidence": {
         "chart_config": {
             "columns": ["br_fgv_consumer_confidence_current_situation_index", "br_fgv_consumer_confidence_expectations_index", "br_fgv_consumer_confidence_index"],
-            "names": "Índice de Confiança do Consumidor",
+            "names": ["Atual", "Expectativas", "Índice"],
             "chart_type": "line",
-            "title": "Índices de Sentimento",
+            "title": "Índice de Confiança do Consumidor",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Sentimento",
-        "block_title": ""
+        "block_title": "Índices de Sentimento"
+    },
+    "br_fgv_business_confidence": {
+        "chart_config": {
+            "columns": ["br_fgv_business_confidence_current_situation_index", "br_fgv_business_confidence_expectations_index", "br_fgv_business_confidence_index"],
+            "names": ["Atual", "Expectativas", "Índice"],
+            "chart_type": "line",
+            "title": "Índice de Confiança Empresarial",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Sentimento",
+        "block_title": "Índices de Sentimento"
+    },
+    "br_fgv_industrial_confidence": {
+        "chart_config": {
+            "columns": ["br_fgv_industrial_confidence_current_situation_index", "br_fgv_industrial_confidence_expectations_index", "br_fgv_industrial_confidence_index"],
+            "names": ["Atual", "Expectativas", "Índice"],
+            "chart_type": "line",
+            "title": "Índice de Confiança Industrial",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Sentimento",
+        "block_title": "Índices de Sentimento"
+    },
+    "br_fgv_economic_uncertainty": {
+        "chart_config": {
+            "columns": ["br_fgv_economic_uncertainty_index"],
+            "names": ["Índice"],
+            "chart_type": "line",
+            "title": "Índice de Incerteza Econômica",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Sentimento",
+        "block_title": "Índices de Sentimento"
     },
     "br_caged_mom": {
         "chart_config": {
             "columns": "br_caged_registered_employess_total",
             "names": "Criação de Empregos Formais (MoM)",
             "chart_type": "column",
-            "title": "CAGED",
+            "title": "Criação de Empregos Formais (MoM)",
             "y_axis_title": "Valor",
         },
+        "transformations": [{"type": "monthly_difference", "column": "br_caged_registered_employess_total", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "Emprego",
-        "block_title": ""
+        "block_title": "CAGED"
     },
     "br_pnad_unemployment_rate": {
         "chart_config": {
             "columns": "br_pnad_unemployment_rate",
             "names": "Taxa de Desemprego",
             "chart_type": "line",
-            "title": "PNAD",
+            "title": "Taxa de Desemprego",
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Emprego",
-        "block_title": ""
+        "block_title": "PNAD"
     },
     "br_bcb_credit_outstanding_total": {
         "chart_config": {
@@ -791,18 +950,31 @@ CHARTS_ECONOMIA = {
         "group": "Commodities",
         "block_title": ""
     },
-     "br_bcb_gross_gov_debt_to_gdp": {
+     "br_debt_to_gdp": {
         "chart_config": {
             "columns": ["br_bcb_gross_gov_debt_to_gdp", "br_bcb_net_gov_debt_to_gdp", "br_bcb_net_public_sector_debt_to_gdp"],
-            "names": "Dívida (% do PIB)",
+            "names": ["Dívida Bruta", "Dívida Líquida", "Dívida Líquida do Setor Público"],
             "chart_type": "line",
-            "title": "Fiscal",
-            "y_axis_title": "Taxa (%)",
+            "title": "Dívida (% do PIB)",
+            "y_axis_title": "% do PIB",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Fiscal",
-        "block_title": ""
+        "block_title": "Fiscal"
+    },
+     "br_resultado_do_setor_publico": {
+        "chart_config": {
+            "columns": ["br_bcb_primary_result_12m_to_gdp", "br_bcb_nominal_result_12m_to_gdp", "br_bcb_interest_paid_12m_to_gdp"],
+            "names": ["Resultado Primário", "Resultado Nominal", "Pagamento de Juros"],
+            "chart_type": "line",
+            "title": "Resultado do Setor Publico (% PIB)",
+            "y_axis_title": "% do PIB",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Fiscal",
+        "block_title": "Fiscal"
     },
 
     # === Global ===

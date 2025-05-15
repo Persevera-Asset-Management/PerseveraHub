@@ -90,9 +90,6 @@ def create_highcharts_options(
         colors_processed_ax1: List[Optional[str]]
         colors_processed_ax2: List[Optional[str]]
 
-        # --- Parse y_column for dual_axis_line ---
-        y_input_original_debug = y_column # For debug print
-
         # Pattern 1: New format (recommended) - (['L1', 'L2'], ['R1'])
         if (isinstance(y_column, (list, tuple)) and len(y_column) == 2 and
             isinstance(y_column[0], list) and all(isinstance(s, str) for s in y_column[0]) and len(y_column[0]) > 0 and

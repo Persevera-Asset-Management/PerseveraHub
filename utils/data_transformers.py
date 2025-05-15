@@ -136,6 +136,89 @@ class MonthlyVariationTransformer(DataTransformer):
 
         return result
 
+class QuarterlyVariationTransformer(DataTransformer):
+    """Calculates quarterly variation for a given column, respecting its frequency if provided."""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        freq = config.get('frequency') # Get the target frequency, e.g., 'Q', 'M', 'D'
+
+        if not column or column not in data.columns:
+            print(f"Warning: Column '{column}' not found for quarterly variation. Skipping.")
+            return data
+
+        result = data.copy()
+        new_column_name = f"{column}_qoq"
+
+        if not freq:
+            # Default behavior: Assume daily-like data (63 periods) if frequency not specified
+            # (approx. 21 days/month * 3 months/quarter)
+            print(f"Warning: Frequency not specified for {column}. Assuming daily-like data for quarterly variation (63 periods).")
+            result[new_column_name] = result[column].pct_change(periods=63) * 100
+            return result
+
+        # Proceed with frequency-aware calculation
+        col_data = result[[column]].dropna() # Work on non-NaN data
+
+        # Ensure index is DatetimeIndex
+        if not isinstance(col_data.index, pd.DatetimeIndex):
+            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware quarterly transformation.")
+            return data # Return original data to avoid errors
+
+        try:
+            # Determine periods for pct_change based on the provided frequency
+            # This map defines how many periods of the given frequency constitute "one quarter"
+            _freq_upper = freq.upper()
+            cleaned_base_freq = None
+            if _freq_upper in ['Q', 'QS']: # Quarterly frequencies
+                cleaned_base_freq = 'Q'
+            elif _freq_upper in ['M', 'MS']: # Monthly frequencies
+                cleaned_base_freq = 'M'
+            # Add other base frequencies as needed, e.g., 'D', 'B', 'W'
+            elif _freq_upper.startswith('W'): # Weekly frequencies
+                 cleaned_base_freq = 'W'
+            elif _freq_upper == 'D': # Daily frequency
+                 cleaned_base_freq = 'D'
+            elif _freq_upper == 'B': # Business daily frequency
+                 cleaned_base_freq = 'B'
+
+
+            # Periods needed for a quarter-over-quarter calculation based on the data's (resampled) frequency
+            periods_map_for_qoq = {'Q': 1, 'M': 3, 'W': 13, 'D': 63, 'B': 63} # Approx for W, D, B
+            periods = periods_map_for_qoq.get(cleaned_base_freq)
+
+            # Resample to the target frequency (from config), taking the last available value
+            resampled_data = col_data.resample(freq).last()
+
+            # Calculate quarterly variation on the resampled data
+            variation = resampled_data[column].pct_change(periods=periods) * 100
+
+            # Reindex back to the original DataFrame's index
+            # Using ffill to propagate last known good variation if original index is more granular
+            aligned_variation = variation.reindex(result.index, method='ffill')
+            result[new_column_name] = aligned_variation
+
+            if periods is None:
+                print(f"Warning: Unsupported frequency '{freq}' for monthly variation on {column}. Skipping transformation.")
+                return data # Return original data, similar to YearlyVariationTransformer
+
+            # Resample to the target frequency, taking the last available value in the period
+            resampled_data = col_data.resample(freq).last() # Use the original `freq` from config
+
+            # Calculate monthly variation on the resampled data
+            variation = resampled_data[column].pct_change(periods=periods) * 100
+
+            # Reindex back to the original DataFrame's index
+            aligned_variation = variation.reindex(result.index)
+            result[new_column_name] = aligned_variation
+
+
+        except Exception as e:
+            print(f"Error during quarterly variation transformation for {column} with freq {freq}: {e}")
+            return data # Safest option, return original data in case of error
+
+        return result
+
 class MonthlyDifferenceTransformer(DataTransformer):
     """Calculates monthly difference for a given column, respecting its frequency if provided."""
     @staticmethod
@@ -307,6 +390,7 @@ class YTDChangeTransformer(DataTransformer):
 TRANSFORMERS = {
     "yearly_variation": YearlyVariationTransformer,
     "monthly_variation": MonthlyVariationTransformer,
+    "quarterly_variation": QuarterlyVariationTransformer,
     "monthly_difference": MonthlyDifferenceTransformer,
     "moving_average": MovingAverageTransformer,
     "rolling_max": RollingMaxTransformer,

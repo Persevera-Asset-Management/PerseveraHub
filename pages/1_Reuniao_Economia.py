@@ -89,7 +89,7 @@ else:
         st.header("Brasil")
         br_context = charts_by_context.get("Brasil", {})
         
-        br_tabs = st.tabs(["PIB", "IBC-Br", "Indústria", "Serviços", "Varejo", "Inflação", "Commodities", "Fiscal"])
+        br_tabs = st.tabs(["PIB", "IBC-Br", "Indústria", "Serviços", "Varejo", "Inflação", "Commodities", "Fiscal", "Emprego", "Sentimento"])
         
         with br_tabs[0]:
             if "PIB" in br_context:
@@ -122,4 +122,11 @@ else:
         with br_tabs[7]:
             if "Fiscal" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Fiscal", charts_by_context)
-    
+
+        with br_tabs[8]:
+            if "Emprego" in br_context:
+                render_chart_group_with_context(data, chart_configs, "Brasil", "Emprego", charts_by_context)
+
+        with br_tabs[9]:
+            if "Sentimento" in br_context:
+                render_chart_group_with_context(data, chart_configs, "Brasil", "Sentimento", charts_by_context)
