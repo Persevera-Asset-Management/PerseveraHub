@@ -356,8 +356,7 @@ else:
 st.subheader("Estatísticas Adicionais")
 
 # Filter combined_nav_data for the selected funds for these stats
-# Or decide if these stats should always be for the main Persevera fund + benchmarks
-stats_data_selection = initial_selection_cols # Default to persevera + benchmarks
+stats_data_selection = initial_selection_cols
 
 stats_data_options = st.multiselect(
     "Selecione fundos/benchmarks para Estatísticas Adicionais:",
