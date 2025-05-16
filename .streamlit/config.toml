@@ -1,0 +1,21 @@
+[theme]
+primaryColor = "#2C74B3"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "Roboto"
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#e0ecfc"
+
+[server]
+enableCORS = true
+enableXsrfProtection = true
+
+[global]
+showWarningOnDirectExecution = false
+developmentMode = false
+
+[browser]
+gatherUsageStats = false 
