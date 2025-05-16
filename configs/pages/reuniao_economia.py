@@ -436,7 +436,7 @@ CHARTS_ECONOMIA = {
             "names": ["Abertura de Vagas", "Contratações", "Saídas Voluntárias", "Demissões"],
             "chart_type": "line",
             "title": "Rotatividade de Emprego",
-            "y_axis_title": ["Taxa (%)", "Taxa (%)", "Taxa (%)", "Taxa (%)"],
+            "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Estados Unidos",
@@ -783,8 +783,8 @@ CHARTS_ECONOMIA = {
     # Sentimento
     "br_pmi": {
         "chart_config": {
-            "columns": ["br_pmi_composite", "br_pmi_services"],
-            "names": ["Composto", "Serviços"],
+            "columns": ["br_pmi_composite", "br_pmi_manufacturing", "br_pmi_services"],
+            "names": ["Composto", "Indústria", "Serviços"],
             "chart_type": "line",
             "title": "PMI",
             "y_axis_title": "Valor",
@@ -873,6 +873,8 @@ CHARTS_ECONOMIA = {
         "group": "Emprego",
         "block_title": "PNAD"
     },
+    
+    # Crédito
     "br_bcb_credit_outstanding_total": {
         "chart_config": {
             "columns": ["br_bcb_credit_outstanding_total", "br_bcb_credit_outstanding_pf", "br_bcb_credit_outstanding_pj"],
@@ -925,6 +927,8 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": ""
     },
+
+    # Setor Externo
     "br_terms_of_trade": {
         "chart_config": {
             "columns": ["br_citi_terms_of_trade_index", "br_mdic_terms_of_trade_index"],
@@ -964,6 +968,8 @@ CHARTS_ECONOMIA = {
         "group": "Setor Externo",
         "block_title": ""
     },
+
+    # Inflação
     "br_ipca_yoy": {
         "chart_config": {
             "columns": "br_ipca_yoy",
@@ -1003,6 +1009,8 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": ""
     },
+
+    # Commodities
     "crb_index_scaled": {
         "chart_config": {
             "columns": ["crb_index", "crb_fats_oils_index", "crb_food_index", "crb_livestock_index", "crb_metals_index", "crb_raw_industrials_index", "crb_textiles_index"], # Base columns before scaling
@@ -1016,6 +1024,8 @@ CHARTS_ECONOMIA = {
         "group": "Commodities",
         "block_title": ""
     },
+
+    # Fiscal
      "br_debt_to_gdp": {
         "chart_config": {
             "columns": ["br_bcb_gross_gov_debt_to_gdp", "br_bcb_net_gov_debt_to_gdp", "br_bcb_net_public_sector_debt_to_gdp"],

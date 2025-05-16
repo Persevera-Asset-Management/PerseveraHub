@@ -27,10 +27,9 @@ chart_configs = CHARTS_ECONOMIA
 CODES = extract_codes_from_config(chart_configs)
 
 # Date range selector
-col1, col2 = st.columns([1, 3])
-with col1:
-    start_date = st.date_input("Data Inicial", datetime(2018, 1, 1), format="DD/MM/YYYY")
-    start_date_str = start_date.strftime('%Y-%m-%d')
+st.sidebar.header("Filters")
+start_date = st.sidebar.date_input("Data Inicial", datetime(2018, 1, 1), format="DD/MM/YYYY")
+start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
 with st.spinner("Carregando dados econômicos..."):
