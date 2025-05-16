@@ -16,3 +16,5 @@ git+https://github.com/Persevera-Asset-Management/PerseveraTools.git
 git+https://github.com/Persevera-Asset-Management/PerseveraStyleAnalysis.git
 --extra-index-url https://blpapi.bloomberg.com/repository/releases/python/simple/
 blpapi
+fredapi
+sidrapy
