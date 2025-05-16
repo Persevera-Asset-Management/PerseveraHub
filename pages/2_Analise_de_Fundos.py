@@ -218,18 +218,14 @@ if not persevera_fund_col_name:
     st.error("Não foi possível identificar a coluna do fundo Persevera principal nos dados carregados.")
     
 # Load benchmark data
-# The benchmark data should align with the nav_data's date index
 benchmark_df = load_benchmark_data(selected_fund_name, nav_data.index)
 
 # Merge NAV data with benchmark data
-# Ensure benchmark_df index is datetime
 if not isinstance(benchmark_df.index, pd.DatetimeIndex):
     benchmark_df.index = pd.to_datetime(benchmark_df.index)
 
 combined_nav_data = pd.merge(nav_data, benchmark_df, left_index=True, right_index=True, how='left')
 
-# Fill NaNs in benchmark columns that might have been introduced by left merge if dates don't align perfectly.
-# Typically, benchmark data should be available for all trading days.
 for col in benchmark_df.columns:
     if col in combined_nav_data:
         combined_nav_data[col] = combined_nav_data[col].ffill()
