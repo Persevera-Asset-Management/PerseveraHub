@@ -94,7 +94,7 @@ def get_performance_table(nav, total_equity, start_date, end_date):
     df = nav.ffill()
     gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
     gp_monthly = df.groupby(pd.Grouper(level='date', freq="M")).last()
-    gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
+    gp_yearly = df.groupby(pd.Grouper(level='date', freq="Y")).last()
 
     time_frames = {
         'day': gp_daily.pct_change().iloc[-1],
