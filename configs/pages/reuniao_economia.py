@@ -408,7 +408,7 @@ CHARTS_ECONOMIA = {
          "chart_config": {
             "columns": ["us_jolts_job_openings_total_private", "us_jolts_job_openings_government"],
             "names": ["Privado", "Público"],
-            "chart_type": "line",
+            "chart_type": "dual_axis_line",
             "title": "Abertura de Vagas (Privado e Público)",
             "y_axis_title": "Valor",
         },
@@ -421,7 +421,7 @@ CHARTS_ECONOMIA = {
          "chart_config": {
             "columns": ["us_jolts_hires_total_nonfarm", "us_jolts_quits_total_nonfarm"],
             "names": ["Contratações", "Saídas Voluntárias"],
-            "chart_type": "line",
+            "chart_type": "dual_axis_line",
             "title": "Contratações e Saídas Voluntárias",
             "y_axis_title": "Valor",
         },
@@ -456,20 +456,20 @@ CHARTS_ECONOMIA = {
         "group": "Emprego",
         "block_title": "Job Openings and Labor Turnover Survey"
     },
-    "us_jolts_layoffs_composition": {
-         "chart_config": {
-            "columns": ["us_jolts_quits_total_nonfarm", "us_jolts_layoffs_total_nonfarm", "us_jolts_separations_other_total_nonfarm"],
-            "names": ["Saídas Voluntárias", "Demissões", "Outras"],
-            "chart_type": "area",
-            "stacked": True,
-            "title": "Composição das Demissões",
-            "y_axis_title": "%",
-        },
-        "width": 6,
-        "context": "Estados Unidos",
-        "group": "Emprego",
-        "block_title": "Job Openings and Labor Turnover Survey"
-    },
+    # "us_jolts_layoffs_composition": {
+    #      "chart_config": {
+    #         "columns": ["us_jolts_quits_total_nonfarm", "us_jolts_layoffs_total_nonfarm", "us_jolts_separations_other_total_nonfarm"],
+    #         "names": ["Saídas Voluntárias", "Demissões", "Outras"],
+    #         "chart_type": "area",
+    #         "stacked": True,
+    #         "title": "Composição das Demissões",
+    #         "y_axis_title": "%",
+    #     },
+    #     "width": 6,
+    #     "context": "Estados Unidos",
+    #     "group": "Emprego",
+    #     "block_title": "Job Openings and Labor Turnover Survey"
+    # },
     "us_adp_nonfarm_private_payrolls_mom": {
          "chart_config": {
             "columns": "us_adp_nonfarm_private_payrolls",
