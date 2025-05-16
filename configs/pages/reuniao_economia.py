@@ -222,8 +222,8 @@ CHARTS_ECONOMIA = {
     },
     "us_pmi": {
          "chart_config": {
-            "columns": "us_pmi_composite",
-            "names": "Composto",
+            "columns": ["us_pmi_composite", "us_pmi_manufacturing", "us_pmi_services"],
+            "names": ["Composto", "Indústria", "Serviços"],
             "chart_type": "line",
             "title": "PMI",
             "y_axis_title": "Valor",
@@ -236,7 +236,7 @@ CHARTS_ECONOMIA = {
     "us_ism_composites": {
         "chart_config": {
             "columns": ["us_ism_manufacting", "us_ism_services"],
-            "names": ["Manufacturing", "Services"],
+            "names": ["Indústria", "Serviços"],
             "chart_type": "line",
             "title": "ISM Composites",
             "y_axis_title": "Valor",
@@ -404,6 +404,72 @@ CHARTS_ECONOMIA = {
         "group": "Emprego",
         "block_title": "Job Openings and Labor Turnover Survey"
     },
+    "us_jolts_job_openings_detailed": {
+         "chart_config": {
+            "columns": ["us_jolts_job_openings_total_private", "us_jolts_job_openings_government"],
+            "names": ["Privado", "Público"],
+            "chart_type": "line",
+            "title": "Abertura de Vagas (Privado e Público)",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Emprego",
+        "block_title": "Job Openings and Labor Turnover Survey"
+    },
+    "us_jolts_hires_quits": {
+         "chart_config": {
+            "columns": ["us_jolts_hires_total_nonfarm", "us_jolts_quits_total_nonfarm"],
+            "names": ["Contratações", "Saídas Voluntárias"],
+            "chart_type": "line",
+            "title": "Contratações e Saídas Voluntárias",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Emprego",
+        "block_title": "Job Openings and Labor Turnover Survey"
+    },
+    "us_jolts_turnover_rates": {
+         "chart_config": {
+            "columns": ["us_jolts_job_openings_rate_total_nonfarm", "us_jolts_hiring_rate_total_nonfarm", "us_jolts_quits_rate_total_nonfarm", "us_jolts_layoffs_rate_total_nonfarm"],
+            "names": ["Abertura de Vagas", "Contratações", "Saídas Voluntárias", "Demissões"],
+            "chart_type": "line",
+            "title": "Rotatividade de Emprego",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Emprego",
+        "block_title": "Job Openings and Labor Turnover Survey"
+    },
+    "us_jolts_hiring_rate": {
+         "chart_config": {
+            "columns": ["us_jolts_hiring_rate_total_nonfarm", "us_jolts_hiring_rate_total_private"],
+            "names": ["Total", "Privado"],
+            "chart_type": "line",
+            "title": "Taxa de Contratação",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Emprego",
+        "block_title": "Job Openings and Labor Turnover Survey"
+    },
+    "us_jolts_layoffs_composition": {
+         "chart_config": {
+            "columns": ["us_jolts_quits_total_nonfarm", "us_jolts_layoffs_total_nonfarm", "us_jolts_separations_other_total_nonfarm"],
+            "names": ["Saídas Voluntárias", "Demissões", "Outras"],
+            "chart_type": "area",
+            "stacked": True,
+            "title": "Composição das Demissões",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Emprego",
+        "block_title": "Job Openings and Labor Turnover Survey"
+    },
     "us_adp_nonfarm_private_payrolls_mom": {
          "chart_config": {
             "columns": "us_adp_nonfarm_private_payrolls",
@@ -542,7 +608,7 @@ CHARTS_ECONOMIA = {
         "group": "Emprego",
         "block_title": "Current Population Survey (Household Data)"
     },
-     "us_indeed_job_postings": {
+    "us_indeed_job_postings": {
         "chart_config": {
             "columns": ["us_indeed_job_postings", "us_indeed_new_job_postings"],
             "names": ["Total", "Novas Vagas"],
