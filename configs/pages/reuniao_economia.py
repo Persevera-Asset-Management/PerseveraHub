@@ -178,7 +178,7 @@ CHARTS_ECONOMIA = {
         "transformations": [{"type": "yearly_variation", "column": "us_new_home_sales_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_housing_starts_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_building_permits_total", "frequency": "MS"}],
         "width": 6,
         "context": "Estados Unidos",
-        "group": "Housing",
+        "group": "Imobiliário",
         "block_title": "Vendas e Contruções"
     },
     "us_case_shiller_home_prices_index_yoy": {
@@ -186,8 +186,8 @@ CHARTS_ECONOMIA = {
             "columns": ["us_case_shiller_home_prices_national_index", "us_case_shiller_home_prices_20_city_index", "us_zillow_home_prices_national_index"],
             "names": ["Nacional (S&P CS)", "Maiores 20 Cidades (S&P CS)", "Nacional (Zillow)"],
             "chart_type": "line",
-            "title": "S&P CoreLogic Case-Shiller Price Indices",
-            "y_axis_title": "Valor",
+            "title": "S&P CoreLogic Case-Shiller Price Indices (% YoY)",
+            "y_axis_title": "%",
         },
         "transformations": [{"type": "yearly_variation", "column": "us_case_shiller_home_prices_national_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_case_shiller_home_prices_20_city_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_zillow_home_prices_national_index", "frequency": "MS"}],
         "width": 6,
@@ -813,7 +813,7 @@ CHARTS_ECONOMIA = {
         "chart_config": {
             "columns": "br_ibcbr_index",
             "names": "Índice",
-            "chart_type": "line",
+            "chart_type": "column",
             "title": "IBC-Br (% MoM)",
             "y_axis_title": "%",
         },
@@ -858,43 +858,131 @@ CHARTS_ECONOMIA = {
     "br_pms_services_volume": {
         "chart_config": {
             "columns": "br_pms_services_volume_total_index",
-            "names": "Volume de Serviços",
+            "names": "Índice",
             "chart_type": "line",
-            "title": "Pesquisa Mensal de Serviços (PMS)",
+            "title": "Volume de Serviços",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Serviços",
-        "block_title": ""
+        "block_title": "Pesquisa Mensal de Serviços (PMS)"
     },
+    "br_pms_services_volume_yoy": {
+        "chart_config": {
+            "columns": "br_pms_services_volume_total_index",
+            "names": "Índice",
+            "chart_type": "line",
+            "title": "Volume de Serviços (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Serviços",
+        "block_title": "Pesquisa Mensal de Serviços (PMS)"
+    },
+    "br_pms_services_volume_mom": {
+        "chart_config": {
+            "columns": "br_pms_services_volume_total_index",
+            "names": "Índice",
+            "chart_type": "column",
+            "title": "Volume de Serviços (% MoM)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "monthly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Serviços",
+        "block_title": "Pesquisa Mensal de Serviços (PMS)"
+    },
+
+    # Indústria
     "br_industrial_production": {
         "chart_config": {
             "columns": "br_industrial_production",
-            "names": "Indústria",
+            "names": "Índice",
             "chart_type": "line",
-            "title": "Pesquisa Industrial Mensal (PIM)",
+            "title": "Produção Industrial",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Indústria",
-        "block_title": ""
+        "block_title": "Pesquisa Industrial Mensal (PIM)"
     },
+    "br_industrial_production_yoy": {
+        "chart_config": {
+            "columns": "br_industrial_production",
+            "names": "Índice",
+            "chart_type": "line",
+            "title": "Produção Industrial (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_industrial_production", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Indústria",
+        "block_title": "Pesquisa Industrial Mensal (PIM)"
+    },
+    "br_industrial_production_mom": {
+        "chart_config": {
+            "columns": "br_industrial_production",
+            "names": "Índice",
+            "chart_type": "column",
+            "title": "Produção Industrial (% MoM)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "monthly_variation", "column": "br_industrial_production", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Indústria",
+        "block_title": "Pesquisa Industrial Mensal (PIM)"
+    },
+
+    # Varejo
     "br_pmc_retail_sales_volume": {
         "chart_config": {
             "columns": ["br_pmc_retail_sales_volume_total_index", "br_pmc_retail_sales_volume_total_amplified_index"],
-            "names": "Volume de Vendas",
+            "names": ["Índice", "Índice Ampliado"],
             "chart_type": "line",
-            "title": "Pesquisa Mensal do Comércio (PMC)",
+            "title": "Volume de Vendas",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Varejo",
-        "block_title": ""
+        "block_title": "Pesquisa Mensal do Comércio (PMC)"
     },
-    
+    "br_pmc_retail_sales_volume_yoy": {
+        "chart_config": {
+            "columns": ["br_pmc_retail_sales_volume_total_index", "br_pmc_retail_sales_volume_total_amplified_index"],
+            "names": ["Índice", "Índice Ampliado"],
+            "chart_type": "line",
+            "title": "Volume de Vendas (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Varejo",
+        "block_title": "Pesquisa Mensal do Comércio (PMC)"
+    },
+    "br_pmc_retail_sales_volume_mom": {
+        "chart_config": {
+            "columns": ["br_pmc_retail_sales_volume_total_index", "br_pmc_retail_sales_volume_total_amplified_index"],
+            "names": ["Índice", "Índice Ampliado"],
+            "chart_type": "column",
+            "title": "Volume de Vendas (% MoM)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "monthly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Varejo",
+        "block_title": "Pesquisa Mensal do Comércio (PMC)"
+    },
+
     # Sentimento
     "br_pmi": {
         "chart_config": {
@@ -1049,28 +1137,54 @@ CHARTS_ECONOMIA = {
     "br_terms_of_trade": {
         "chart_config": {
             "columns": ["br_citi_terms_of_trade_index", "br_mdic_terms_of_trade_index"],
-            "names": "Termos de Troca",
-            "chart_type": "line_two_yaxis",
-            "title": "Balança Comercial",
+            "names": ["Índice de Termos de Troca (Citi)", "Índice de Termos de Troca (MDIC)"],
+            "chart_type": "dual_axis_line",
+            "title": "Termos de Troca",
+            "y_axis_title": ("Valor", "Valor"),
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Setor Externo",
+        "block_title": "Balança Comercial"
+    },
+    "br_exports_imports": {
+        "chart_config": {
+            "columns": ["br_trade_balance_fob_exports", "br_trade_balance_fob_imports"],
+            "names": ["Exportações", "Importações"],
+            "chart_type": "line",
+            "title": "Exportações e Importações",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Setor Externo",
-        "block_title": ""
+        "block_title": "Balanço Comercial"
     },
-    "br_current_account_t12": {
+    "br_current_account": {
         "chart_config": {
             "columns": ["br_current_account_t12", "br_current_account_to_gdp"],
-            "names": "Transações Correntes",
-            "chart_type": "area_line_two_yaxis",
-            "title": "Balanço de Pagamentos",
-            "y_axis_title": "Valor",
+            "names": ["Acumulado 12 meses", "% do PIB"],
+            "chart_type": "dual_axis_line",
+            "title": "Transações Correntes",
+            "y_axis_title": ("Valor", "% do PIB"),
         },
         "width": 6,
         "context": "Brasil",
         "group": "Setor Externo",
-        "block_title": ""
+        "block_title": "Balanço de Pagamentos"
+    },
+    "br_direct_investment_liabilities": {
+        "chart_config": {
+            "columns": ["br_direct_investment_liabilities_t12", "br_direct_investment_liabilities_to_gdp"],
+            "names": ["Acumulado 12 meses", "% do PIB"],
+            "chart_type": "dual_axis_line",
+            "title": "Investimentos Diretos no País (IDP) - Ingresso Líquido",
+            "y_axis_title": ("Valor", "% do PIB"),
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Setor Externo",
+        "block_title": "Balanço de Pagamentos"
     },
      "br_international_reserves_total": {
         "chart_config": {
@@ -1083,7 +1197,7 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Brasil",
         "group": "Setor Externo",
-        "block_title": ""
+        "block_title": "Reservas Internacionais"
     },
 
     # Inflação
