@@ -59,7 +59,7 @@ CHARTS_ECONOMIA = {
         "chart_config": {
             "columns": ["us_industrial_production_index"],
             "names": ["Produção Industrial"],
-            "chart_type": "column",
+            "chart_type": "line",
             "title": "Produção Industrial (% YoY)",
             "y_axis_title": "%",
         },
@@ -140,7 +140,7 @@ CHARTS_ECONOMIA = {
         "block_title": "Advance Retail Sales"
     },
     
-    # Construção e Vendas
+    # Imobiliário
     "us_bloomberg_housing_surprise_index": {
          "chart_config": {
             "columns": "us_bloomberg_housing_surprise_index",
@@ -154,31 +154,46 @@ CHARTS_ECONOMIA = {
         "group": "Housing",
         "block_title": "Bloomberg Data Surprise"
     },
-    "us_new_home_sales_total": {
+    "us_new_home_sales_starts_permits": {
         "chart_config": {
             "columns": ["us_new_home_sales_total", "us_housing_starts_total", "us_building_permits_total"],
-            "names": "Novas Unidades Habitacionais Privadas",
+            "names": ["Vendas", "Contruções", "Permissões"],
             "chart_type": "line",
-            "title": "Vendas e Contruções",
+            "title": "Novas Unidades Habitacionais Privadas",
             "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Housing",
-        "block_title": "Construção e Vendas"
+        "block_title": "Vendas e Contruções"
     },
-    "us_case_shiller_home_prices_national_index": {
+    "us_new_home_sales_starts_permits_yoy": {
         "chart_config": {
-            "columns": ["us_case_shiller_home_prices_national_index", "us_case_shiller_home_prices_20_city_index"],
-            "names": "S&P CoreLogic Case-Shiller Price Indices",
+            "columns": ["us_new_home_sales_total", "us_housing_starts_total", "us_building_permits_total"],
+            "names": ["Vendas", "Contruções", "Permissões"],
             "chart_type": "line",
-            "title": "Preços de Imóveis",
-            "y_axis_title": "Valor",
+            "title": "Novas Unidades Habitacionais Privadas (% YoY)",
+            "y_axis_title": "%",
         },
+        "transformations": [{"type": "yearly_variation", "column": "us_new_home_sales_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_housing_starts_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_building_permits_total", "frequency": "MS"}],
         "width": 6,
         "context": "Estados Unidos",
         "group": "Housing",
-        "block_title": "Preços"
+        "block_title": "Vendas e Contruções"
+    },
+    "us_case_shiller_home_prices_index_yoy": {
+        "chart_config": {
+            "columns": ["us_case_shiller_home_prices_national_index", "us_case_shiller_home_prices_20_city_index", "us_zillow_home_prices_national_index"],
+            "names": ["Nacional (S&P CS)", "Maiores 20 Cidades (S&P CS)", "Nacional (Zillow)"],
+            "chart_type": "line",
+            "title": "S&P CoreLogic Case-Shiller Price Indices",
+            "y_axis_title": "Valor",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "us_case_shiller_home_prices_national_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_case_shiller_home_prices_20_city_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_zillow_home_prices_national_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Housing",
+        "block_title": "Índices de Preços de Imóveis"
     },
     
     # Crédito

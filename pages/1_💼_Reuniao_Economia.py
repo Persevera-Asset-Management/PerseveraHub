@@ -49,7 +49,7 @@ else:
         st.header("Estados Unidos")
         us_context = charts_by_context.get("Estados Unidos", {})
         
-        us_tabs = st.tabs(["PIB", "Inflação", "Indústria", "Varejo", "Crédito", "Housing", "Sentimento", "Emprego", "Fiscal"])
+        us_tabs = st.tabs(["PIB", "Inflação", "Indústria", "Varejo", "Crédito", "Imobiliário", "Sentimento", "Emprego", "Fiscal"])
         
         with us_tabs[0]:
             if "PIB" in us_context:
@@ -72,8 +72,8 @@ else:
                 render_chart_group_with_context(data, chart_configs, "Estados Unidos", "Crédito", charts_by_context)
 
         with us_tabs[5]:
-            if "Housing" in us_context:
-                render_chart_group_with_context(data, chart_configs, "Estados Unidos", "Housing", charts_by_context)
+            if "Imobiliário" in us_context:
+                render_chart_group_with_context(data, chart_configs, "Estados Unidos", "Imobiliário", charts_by_context)
 
         with us_tabs[6]:
             if "Sentimento" in us_context:
