@@ -1150,9 +1150,9 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": "Saldo e Concessão de Crédito"
     },
-    "br_bcb_credit_outstanding_pf_pj": {
+    "br_bcb_past_due_loans": {
         "chart_config": {
-            "columns": ["br_bcb_credit_outstanding_pf", "br_bcb_credit_outstanding_pj"],
+            "columns": ["br_bcb_past_due_loans_pf", "br_bcb_past_due_loans_pj"],
             "names": ["PF", "PJ"],
             "chart_type": "line",
             "title": "Carteira de Crédito",
@@ -1163,7 +1163,7 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": "Inadimplência"
     },
-    "br_bcb_credit_outstanding_pf_pj_details": {
+    "br_bcb_past_due_loans_details": {
         "chart_config": {
             "columns": ["br_bcb_past_due_loans_nonearmarked_pj", "br_bcb_past_due_loans_earmarked_pj", "br_bcb_past_due_loans_nonearmarked_pf", "br_bcb_past_due_loans_earmarked_pf"],
             "names": ["PJ (Recursos Livres)", "PJ (Direcionados)", "PF (Recursos Livres)", "PF (Direcionados)"],
@@ -1208,7 +1208,7 @@ CHARTS_ECONOMIA = {
         "chart_config": {
             "columns": ["br_current_account_t12", "br_current_account_to_gdp"],
             "names": ["Acumulado 12 meses", "% do PIB"],
-            "chart_type": "dual_axis_line",
+            "chart_type": "dual_axis_line_area",
             "title": "Transações Correntes",
             "y_axis_title": ("Valor", "% do PIB"),
         },
@@ -1221,7 +1221,7 @@ CHARTS_ECONOMIA = {
         "chart_config": {
             "columns": ["br_direct_investment_liabilities_t12", "br_direct_investment_liabilities_to_gdp"],
             "names": ["Acumulado 12 meses", "% do PIB"],
-            "chart_type": "dual_axis_line",
+            "chart_type": "dual_axis_line_area",
             "title": "Investimentos Diretos no País (IDP) - Ingresso Líquido",
             "y_axis_title": ("Valor", "% do PIB"),
         },
@@ -1250,26 +1250,26 @@ CHARTS_ECONOMIA = {
             "columns": "br_ipca_yoy",
             "names": "IPCA",
             "chart_type": "line",
-            "title": "Headline",
-            "y_axis_title": "Taxa (%)",
+            "title": "IPCA (% YoY)",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Inflação",
-        "block_title": ""
+        "block_title": "Headline"
     },
     "br_focus_ipca_median": {
         "chart_config": {
             "columns": ["2025", "2026", "2027"], # Special case: columns derived from pivoted focus data
             "names": "IPCA (Mediana)",
             "chart_type": "line",
-            "title": "Expectativas (Focus)",
+            "title": "IPCA (Mediana)",
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Inflação",
-        "block_title": ""
+        "block_title": "Expectativas (Focus)"
     },
      "br_ipca_grupos_yoy": {
         "chart_config": {
