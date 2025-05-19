@@ -962,7 +962,7 @@ CHARTS_ECONOMIA = {
             "title": "Volume de Vendas (% YoY)",
             "y_axis_title": "%",
         },
-        "transformations": [{"type": "yearly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}],
+        "transformations": [{"type": "yearly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pmc_retail_sales_volume_total_amplified_index", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "Varejo",
@@ -976,7 +976,7 @@ CHARTS_ECONOMIA = {
             "title": "Volume de Vendas (% MoM)",
             "y_axis_title": "%",
         },
-        "transformations": [{"type": "monthly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}],
+        "transformations": [{"type": "monthly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}, {"type": "monthly_variation", "column": "br_pmc_retail_sales_volume_total_amplified_index", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "Varejo",
@@ -1080,57 +1080,101 @@ CHARTS_ECONOMIA = {
     },
     
     # Crédito
-    "br_bcb_credit_outstanding_total": {
+    "br_bcb_credit_outstanding": {
         "chart_config": {
             "columns": ["br_bcb_credit_outstanding_total", "br_bcb_credit_outstanding_pf", "br_bcb_credit_outstanding_pj"],
-            "names": "Saldo da Carteira de Crédito (Total)",
+            "names": ["Total", "PF", "PJ"],
             "chart_type": "line",
-            "title": "Saldo e Concessão de Crédito",
-            "y_axis_title": "Valor",
+            "title": "Saldo da Carteira de Crédito (% YoY)",
+            "y_axis_title": "%",
         },
+        "transformations": [{"type": "yearly_variation", "column": "br_bcb_credit_outstanding_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_credit_outstanding_pf", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_credit_outstanding_pj", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "Crédito",
-        "block_title": ""
+        "block_title": "Saldo da Carteira de Crédito"
     },
-    "br_bcb_average_interest_rate_total": {
-         "chart_config": {
-            "columns": ["br_bcb_average_interest_rate_total", "br_bcb_average_interest_rate_pf", "br_bcb_average_interest_rate_pj", "br_selic_target"],
-            "names": "Taxa Média de Juros das Operações",
-            "chart_type": "line",
-            "title": "Taxa de Juros",
-            "y_axis_title": "Valor",
-        },
-        "width": 6,
-        "context": "Brasil",
-        "group": "Crédito",
-        "block_title": ""
-    },
-    "br_bcb_past_due_loans": {
+    "br_bcb_credit_outstanding_details": {
         "chart_config": {
-            "columns": ["br_bcb_past_due_loans_pf", "br_bcb_past_due_loans_pj"],
-            "names": "Inadimplência da Carteira de Crédito",
+            "columns": ["br_bcb_nonearmarked_credit_outstanding_pj", "br_bcb_earmarked_credit_outstanding_pj", "br_bcb_nonearmarked_credit_outstanding_pf", "br_bcb_earmarked_credit_outstanding_pf"],
+            "names": ["PJ (Recursos Livres)", "PJ (Direcionados)", "PF (Recursos Livres)", "PF (Direcionados)"],
             "chart_type": "line",
-            "title": "Inadimplência",
-            "y_axis_title": "Taxa (%)",
+            "title": "Saldo da Carteira de Crédito (% YoY)",
+            "y_axis_title": "%",
         },
+        "transformations": [{"type": "yearly_variation", "column": "br_bcb_nonearmarked_credit_outstanding_pj", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_earmarked_credit_outstanding_pj", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_nonearmarked_credit_outstanding_pf", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_earmarked_credit_outstanding_pf", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "Crédito",
-        "block_title": ""
+        "block_title": "Saldo da Carteira de Crédito"
     },
-    "br_bcb_household_debt_to_income": {
+    "br_bcb_new_operations": {
         "chart_config": {
-            "columns": ["br_bcb_household_debt_to_income", "br_bcb_household_debt_ex_mortgage_to_income"],
-            "names": "Endividamento das Famílias em Relação à Renda",
+            "columns": ["br_bcb_new_operations_pj", "br_bcb_new_operations_pf"],
+            "names": ["PJ", "PF"],
             "chart_type": "line",
-            "title": "Outros Indicadores",
-            "y_axis_title": "Taxa (%)",
+            "title": "Concessão de Crédito (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_bcb_new_operations_pj", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_new_operations_pf", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Concessão de Crédito"
+    },
+    "br_bcb_new_operations_details": {
+        "chart_config": {
+            "columns": ["br_bcb_nonearmarked_new_operations_pj", "br_bcb_earmarked_new_operations_pj", "br_bcb_nonearmarked_new_operations_pf", "br_bcb_earmarked_new_operations_pf"],
+            "names": ["PJ (Recursos Livres)", "PJ (Direcionados)", "PF (Recursos Livres)", "PF (Direcionados)"],
+            "chart_type": "line",
+            "title": "Concessão de Crédito (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_bcb_nonearmarked_new_operations_pj", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_earmarked_new_operations_pj", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_nonearmarked_new_operations_pf", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_earmarked_new_operations_pf", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Concessão de Crédito"
+    },
+    "br_bcb_sfn_loans": {
+        "chart_config": {
+            "columns": ["br_bcb_sfn_loans_to_government", "br_bcb_sfn_loans_to_companies", "br_bcb_sfn_loans_to_individuals"],
+            "names": ["Governo", "Empresas", "Indivíduos"],
+            "chart_type": "line",
+            "title": "Saldo de Empréstimos e Financiamentos do SFN (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_bcb_sfn_loans_to_government", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_sfn_loans_to_companies", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_bcb_sfn_loans_to_individuals", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Saldo e Concessão de Crédito"
+    },
+    "br_bcb_credit_outstanding_pf_pj": {
+        "chart_config": {
+            "columns": ["br_bcb_credit_outstanding_pf", "br_bcb_credit_outstanding_pj"],
+            "names": ["PF", "PJ"],
+            "chart_type": "line",
+            "title": "Carteira de Crédito",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Crédito",
-        "block_title": ""
+        "block_title": "Inadimplência"
+    },
+    "br_bcb_credit_outstanding_pf_pj_details": {
+        "chart_config": {
+            "columns": ["br_bcb_past_due_loans_nonearmarked_pj", "br_bcb_past_due_loans_earmarked_pj", "br_bcb_past_due_loans_nonearmarked_pf", "br_bcb_past_due_loans_earmarked_pf"],
+            "names": ["PJ (Recursos Livres)", "PJ (Direcionados)", "PF (Recursos Livres)", "PF (Direcionados)"],
+            "chart_type": "line",
+            "title": "Carteira de Crédito (Abertura)",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Inadimplência"
     },
 
     # Setor Externo
@@ -1158,7 +1202,7 @@ CHARTS_ECONOMIA = {
         "width": 6,
         "context": "Brasil",
         "group": "Setor Externo",
-        "block_title": "Balanço Comercial"
+        "block_title": "Balança Comercial"
     },
     "br_current_account": {
         "chart_config": {
