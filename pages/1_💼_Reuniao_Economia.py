@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
+@st.cache_data(ttl=3600)
 def load_data(codes, start_date):
     try:
         return get_series(codes, start_date=start_date, field='close')
@@ -20,7 +20,7 @@ def load_data(codes, start_date):
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
 
-# Chart configurations com o mesmo nome de grupo (PIB) mas em contextos diferentes (br e us)
+# Chart configurations
 chart_configs = CHARTS_ECONOMIA
 
 # Extract all unique column codes
@@ -82,6 +82,10 @@ else:
         with us_tabs[7]:
             if "Emprego" in us_context:
                 render_chart_group_with_context(data, chart_configs, "Estados Unidos", "Emprego", charts_by_context)
+
+        with us_tabs[8]:
+            if "Fiscal" in us_context:
+                render_chart_group_with_context(data, chart_configs, "Estados Unidos", "Fiscal", charts_by_context)
 
     # Tab 2: Brasil
     with tabs[1]:

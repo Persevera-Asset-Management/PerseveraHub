@@ -4,10 +4,10 @@ CHARTS_ECONOMIA = {
     "us_gdp_qoq": {
         "chart_config": {
             "columns": "us_gdp_qoq",
-            "names": "PIB QoQ SA",
+            "names": "PIB (% QoQ SA)",
             "chart_type": "column",
-            "title": "PIB QoQ SA",
-            "y_axis_title": "Taxa (%)",
+            "title": "PIB (% QoQ SA)",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Estados Unidos",
@@ -17,10 +17,10 @@ CHARTS_ECONOMIA = {
     "us_gdp_yoy": {
         "chart_config": {
             "columns": "us_gdp_yoy",
-            "names": "PIB YoY SA",
+            "names": "PIB (% YoY)",
             "chart_type": "column",
-            "title": "PIB YoY",
-            "y_axis_title": "Taxa (%)",
+            "title": "PIB (% YoY)",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Estados Unidos",
@@ -47,7 +47,7 @@ CHARTS_ECONOMIA = {
             "columns": ["us_industrial_production_index", "us_capacity_utilization_index"],
             "names": ["Produção Industrial", "Utilização de Capacidade"],
             "chart_type": "dual_axis_line",
-            "title": "Industrial Production & Capacity Utilization",
+            "title": "Produção Industrial e Utilização de Capacidade",
             "y_axis_title": ["Valor", "Taxa (%)"],
         },
         "width": 6,
@@ -55,7 +55,35 @@ CHARTS_ECONOMIA = {
         "group": "Indústria",
         "block_title": "Industrial Production & Capacity Utilization"
     },
-    
+    "us_industrial_production_yoy": {
+        "chart_config": {
+            "columns": ["us_industrial_production_index"],
+            "names": ["Produção Industrial"],
+            "chart_type": "column",
+            "title": "Produção Industrial (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "us_industrial_production_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Indústria",
+        "block_title": "Industrial Production & Capacity Utilization"
+    },
+    "us_industrial_production_mom": {
+        "chart_config": {
+            "columns": ["us_industrial_production_index"],
+            "names": ["Produção Industrial"],
+            "chart_type": "column",
+            "title": "Produção Industrial (% MoM)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "monthly_variation", "column": "us_industrial_production_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Indústria",
+        "block_title": "Industrial Production & Capacity Utilization"
+    },
+
     # Varejo
     "us_bloomberg_retail_surprise_index": {
         "chart_config": {
@@ -206,6 +234,7 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": ""
     },
+    
     # Sentimento
     "us_bloomberg_business_cycle_surprise_index": {
          "chart_config": {
@@ -693,6 +722,49 @@ CHARTS_ECONOMIA = {
         "block_title": "Soft Data"
     },
 
+    # Fiscal
+    "us_total_public_debt_to_gdp": {
+        "chart_config": {
+            "columns": "us_total_public_debt_to_gdp",
+            "names": "Dívida Pública / PIB",
+            "chart_type": "line",
+            "title": "Dívida Pública / PIB",
+            "y_axis_title": "% do PIB",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Fiscal",
+        "block_title": "Dívida Pública"
+    },
+    "us_total_public_debt_to_gdp_participants": {
+        "chart_config": {
+            "columns": ["us_federal_debt_held_by_fed_banks_to_gdp", "us_federal_debt_held_by_foreign_investors_to_gdp", "us_federal_debt_held_by_the_public_to_gdp", "us_federal_debt_held_by_private_investors_to_gdp", "us_federal_debt_held_by_trusts_to_gdp"],
+            "names": ["Fed Banks", "Foreign Investors", "The Public", "Private Investors", "Trusts"],
+            "chart_type": "line",
+            "title": "Dívida Pública / PIB (por Participantes)",
+            "y_axis_title": "% do PIB",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Fiscal",
+        "block_title": "Dívida Pública"
+    },
+    "us_total_public_debt_participants": {
+        "chart_config": {
+            "columns": ["us_federal_debt_held_by_fed_banks", "us_federal_debt_held_by_foreign_investors", "us_federal_debt_held_by_the_public", "us_federal_debt_held_by_private_investors", "us_federal_debt_held_by_trusts"],
+            "names": ["Fed Banks", "Foreign Investors", "The Public", "Private Investors", "Trusts"],
+            "chart_type": "area",
+            "stacking": "percent",
+            "title": "Dívida Pública (por Participantes)",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Fiscal",
+        "block_title": "Dívida Pública"
+    },
+
+
     # === Brasil ===
     # IBC-Br
     "br_ibcbr": {
@@ -846,6 +918,8 @@ CHARTS_ECONOMIA = {
         "group": "Sentimento",
         "block_title": "Índices de Sentimento"
     },
+    
+    # Emprego
     "br_caged_mom": {
         "chart_config": {
             "columns": "br_caged_registered_employess_total",
@@ -914,7 +988,7 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": ""
     },
-     "br_bcb_household_debt_to_income": {
+    "br_bcb_household_debt_to_income": {
         "chart_config": {
             "columns": ["br_bcb_household_debt_to_income", "br_bcb_household_debt_ex_mortgage_to_income"],
             "names": "Endividamento das Famílias em Relação à Renda",
