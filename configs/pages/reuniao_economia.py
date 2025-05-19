@@ -1206,11 +1206,11 @@ CHARTS_ECONOMIA = {
     },
     "br_current_account": {
         "chart_config": {
-            "columns": ["br_current_account_t12", "br_current_account_to_gdp"],
-            "names": ["Acumulado 12 meses", "% do PIB"],
+            "columns": ["br_current_account_to_gdp", "br_current_account_t12"],
+            "names": ["% do PIB", "Acumulado 12 meses"],
             "chart_type": "dual_axis_line_area",
             "title": "Transações Correntes",
-            "y_axis_title": ("Valor", "% do PIB"),
+            "y_axis_title": ("% do PIB", "Valor"),
         },
         "width": 6,
         "context": "Brasil",
@@ -1219,11 +1219,11 @@ CHARTS_ECONOMIA = {
     },
     "br_direct_investment_liabilities": {
         "chart_config": {
-            "columns": ["br_direct_investment_liabilities_t12", "br_direct_investment_liabilities_to_gdp"],
-            "names": ["Acumulado 12 meses", "% do PIB"],
+            "columns": ["br_direct_investment_liabilities_to_gdp", "br_direct_investment_liabilities_t12"],
+            "names": ["% do PIB", "Acumulado 12 meses"],
             "chart_type": "dual_axis_line_area",
             "title": "Investimentos Diretos no País (IDP) - Ingresso Líquido",
-            "y_axis_title": ("Valor", "% do PIB"),
+            "y_axis_title": ("% do PIB", "Valor"),
         },
         "width": 6,
         "context": "Brasil",
@@ -1258,6 +1258,19 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Headline"
     },
+    "br_ipca_mom": {
+        "chart_config": {
+            "columns": ["br_ipca_sa_mom", "br_ipca15_mom"],
+            "names": ["IPCA", "IPCA-15"],
+            "chart_type": "column",
+            "title": "IPCA (% MoM)",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Inflação",
+        "block_title": "Headline"
+    },
     "br_focus_ipca_median": {
         "chart_config": {
             "columns": ["2025", "2026", "2027"], # Special case: columns derived from pivoted focus data
@@ -1274,15 +1287,28 @@ CHARTS_ECONOMIA = {
      "br_ipca_grupos_yoy": {
         "chart_config": {
             "columns": ["br_ipca_yoy", "br_ipca_non_regulated_yoy", "br_ipca_regulated_yoy"],
-            "names": "IPCA Grupos (% YoY)",
+            "names": ["IPCA", "Livres", "Administrados"],
             "chart_type": "line",
-            "title": "Grupos e Núcleos",
-            "y_axis_title": "Taxa (%)",
+            "title": "IPCA Grupos (% YoY)",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Brasil",
         "group": "Inflação",
-        "block_title": ""
+        "block_title": "Grupos e Núcleos"
+    },
+     "br_ipca_grupos_outros_yoy": {
+        "chart_config": {
+            "columns": ["br_ipca_yoy", "br_ipca_services_yoy", "br_ipca_durable_yoy", "br_ipca_semi_durable_yoy", "br_ipca_non_durable_yoy"],
+            "names": ["IPCA", "Serviços", "Duráveis", "Semi-Duráveis", "Não-Duráveis"],
+            "chart_type": "line",
+            "title": "IPCA Grupos (% YoY)",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Inflação",
+        "block_title": "Grupos e Núcleos"
     },
 
     # Commodities
