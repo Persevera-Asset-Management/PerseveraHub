@@ -151,7 +151,7 @@ CHARTS_ECONOMIA = {
         },
         "width": 6,
         "context": "Estados Unidos",
-        "group": "Housing",
+        "group": "Imobiliário",
         "block_title": "Bloomberg Data Surprise"
     },
     "us_new_home_sales_starts_permits": {
@@ -164,7 +164,7 @@ CHARTS_ECONOMIA = {
         },
         "width": 6,
         "context": "Estados Unidos",
-        "group": "Housing",
+        "group": "Imobiliário",
         "block_title": "Vendas e Contruções"
     },
     "us_new_home_sales_starts_permits_yoy": {
@@ -192,7 +192,7 @@ CHARTS_ECONOMIA = {
         "transformations": [{"type": "yearly_variation", "column": "us_case_shiller_home_prices_national_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_case_shiller_home_prices_20_city_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_zillow_home_prices_national_index", "frequency": "MS"}],
         "width": 6,
         "context": "Estados Unidos",
-        "group": "Housing",
+        "group": "Imobiliário",
         "block_title": "Índices de Preços de Imóveis"
     },
     
@@ -790,6 +790,34 @@ CHARTS_ECONOMIA = {
             "title": "IBC-Br",
             "y_axis_title": "Valor",
         },
+        "width": 6,
+        "context": "Brasil",
+        "group": "IBC-Br",
+        "block_title": "IBC-Br"
+    },
+    "br_ibcbr_yoy": {
+        "chart_config": {
+            "columns": "br_ibcbr_index",
+            "names": "Índice",
+            "chart_type": "line",
+            "title": "IBC-Br (% YoY)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_ibcbr_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "IBC-Br",
+        "block_title": "IBC-Br"
+    },
+    "br_ibcbr_mom": {
+        "chart_config": {
+            "columns": "br_ibcbr_index",
+            "names": "Índice",
+            "chart_type": "line",
+            "title": "IBC-Br (% MoM)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "monthly_variation", "column": "br_ibcbr_index", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "IBC-Br",
