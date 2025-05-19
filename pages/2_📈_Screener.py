@@ -88,11 +88,11 @@ selected_cols_options = {
 
 default_selected_display_names = ['ADTV (21d)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE']
 
-st.sidebar.header("Filters")
+st.sidebar.header("Filtros")
 
 # ADTV Filter
 adtv_filter = st.sidebar.number_input(
-    "Minimum ADTV (21d):",
+    "ADTV Mínimo (21d):",
     min_value=0.0,
     value=8000000.0,
     step=500000.0,
@@ -100,7 +100,7 @@ adtv_filter = st.sidebar.number_input(
 )
 
 selected_display_names = st.sidebar.multiselect(
-    "Select metrics to display:",
+    "Selecione as métricas para exibir:",
     options=list(selected_cols_options.keys()),
     default=default_selected_display_names
 )
