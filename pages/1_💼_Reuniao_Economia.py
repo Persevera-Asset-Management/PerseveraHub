@@ -49,7 +49,7 @@ else:
         st.header("Estados Unidos")
         us_context = charts_by_context.get("Estados Unidos", {})
         
-        us_tabs = st.tabs(["PIB", "Inflação", "Indústria", "Varejo", "Crédito", "Housing", "Sentimento", "Emprego"])
+        us_tabs = st.tabs(["PIB", "Inflação", "Indústria", "Varejo", "Crédito", "Housing", "Sentimento", "Emprego", "Fiscal"])
         
         with us_tabs[0]:
             if "PIB" in us_context:
