@@ -13,12 +13,25 @@ st.set_page_config(
 
 st.title("Planejamento Financeiro")
 
+# Definição dos parâmetros
 st.sidebar.header("Parâmetros")
 
+st.sidebar.subheader("Patrimônio")
 patrimonio_inicial = st.sidebar.number_input("Patrimônio Inicial (R$):", min_value=0.0, value=100000.0, step=10000.0, format="%.0f")
-horizonte_temporal = st.sidebar.number_input("Horizonte Temporal (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
+
+st.sidebar.subheader("Fase de Acumulação")
+periodo_acumulacao = st.sidebar.number_input("Período de Acumulação (anos):", min_value=0.0, value=10.0, step=1.0, format="%.0f")
+
+if periodo_acumulacao == 0:
+    aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f", disabled=True)
+else:
+    aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f")
+
+st.sidebar.subheader("Fase de Distribuição")
+periodo_distribuicao = st.sidebar.number_input("Período de Distribuição (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
 resgate_mensal = st.sidebar.number_input("Resgate Mensal (R$):", min_value=0.0, value=10000.0, step=1000.0, format="%.0f")
-aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f")
+
+st.sidebar.subheader("Hipóteses de Mercado")
 rentabilidade_nominal_esperada = st.sidebar.number_input("Rentabilidade Nominal Esperada (% a.a):", min_value=0.0, value=10.0, step=0.1, format="%.1f")
 inflacao_esperada = st.sidebar.number_input("Inflação Esperada (% a.a):", min_value=0.0, value=2.0, step=0.1, format="%.1f")
 aliquota_irrf = st.sidebar.number_input("Alíquota de Impostos (%):", min_value=0.0, value=15.0, step=0.1, format="%.1f")
@@ -28,33 +41,61 @@ rentabilidade_anual = rentabilidade_nominal_esperada / 100.0
 inflacao_anual = inflacao_esperada / 100.0
 
 # Função para simular a evolução patrimonial
-def simular_patrimonio(patrimonio_inicial, horizonte_temporal, resgate_mensal, aporte_mensal, inflacao_esperada, rentabilidade_nominal_esperada, aliquota_irrf):
+def simular_patrimonio(patrimonio_inicial, periodo_acumulacao, periodo_distribuicao, resgate_mensal, aporte_mensal, inflacao_esperada, rentabilidade_nominal_esperada, aliquota_irrf):
     
     # Convertendo taxas anuais para mensais
     rentabilidade_mensal_liquida_bruta = (1 + rentabilidade_nominal_esperada / 100.0) ** (1/12) - 1
     inflacao_mensal_calc = (1 + inflacao_esperada / 100.0) ** (1/12) - 1
     
     # Inicializando variáveis para armazenar resultados
-    resultados = []
     patrimonio_atual = patrimonio_inicial
-    resgate_total = 0
-    aporte_total = 0
-    rendimento_total = 0
+    resgate_total = 0.0
+    aporte_total = 0.0
+    rendimento_total = 0.0
+    
+    # Adicionar o estado inicial (Mês 0)
+    resultados = [{
+        "Mês": 0,
+        "Ano": 0,
+        "Patrimônio": patrimonio_atual,
+        "Rendimento Acumulado": rendimento_total,
+        "Resgate Acumulado": resgate_total,
+        "Resgate Mensal Ajustado": 0.0,
+        "Aporte Acumulado": aporte_total,
+        "Aporte Mensal Ajustado": 0.0,
+        "Fator Inflação": 1.0,
+        "Inflação Acumulada": 0.0
+    }]
+
+    meses_acumulacao = int(periodo_acumulacao * 12)
+    meses_distribuicao = int(periodo_distribuicao * 12)
+    meses_totais_simulacao = meses_acumulacao + meses_distribuicao
     
     # Simulação mês a mês
-    for mes in range(1, int(horizonte_temporal * 12) + 1):
+    for mes in range(1, meses_totais_simulacao + 1):
         # Aplicar rendimento
         rendimento_bruto = patrimonio_atual * rentabilidade_mensal_liquida_bruta
         rendimento_liquido = rendimento_bruto * (1 - aliquota_irrf / 100.0)
         rendimento_total += rendimento_liquido
         
-        # Aplicar resgate ajustado pela inflação
         fator_inflacao = (1 + inflacao_mensal_calc) ** (mes - 1)
-        resgate_ajustado = resgate_mensal * fator_inflacao
+        
+        aporte_do_mes_base = 0.0
+        resgate_do_mes_base = 0.0
+
+        if mes <= meses_acumulacao:
+            # Fase de Acumulação
+            aporte_do_mes_base = aporte_mensal
+        else:
+            # Fase de Distribuição (ocorre após os meses de acumulação)
+            resgate_do_mes_base = resgate_mensal
+        
+        # Aplicar resgate ajustado pela inflação
+        resgate_ajustado = resgate_do_mes_base * fator_inflacao
         resgate_total += resgate_ajustado
         
         # Adicionar aportes (também ajustados pela inflação)
-        aporte_ajustado = aporte_mensal * fator_inflacao
+        aporte_ajustado = aporte_do_mes_base * fator_inflacao
         aporte_total += aporte_ajustado
         
         # Calcular novo patrimônio
@@ -69,6 +110,7 @@ def simular_patrimonio(patrimonio_inicial, horizonte_temporal, resgate_mensal, a
             "Resgate Acumulado": resgate_total,
             "Resgate Mensal Ajustado": resgate_ajustado,
             "Aporte Acumulado": aporte_total,
+            "Aporte Mensal Ajustado": aporte_ajustado,
             "Fator Inflação": fator_inflacao,
             "Inflação Acumulada": (1 + inflacao_mensal_calc) ** (mes - 1) - 1
         })
@@ -77,15 +119,19 @@ def simular_patrimonio(patrimonio_inicial, horizonte_temporal, resgate_mensal, a
     df_resultados = pd.DataFrame(resultados)
     
     # Adicionar coluna para período formatado (para visualização)
-    df_resultados["Período"] = df_resultados["Ano"].apply(lambda x: f"Ano {x}")
-    df_resultados["Período Completo"] = df_resultados.apply(lambda x: f"Ano {x['Ano']} Mês {x['Mês'] % 12 or 12}", axis=1)
+    df_resultados["Período"] = df_resultados["Ano"].apply(lambda ano: "Inicial" if ano == 0 else f"Ano {ano}")
+    df_resultados["Período Completo"] = df_resultados.apply(
+        lambda row: "Inicial" if row["Mês"] == 0 else f"Ano {row['Ano']} Mês {((row['Mês'] - 1) % 12) + 1}",
+        axis=1
+    )
     
     return df_resultados
 
 # Calcular a simulação
 df_simulacao = simular_patrimonio(
     patrimonio_inicial=patrimonio_inicial,
-    horizonte_temporal=horizonte_temporal,
+    periodo_acumulacao=periodo_acumulacao,
+    periodo_distribuicao=periodo_distribuicao,
     resgate_mensal=resgate_mensal,
     aporte_mensal=aporte_mensal,
     inflacao_esperada=inflacao_esperada,
@@ -100,8 +146,28 @@ st.subheader("Resultados da Simulação")
 
 ultima_linha = df_simulacao.iloc[-1]
 patrimonio_final = ultima_linha["Patrimônio"]
-crescimento_nominal = (patrimonio_final / patrimonio_inicial - 1) * 100
-crescimento_real = ((patrimonio_final / patrimonio_inicial) / (1 + inflacao_esperada / 100.0) ** horizonte_temporal - 1) * 100
+periodo_total_anos = periodo_acumulacao + periodo_distribuicao
+
+if patrimonio_inicial > 0:
+    crescimento_nominal = (patrimonio_final / patrimonio_inicial - 1) * 100
+    inflacao_total_fator = (1 + inflacao_anual) ** periodo_total_anos
+    if inflacao_total_fator > 0:
+        crescimento_real = ((patrimonio_final / patrimonio_inicial) / inflacao_total_fator - 1) * 100
+    else: # Edge case for extreme deflation
+        crescimento_real = float('inf') if (patrimonio_final / patrimonio_inicial) >= 0 else float('-inf')
+elif patrimonio_inicial == 0:
+    if patrimonio_final > 0:
+        crescimento_nominal = float('inf')
+        crescimento_real = float('inf')
+    elif patrimonio_final == 0:
+        crescimento_nominal = 0.0
+        crescimento_real = 0.0
+    else: # patrimonio_final < 0
+        crescimento_nominal = float('-inf')
+        crescimento_real = float('-inf')
+else: # patrimonio_inicial < 0 (not allowed by UI but robust)
+    crescimento_nominal = 0.0 # Or indicate N/A
+    crescimento_real = 0.0   # Or indicate N/A
 
 metricas_col1, metricas_col2 = st.columns(2)
 
@@ -119,8 +185,8 @@ st.subheader("Evolução do Patrimônio")
 
 evolucao_options = create_chart(
     data=df_simulacao,
-    columns=["Patrimônio", "Rendimento Acumulado", "Resgate Acumulado"],
-    names=["Patrimônio", "Rendimento Acumulado", "Resgate Acumulado"],
+    columns=["Patrimônio", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
+    names=["Patrimônio", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
     chart_type='line',
     title="",
     y_axis_title="Valor (R$)",
@@ -197,9 +263,10 @@ with tab_mensal:
     df_memoria_mensal["Resgate Acumulado"] = df_memoria_mensal["Resgate Acumulado"].map("R$ {:,.2f}".format)
     df_memoria_mensal["Resgate Mensal Ajustado"] = df_memoria_mensal["Resgate Mensal Ajustado"].map("R$ {:,.2f}".format)
     df_memoria_mensal["Aporte Acumulado"] = df_memoria_mensal["Aporte Acumulado"].map("R$ {:,.2f}".format)
+    df_memoria_mensal["Aporte Mensal Ajustado"] = df_memoria_mensal["Aporte Mensal Ajustado"].map("R$ {:,.2f}".format)
     df_memoria_mensal["Inflação Acumulada"] = df_memoria_mensal["Inflação Acumulada"].map("{:.2%}".format)
 
-    df_memoria_mensal = df_memoria_mensal[["Período Completo", "Patrimônio", "Rendimento Acumulado", "Resgate Acumulado", "Resgate Mensal Ajustado", "Aporte Acumulado", "Inflação Acumulada"]]
+    df_memoria_mensal = df_memoria_mensal[["Período Completo", "Patrimônio", "Rendimento Acumulado", "Resgate Acumulado", "Resgate Mensal Ajustado", "Aporte Acumulado", "Aporte Mensal Ajustado", "Inflação Acumulada"]]
     df_memoria_mensal.set_index("Período Completo", inplace=True)
 
     st.dataframe(df_memoria_mensal, use_container_width=True)
