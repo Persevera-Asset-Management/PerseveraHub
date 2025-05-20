@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional, Union, Tuple
 from utils.charts import create_highcharts_options
 from utils.data_transformers import apply_transformations
 
-def create_chart(data, columns, names, chart_type, title, y_axis_title=None, colors=None, **kwargs):
+def create_chart(data, columns, names, chart_type, title, y_axis_title=None, x_axis_title=None, colors=None, **kwargs):
     """
     Creates a Highcharts chart configuration with specified parameters.
     
@@ -21,6 +21,8 @@ def create_chart(data, columns, names, chart_type, title, y_axis_title=None, col
         Chart title
     y_axis_title : str, optional
         Y-axis title (defaults to "Value" if None)
+    x_axis_title : str, optional
+        X-axis title (defaults to None)
     colors : str or List[str], optional
         Color(s) for the series
     **kwargs : dict
@@ -37,6 +39,7 @@ def create_chart(data, columns, names, chart_type, title, y_axis_title=None, col
         chart_type=chart_type,
         title=title,
         y_axis_title=y_axis_title or "Value",
+        x_axis_title=x_axis_title,
         series_name=names,
         color=colors,
         **kwargs

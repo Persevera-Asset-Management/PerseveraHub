@@ -10,6 +10,7 @@ def create_highcharts_options(
     stacking: Optional[Literal['normal', 'percent']] = None,
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
+    x_axis_title: Optional[str] = None,
     series_name: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     color: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     point_markers: Optional[List[Dict[str, Any]]] = None,
@@ -43,6 +44,8 @@ def create_highcharts_options(
     y_axis_title : str or Tuple[str, str], optional
         Y-axis title. For 'dual_axis_line' or 'dual_axis_line_area', this must be a Tuple[str, str] (e.g., ('Title Left', 'Title Right')). 
         For single-axis charts, a string. Defaults to concatenated y-column names if multiple y-columns on a single axis.
+    x_axis_title : str, optional
+        X-axis title. Defaults to x_column name if not provided, or None if x_column is also None.
     series_name : str or List[str] or Tuple, optional
         Name(s) of the data series.
         - For single-axis charts: a string (if one y_column) or a list of strings (matching y_columns). Defaults to y_column names.
@@ -330,6 +333,9 @@ def create_highcharts_options(
         else: # Linear axis for other types like line, scatter, area, dual_axis_line
             x_label = x_column_effective
             
+    # Use provided x_axis_title if available, otherwise use the derived x_label
+    final_x_axis_title = x_axis_title if x_axis_title is not None else x_label
+
     # Set x-axis type based on data type and chart type
     x_axis_type: Optional[str]
     if is_datetime:
@@ -377,7 +383,7 @@ def create_highcharts_options(
         chart_options["xAxis"] = {
             "type": x_axis_type,
             "title": {
-                "text": x_label
+                "text": final_x_axis_title
             }
         }
         
