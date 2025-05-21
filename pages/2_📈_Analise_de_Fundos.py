@@ -93,13 +93,13 @@ def load_fund_data(fund_name):
 def get_performance_table(nav, total_equity, start_date, end_date):
     df = nav.ffill()
     gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
-    gp_monthly = df.groupby(pd.Grouper(level='date', freq="M")).last()
-    gp_yearly = df.groupby(pd.Grouper(level='date', freq="Y")).last()
+    gp_monthly = df.groupby(pd.Grouper(level='date', freq="ME")).last()
+    gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
 
     time_frames = {
-        'day': gp_daily.pct_change().iloc[-1],
-        'mtd': gp_monthly.pct_change().iloc[-1],
-        'ytd': gp_yearly.pct_change().iloc[-1],
+        'day': gp_daily.pct_change(fill_method=None).iloc[-1],
+        'mtd': gp_monthly.pct_change(fill_method=None).iloc[-1],
+        'ytd': gp_yearly.pct_change(fill_method=None).iloc[-1],
         '3m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=3):].iloc[0] - 1),
         '6m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=6):].iloc[0] - 1),
         '12m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=12):].iloc[0] - 1),
@@ -107,9 +107,9 @@ def get_performance_table(nav, total_equity, start_date, end_date):
         '36m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=36):].iloc[0] - 1),
         'custom': df[start_date:end_date].iloc[-1] / df[start_date:end_date].iloc[0] - 1,
 
-        'day_rank': gp_daily.pct_change().iloc[-1].rank(ascending=False),
-        'mtd_rank': gp_monthly.pct_change().iloc[-1].rank(ascending=False),
-        'ytd_rank': gp_yearly.pct_change().iloc[-1].rank(ascending=False),
+        'day_rank': gp_daily.pct_change(fill_method=None).iloc[-1].rank(ascending=False),
+        'mtd_rank': gp_monthly.pct_change(fill_method=None).iloc[-1].rank(ascending=False),
+        'ytd_rank': gp_yearly.pct_change(fill_method=None).iloc[-1].rank(ascending=False),
         '3m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=3):].iloc[0] - 1).rank(ascending=False),
         '6m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=6):].iloc[0] - 1).rank(ascending=False),
         '12m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=12):].iloc[0] - 1).rank(ascending=False),
