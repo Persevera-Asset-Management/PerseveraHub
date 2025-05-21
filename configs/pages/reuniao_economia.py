@@ -4,9 +4,9 @@ CHARTS_ECONOMIA = {
     "us_gdp_qoq": {
         "chart_config": {
             "columns": "us_gdp_qoq",
-            "names": "PIB (% QoQ SA)",
+            "names": "PIB",
             "chart_type": "column",
-            "title": "PIB (% QoQ SA)",
+            "title": "PIB (var. Trimestral %)",
             "y_axis_title": "%",
         },
         "width": 6,
@@ -17,7 +17,7 @@ CHARTS_ECONOMIA = {
     "us_gdp_yoy": {
         "chart_config": {
             "columns": "us_gdp_yoy",
-            "names": "PIB (var. Anual %)",
+            "names": "PIB",
             "chart_type": "column",
             "title": "PIB (var. Anual %)",
             "y_axis_title": "%",
@@ -828,9 +828,9 @@ CHARTS_ECONOMIA = {
     "br_gdp_qoq": {
          "chart_config": {
             "columns": "br_gdp_index",
-            "names": "PIB (% QoQ)",
+            "names": "PIB",
             "chart_type": "column",
-            "title": "PIB (% QoQ)",
+            "title": "PIB (var. Trimestral %)",
             "y_axis_title": "Taxa (%)",
         },
         "transformations": [{"type": "quarterly_variation", "column": "br_gdp_index", "frequency": "QS"}],
