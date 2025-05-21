@@ -32,7 +32,7 @@ CODES = extract_codes_from_config(chart_configs)
 
 # Date range selector
 st.sidebar.header("Filtros")
-start_date = st.sidebar.date_input("Data Inicial", datetime.now() - timedelta(days=180), format="DD/MM/YYYY")
+start_date = st.sidebar.date_input("Data Inicial", datetime.now() - timedelta(days=365), format="DD/MM/YYYY")
 start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
