@@ -52,7 +52,7 @@ def style_screener_table(df_to_style):
     alignment_styles = [
         # Left-align index header and values
         {'selector': 'th.row_heading', 'props': [('text-align', 'left'), ('min-width', '80px')]},
-        {'selector': 'td.data.row_heading', 'props': [('text-align', 'left')]} # Should target index cells if rendered as data cells by Styler
+        {'selector': 'td.data.row_heading', 'props': [('text-align', 'left')]}
     ]
 
     for i, col_name in enumerate(df_styled.columns):

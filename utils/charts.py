@@ -18,7 +18,9 @@ def create_highcharts_options(
     line_width: int = 3,
     zoom_type: str = "x",
     animation: bool = False,
-    decimal_precision: int = 2
+    decimal_precision: int = 2,
+    point_name_column: Optional[str] = None,
+    tooltip_point_format: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Generate Highcharts options for various chart types.
@@ -70,6 +72,10 @@ def create_highcharts_options(
         Whether to enable animations
     decimal_precision : int, optional
         Number of decimal places in tooltips
+    point_name_column : str, optional
+        Column to use for individual point names, especially for scatter charts.
+    tooltip_point_format : str, optional
+        Custom HTML string format for the tooltip's point display.
         
     Returns:
     --------
@@ -410,7 +416,7 @@ def create_highcharts_options(
             }
         
         chart_options["tooltip"] = {
-            "shared": True,
+            "shared": True if chart_type != 'scatter' else False, # Scatter usually has non-shared tooltips
             "crosshairs": True
         }
         
@@ -421,10 +427,16 @@ def create_highcharts_options(
                 "month": "%B %Y"
             }
         
+        # Apply custom tooltip point format if provided
+        if tooltip_point_format:
+            chart_options["tooltip"]["pointFormat"] = tooltip_point_format
+        elif chart_type != 'scatter': # Default pointFormat if not scatter and no custom one
+            chart_options["tooltip"]["pointFormat"] = '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>'
+        
         # Set up series
         chart_options["series"] = []
 
-        def _prepare_series_data_points(y_col_for_series: str) -> List[List[Union[int, float, str]]]:
+        def _prepare_series_data_points(y_col_for_series: str) -> List[Union[List[Union[int, float, str]], Dict[str, Union[int, float, str]]]]: # Allow dict for scatter points
             _s_data = []
             for _idx, _row in temp_data.iterrows():
                 _x_val: Union[int, float, str]
@@ -438,7 +450,14 @@ def create_highcharts_options(
                     _x_val = _row[x_column_effective]
                 
                 if pd.notna(_row[y_col_for_series]):
-                    _s_data.append([_x_val, float(_row[y_col_for_series])])
+                    if chart_type == 'scatter' and point_name_column and point_name_column in _row:
+                        _s_data.append({
+                            "x": float(_x_val) if isinstance(_x_val, (int, float, str)) and str(_x_val).replace('.', '', 1).isdigit() else _x_val, # ensure numeric for scatter x
+                            "y": float(_row[y_col_for_series]),
+                            "name": str(_row[point_name_column])
+                        })
+                    else:
+                        _s_data.append([_x_val, float(_row[y_col_for_series])])
             return _s_data
 
         if is_dual_axis:

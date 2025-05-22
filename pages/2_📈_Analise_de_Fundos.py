@@ -330,7 +330,7 @@ if not performance_to_plot.empty:
         columns=list(performance_to_plot.columns),
         names=list(performance_to_plot.columns),
         chart_type='line',
-        title="Performance Acumulada",
+        title="",
         y_axis_title="%"
     )
     hct.streamlit_highcharts(perf_chart_options, key=f"perf_acumulada_{selected_fund_name}")
@@ -345,12 +345,29 @@ performance_table_data = get_performance_table(
     st.session_state.start_date,
     st.session_state.end_date
 )
-# st.dataframe(performance_table_data.set_index('fund_name'), use_container_width=True)
+
 if not performance_table_data.empty:
     styled_performance_table = style_performance_table(performance_table_data.set_index('fund_name'))
     st.dataframe(styled_performance_table, use_container_width=True)
 else:
     st.info("Não há dados para a tabela de performance com os filtros selecionados.")
+
+# 1D x Patrimônio Líquido
+st.subheader("1D x Patrimônio Líquido")
+short_term_chart_options = create_chart(
+    data=performance_table_data.dropna(),
+    columns="day",
+    names="Fundos",
+    chart_type='scatter',
+    title="",
+    y_axis_title="Retorno 1D (%)",
+    x_axis_title="Patrimônio Líquido (R$)",
+    x_column="PL",
+    zoom_type="xy",
+    point_name_column="fund_name",
+    tooltip_point_format='<b>{point.name}</b><br/>Patrimônio Líquido: {point.x:,.0f}<br/>Retorno 1D: {point.y:.2f}%'
+)
+hct.streamlit_highcharts(short_term_chart_options, key=f"scatter_1d_pl_{selected_fund_name}")
 
 # Additional Statistics (Drawdown, Volatility, Net Equity)
 st.subheader("Estatísticas Adicionais")
@@ -386,7 +403,7 @@ if not stats_data_filtered.empty:
                 columns=list(drawdown_data.columns),
                 names=list(drawdown_data.columns),
                 chart_type='area',
-                title="Drawdown",
+                title="",
                 y_axis_title="%"
             )
             hct.streamlit_highcharts(drawdown_chart_options, key=f"drawdown_{selected_fund_name}")
@@ -402,7 +419,7 @@ if not stats_data_filtered.empty:
                 columns=list(volatility_data.columns),
                 names=list(volatility_data.columns),
                 chart_type='line',
-                title="Volatilidade Anualizada (21d)",
+                title="",
                 y_axis_title="%"
             )
             hct.streamlit_highcharts(vol_chart_options, key=f"volatility_{selected_fund_name}")
@@ -425,7 +442,7 @@ if not stats_data_filtered.empty:
                     columns=list(pl_to_display.columns),
                     names=list(pl_to_display.columns),
                     chart_type='area',
-                    title=f"Patrimônio Líquido - {actual_persevera_pl_col}",
+                    title="",
                     y_axis_title="Valor"
                 )
                 hct.streamlit_highcharts(pl_chart_options, key=f"pl_{selected_fund_name}")
