@@ -87,6 +87,10 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
                 scalar = t_conf.get("scalar", 1)
                 new_col_name = f"{original_col_name}_divided_by_{scalar}"
                 break
+            elif transform_type == "saar":
+                period_months = t_conf.get("period_months", 12)
+                new_col_name = f"{original_col_name}_saar_{period_months}m"
+                break
             # Add other specific single-column input transformers here
 
         # Handle transformers that don't use 'column' but whose output name might match original_col_name

@@ -779,12 +779,28 @@ CHARTS_ECONOMIA = {
     },
     "us_total_public_debt_to_gdp_participants": {
         "chart_config": {
-            "columns": ["us_federal_debt_held_by_fed_banks_to_gdp", "us_federal_debt_held_by_foreign_investors_to_gdp", "us_federal_debt_held_by_the_public_to_gdp", "us_federal_debt_held_by_private_investors_to_gdp", "us_federal_debt_held_by_trusts_to_gdp"],
-            "names": ["Fed Banks", "Foreign Investors", "The Public", "Private Investors", "Trusts"],
+            "columns": ["us_federal_debt_held_by_fed_banks_to_gdp", "us_federal_debt_held_by_foreign_investors_to_gdp", "us_federal_debt_held_by_private_investors_to_gdp", "us_federal_debt_held_by_trusts_to_gdp"],
+            "names": ["Fed Banks", "Foreign Investors", "Private Investors", "Trusts"],
             "chart_type": "line",
             "title": "Dívida Pública / PIB (por Participantes)",
             "y_axis_title": "% do PIB",
         },
+
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Fiscal",
+        "block_title": "Dívida Pública"
+    },
+    "us_total_public_debt_participants": {
+        "chart_config": {
+            "columns": ["us_federal_debt_held_by_fed_banks", "us_federal_debt_held_by_foreign_investors", "us_federal_debt_held_by_private_investors", "us_federal_debt_held_by_trusts"],
+            "names": ["Fed Banks", "Foreign Investors", "Private Investors", "Trusts"],
+            "chart_type": "area",
+            "stacking": "percent",
+            "title": "Dívida Pública (por Participantes)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "divide", "column": "us_federal_debt_held_by_trusts", "scalar": 1e3}],
         "width": 6,
         "context": "Estados Unidos",
         "group": "Fiscal",
@@ -1162,6 +1178,60 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": "Saldo e Concessão de Crédito"
     },
+
+    "br_bcb_average_interest_rate": {
+        "chart_config": {
+            "columns": ["br_bcb_average_interest_rate_total", "br_bcb_average_interest_rate_pf", "br_bcb_average_interest_rate_pj"],
+            "names": ["Total", "PF", "PJ"],
+            "chart_type": "line",
+            "title": "Taxa Média de Juros das Operações",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Taxa de Juros"
+    },
+    "br_bcb_average_interest_rate_details": {
+        "chart_config": {
+            "columns": ["br_bcb_average_interest_rate_nonearmarked_pf", "br_bcb_average_interest_rate_nonearmarked_pj", "br_bcb_average_interest_rate_earmarked_pf", "br_bcb_average_interest_rate_earmarked_pj"],
+            "names": ["PF (Recursos Livres)", "PJ (Recursos Livres)", "PF (Direcionados)", "PJ (Direcionados)"],
+            "chart_type": "line",
+            "title": "Taxa Média de Juros das Operações (Abertura)",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Taxa de Juros"
+    },
+    "br_bcb_average_interest_rate_details_pj": {
+        "chart_config": {
+            "columns": ["br_bcb_average_interest_rate_nonearmarked_discount_pj", "br_bcb_average_interest_rate_nonearmarked_working_capital_pj"],
+            "names": ["Desconto de Dupl. e Receb.", "Capital de Giro"],
+            "chart_type": "line",
+            "title": "Taxa Média de Juros das Operações (Abertura - PJ)",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Taxa de Juros"
+    },
+    "br_bcb_average_interest_rate_details_pf": {
+        "chart_config": {
+            "columns": ["br_bcb_average_interest_rate_nonearmarked_overdraft_pf", "br_bcb_average_interest_rate_nonearmarked_personal_credit_pf", "br_bcb_average_interest_rate_nonearmarked_payroll_deducted_personal_loans_pf", "br_bcb_average_interest_rate_nonearmarked_credit_card_revolving_credit_pf", "br_bcb_average_interest_rate_nonearmarked_credit_card_financing_pf"],
+            "names": ["Cheque Especial", "Crédito Pessoal Não Consignado", "Crédito Pessoal Consignado", "Cartão de Crédito Rotativo", "Cartão de Crédito Parcelado"],
+            "chart_type": "line",
+            "title": "Taxa Média de Juros das Operações (Abertura - PF)",
+            "y_axis_title": "Taxa (%)",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Taxa de Juros"
+    },
+    
     "br_bcb_past_due_loans": {
         "chart_config": {
             "columns": ["br_bcb_past_due_loans_pf", "br_bcb_past_due_loans_pj"],
@@ -1187,6 +1257,58 @@ CHARTS_ECONOMIA = {
         "context": "Brasil",
         "group": "Crédito",
         "block_title": "Inadimplência"
+    },
+    "br_bcb_icc": {
+        "chart_config": {
+            "columns": ["br_bcb_icc_total", "br_bcb_icc_pf", "br_bcb_icc_pj"],
+            "names": ["Total", "PF", "PJ"],
+            "chart_type": "line",
+            "title": "Indicador de Custo de Crédito (ICC)",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Custo de Crédito (ICC)"
+    },
+    "br_bcb_icc_spread": {
+        "chart_config": {
+            "columns": ["br_bcb_icc_spread_total", "br_bcb_icc_spread_pf", "br_bcb_icc_spread_pj"],
+            "names": ["Total", "PF", "PJ"],
+            "chart_type": "line",
+            "title": "Spread do Custo de Crédito (ICC)",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Custo de Crédito (ICC)"
+    },
+    "br_bcb_household_debt": {
+        "chart_config": {
+            "columns": ["br_bcb_household_debt_to_income", "br_bcb_household_debt_ex_mortgage_to_income"],
+            "names": ["Total", "Total (ex Crédito Habitacional)"],
+            "chart_type": "line",
+            "title": "Endividamento das Famílias em Relação à Renda",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Endividamento e Compromentimento de Renda"
+    },
+    "br_bcb_household_debt_service": {
+        "chart_config": {
+            "columns": ["br_bcb_household_debt_service_ratio", "br_bcb_household_debt_service_ratio_interest", "br_bcb_household_debt_service_ratio_ex_mortgage", "br_bcb_household_debt_service_ratio_principal"],
+            "names": ["Serviço da Dívida", "Juros da Dívida", "Serviço da Dívida (ex Crédito Habitacional)", "Amortização da Dívida"],
+            "chart_type": "line",
+            "title": "Comprometimento de Renda das Famílias",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Endividamento e Compromentimento de Renda"
     },
 
     # Setor Externo
@@ -1259,12 +1381,13 @@ CHARTS_ECONOMIA = {
     # Inflação
     "br_ipca_yoy": {
         "chart_config": {
-            "columns": "br_ipca_yoy",
-            "names": "IPCA",
+            "columns": ["br_ipca_yoy", "br_ipca_sa_mom"],
+            "names": ["IPCA", "3-month SAAR"],
             "chart_type": "line",
             "title": "IPCA (var. Anual %)",
             "y_axis_title": "%",
         },
+        "transformations": [{"type": "saar", "column": "br_ipca_sa_mom", "period_months": 3}],
         "width": 6,
         "context": "Brasil",
         "group": "Inflação",
@@ -1360,6 +1483,7 @@ CHARTS_ECONOMIA = {
             "title": "Resultado do Setor Publico (% PIB)",
             "y_axis_title": "% do PIB",
         },
+        "transformations": [{"type": "multiply", "column": "br_bcb_primary_result_12m_to_gdp", "scalar": -1}, {"type": "multiply", "column": "br_bcb_nominal_result_12m_to_gdp", "scalar": -1}, {"type": "multiply", "column": "br_bcb_interest_paid_12m_to_gdp", "scalar": -1}],
         "width": 6,
         "context": "Brasil",
         "group": "Fiscal",

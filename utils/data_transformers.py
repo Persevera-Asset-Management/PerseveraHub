@@ -336,28 +336,6 @@ class RollingMinTransformer(DataTransformer):
         
         return result
 
-class RelativePerformanceTransformer(DataTransformer):
-    """Calculates relative performance between two columns"""
-    @staticmethod
-    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
-        base_column = config.get('base_column')
-        target_column = config.get('target_column')
-        
-        if (not base_column or base_column not in data.columns or
-            not target_column or target_column not in data.columns):
-            return data
-            
-        result = data.copy()
-        
-        # Normalize both series to start at 100
-        base_normalized = 100 * data[base_column] / data[base_column].iloc[0]
-        target_normalized = 100 * data[target_column] / data[target_column].iloc[0]
-        
-        # Calculate relative performance
-        result[f"{target_column}_vs_{base_column}"] = target_normalized / base_normalized * 100
-        
-        return result
-
 class MultiplyTransformer(DataTransformer):
     """Multiplies a given column by a scalar value"""
     @staticmethod
@@ -412,6 +390,86 @@ class DivideTransformer(DataTransformer):
         
         return result
 
+class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
+    """
+    Calculates the Seasonally Adjusted Annual Rate (SAAR) for a given column.
+    The calculation is based on ((current_period_value / past_period_value_N_months_ago) ** (12 / N) - 1) * 100.
+    Input data is resampled to month-start frequency before calculation.
+    """
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        period_months = config.get('period_months')
+
+        # Validate essential config for forming the new column name and core logic
+        if not isinstance(column, str) or not column:
+            print(f"Warning: SAAR transformer requires a valid 'column' name string in config. Skipping.")
+            return data # Cannot form new_column_name or proceed
+
+        if not isinstance(period_months, int) or period_months <= 0:
+            print(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
+            return data # Cannot proceed with logic
+
+        result = data.copy()
+        new_column_name = f"{column}_saar_{period_months}m"
+        
+        result[new_column_name] = np.nan # Ensure column exists
+
+        if column not in result.columns:
+            print(f"Warning: Column '{column}' not found in DataFrame for SAAR. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        if not isinstance(result.index, pd.DatetimeIndex):
+            print(f"Error: DataFrame index is not a DatetimeIndex for SAAR on column '{column}'. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        col_data_series = result[column].dropna()
+        
+        if col_data_series.empty:
+            print(f"Warning: Column '{column}' has no non-NaN data for SAAR. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        try:
+            # Resample to month-start frequency, taking the last observation of the month.
+            monthly_series = col_data_series.resample('MS').last()
+        except Exception as e:
+            print(f"Error during resampling for SAAR on column '{column}': {e}. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+        
+        if monthly_series.empty or monthly_series.isnull().all():
+            print(f"Warning: Column '{column}' is empty or all NaN after resampling to 'MS' for SAAR. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        if len(monthly_series) < period_months + 1:
+            print(f"Warning: Not enough data points in monthly series for column '{column}' ({len(monthly_series)} points) to calculate SAAR with period {period_months} months. At least {period_months + 1} points needed. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+            
+        try:
+            # Reconstruct SA index from monthly series
+            # Assumes monthly_series contains MoM % changes.
+            sa_series = np.cumprod(1 + monthly_series/100.0)
+            periodic_growth_rate = sa_series.pct_change(period_months)
+            
+            # Annualize: ( (1 + periodic_growth_rate) ^ (12 / period_months) ) - 1, then * 100
+            saar_pct_values = ((1 + periodic_growth_rate).pow(12.0/period_months) - 1) * 100.0
+ 
+            aligned_saar = saar_pct_values.reindex(result.index) # User removed ffill, kept here
+            result[new_column_name] = aligned_saar
+            
+            print(saar_pct_values) # User's print statement
+            print(result)          # User's print statement
+        except Exception as e:
+            print(f"Error during SAAR calculation for column '{column}': {e}. Output column '{new_column_name}' will remain NaN.")
+            # new_column_name is already NaN if error occurs here
+        
+        return result
+
 # Register all transformers in a dictionary for easy lookup
 TRANSFORMERS = {
     "yearly_variation": YearlyVariationTransformer,
@@ -421,9 +479,9 @@ TRANSFORMERS = {
     "moving_average": MovingAverageTransformer,
     "rolling_max": RollingMaxTransformer,
     "rolling_min": RollingMinTransformer,
-    "relative_performance": RelativePerformanceTransformer,
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
+    "saar": SeasonallyAdjustedAnnualRateTransformer,
     "default": DataTransformer,
 }
 
