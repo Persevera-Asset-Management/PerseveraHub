@@ -20,7 +20,6 @@ def load_data(start_date, descriptors_list):
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
 
-
 @st.cache_data(ttl=3600)
 def load_sectors(codes):
     try:
