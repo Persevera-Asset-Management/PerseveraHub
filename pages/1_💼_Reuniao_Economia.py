@@ -12,6 +12,8 @@ st.set_page_config(
     layout="wide"
 )
 
+st.title('Reunião Economia')
+
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date):
     try:
