@@ -31,7 +31,6 @@ def load_sectors(codes):
 def style_screener_table(df_to_style):
     """Applies styling to the screener DataFrame using Pandas Styler."""
     if df_to_style.empty:
-        # For an empty DataFrame, return its default style to avoid errors
         return pd.DataFrame().style
 
     df_styled = df_to_style.copy()

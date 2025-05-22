@@ -223,31 +223,57 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": "Inadimplência e Juros"
     },
-    "us_sloos_cni": {
+    "us_sloos_net_pct_banks_tightening_cni": {
         "chart_config": {
             "columns": ["us_sloos_net_pct_banks_tightening_cni_loans_large", "us_sloos_net_pct_banks_tightening_cni_loans_small"],
-            "names": "Net Percent of Domestic Respondents Tightening Standards for Commercial and Industrial Loans",
-            "chart_type": "line",
-            "title": "SLOOS: Measures of Supply and Demand for Commercial and Industrial Loans",
-            "y_axis_title": "Taxa (%)",
+            "names": ["Grandes e médias empresas", "Pequenas empresas"],
+            "chart_type": "area",
+            "title": "% líquido de bancos que estão tornando os critérios de aprovação mais rigorosos",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Crédito",
-        "block_title": ""
+        "block_title": "SLOOS: Measures of Supply and Demand for Commercial and Industrial Loans"
     },
-    "us_sloos_consumer": {
+    "us_sloos_net_pct_banks_loan_spreads": {
+        "chart_config": {
+            "columns": ["us_sloos_net_pct_banks_loan_spreads_large", "us_sloos_net_pct_banks_loan_spreads_small"],
+            "names": ["Grandes e médias empresas", "Pequenas empresas"],
+            "chart_type": "area",
+            "title": "% líquido de bancos que estão aumentando as margens sobre seus custos de financiamento",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Crédito",
+        "block_title": "SLOOS: Measures of Supply and Demand for Commercial and Industrial Loans"
+    },
+    "us_sloos_net_pct_banks_demand_cni": {
+        "chart_config": {
+            "columns": ["us_sloos_net_pct_banks_demand_cni_loans_large", "us_sloos_net_pct_banks_demand_cni_loans_small"],
+            "names": ["Grandes e médias empresas", "Pequenas empresas"],
+            "chart_type": "area",
+            "title": "% líquido de bancos que estão relatando uma demanda mais forte para empréstimos comerciais e industriais",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Crédito",
+        "block_title": "SLOOS: Measures of Supply and Demand for Commercial and Industrial Loans"
+    },
+    "us_sloos_net_pct_banks_tightening_consumer_loans": {
         "chart_config": {
             "columns": ["us_sloos_net_pct_banks_tightening_consumer_loans_credit_card", "us_sloos_net_pct_banks_tightening_consumer_loans_auto", "us_sloos_net_pct_banks_tightening_consumer_loans_others"],
-            "names": "Net Percent of Domestic Respondents Tightening Standards for Consumer Loans",
-            "chart_type": "line",
-            "title": "SLOOS: Measures of Supply and Demand for Consumer Loans",
-            "y_axis_title": "Taxa (%)",
+            "names": ["Cartão de Crédito", "Auto", "Outros"],
+            "chart_type": "area",
+            "title": "% líquido de bancos que estão tornando os critérios de aprovação mais rigorosos",
+            "y_axis_title": "%",
         },
         "width": 6,
         "context": "Estados Unidos",
         "group": "Crédito",
-        "block_title": ""
+        "block_title": "SLOOS: Measures of Supply and Demand for Consumer Loans"
     },
     
     # Sentimento
@@ -347,7 +373,7 @@ CHARTS_ECONOMIA = {
             "columns": ["us_nfib_small_business_optimism_index", "us_nfib_small_business_uncertainty_index"],
             "names": ["Índice de Otimismo", "Índice de Incerteza"],
             "chart_type": "line",
-            "title": "Sentimento de Pequenas Empresas (NFIB)",
+            "title": "Índices de Sentimento",
             "y_axis_title": "Valor",
         },
         "width": 6,
@@ -758,20 +784,6 @@ CHARTS_ECONOMIA = {
             "chart_type": "line",
             "title": "Dívida Pública / PIB (por Participantes)",
             "y_axis_title": "% do PIB",
-        },
-        "width": 6,
-        "context": "Estados Unidos",
-        "group": "Fiscal",
-        "block_title": "Dívida Pública"
-    },
-    "us_total_public_debt_participants": {
-        "chart_config": {
-            "columns": ["us_federal_debt_held_by_fed_banks", "us_federal_debt_held_by_foreign_investors", "us_federal_debt_held_by_the_public", "us_federal_debt_held_by_private_investors", "us_federal_debt_held_by_trusts"],
-            "names": ["Fed Banks", "Foreign Investors", "The Public", "Private Investors", "Trusts"],
-            "chart_type": "area",
-            "stacking": "percent",
-            "title": "Dívida Pública (por Participantes)",
-            "y_axis_title": "Valor",
         },
         "width": 6,
         "context": "Estados Unidos",
@@ -1230,7 +1242,7 @@ CHARTS_ECONOMIA = {
         "group": "Setor Externo",
         "block_title": "Balanço de Pagamentos"
     },
-     "br_international_reserves_total": {
+    "br_international_reserves_total": {
         "chart_config": {
             "columns": "br_international_reserves_total",
             "names": "Reservas Internacionais",
@@ -1284,7 +1296,7 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Expectativas (Focus)"
     },
-     "br_ipca_grupos_yoy": {
+    "br_ipca_grupos_yoy": {
         "chart_config": {
             "columns": ["br_ipca_yoy", "br_ipca_non_regulated_yoy", "br_ipca_regulated_yoy"],
             "names": ["IPCA", "Livres", "Administrados"],
@@ -1297,7 +1309,7 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Grupos e Núcleos"
     },
-     "br_ipca_grupos_outros_yoy": {
+    "br_ipca_grupos_outros_yoy": {
         "chart_config": {
             "columns": ["br_ipca_yoy", "br_ipca_services_yoy", "br_ipca_durable_yoy", "br_ipca_semi_durable_yoy", "br_ipca_non_durable_yoy"],
             "names": ["IPCA", "Serviços", "Duráveis", "Semi-Duráveis", "Não-Duráveis"],
@@ -1327,7 +1339,7 @@ CHARTS_ECONOMIA = {
     },
 
     # Fiscal
-     "br_debt_to_gdp": {
+    "br_debt_to_gdp": {
         "chart_config": {
             "columns": ["br_bcb_gross_gov_debt_to_gdp", "br_bcb_net_gov_debt_to_gdp", "br_bcb_net_public_sector_debt_to_gdp"],
             "names": ["Dívida Bruta", "Dívida Líquida", "Dívida Líquida do Setor Público"],
@@ -1340,7 +1352,7 @@ CHARTS_ECONOMIA = {
         "group": "Fiscal",
         "block_title": "Fiscal"
     },
-     "br_resultado_do_setor_publico": {
+    "br_resultado_do_setor_publico": {
         "chart_config": {
             "columns": ["br_bcb_primary_result_12m_to_gdp", "br_bcb_nominal_result_12m_to_gdp", "br_bcb_interest_paid_12m_to_gdp"],
             "names": ["Resultado Primário", "Resultado Nominal", "Pagamento de Juros"],

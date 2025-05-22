@@ -197,7 +197,6 @@ def load_benchmark_data(fund_name, _nav_index):
     df_benchmark = df_benchmark.rename(columns={'br_cdi_index': 'CDI', 'br_ibovespa': 'Ibovespa', 'br_smll': 'SMLL'})
     return df_benchmark
 
-
 fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Compass', 'Nemesis', 'Proteus']
 selected_fund_name = st.sidebar.selectbox("Selecione o fundo:", fund_names_list, index=4)
 

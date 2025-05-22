@@ -358,31 +358,57 @@ class RelativePerformanceTransformer(DataTransformer):
         
         return result
 
-class YTDChangeTransformer(DataTransformer):
-    """Calculates year-to-date change for a given column"""
+class MultiplyTransformer(DataTransformer):
+    """Multiplies a given column by a scalar value"""
     @staticmethod
     def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
         column = config.get('column')
+        scalar = config.get('scalar')
+
         if not column or column not in data.columns:
+            print(f"Warning: Column '{column}' not found for multiplication. Skipping.")
             return data
-            
+
+        if scalar is None:
+            print(f"Warning: Scalar not provided for multiplication on column '{column}'. Skipping.")
+            return data
+        
+        if not isinstance(scalar, (int, float)):
+            print(f"Warning: Scalar '{scalar}' is not a number. Skipping multiplication for column '{column}'.")
+            return data
+
         result = data.copy()
+        new_column_name = f"{column}_multiplied_by_{scalar}"
+        result[new_column_name] = result[column] * scalar
         
-        # Get the year for each date
-        years = pd.DatetimeIndex(data.index).year
+        return result
+
+class DivideTransformer(DataTransformer):
+    """Divides a given column by a scalar value"""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        scalar = config.get('scalar')
+
+        if not column or column not in data.columns:
+            print(f"Warning: Column '{column}' not found for division. Skipping.")
+            return data
+
+        if scalar is None:
+            print(f"Warning: Scalar not provided for division on column '{column}'. Skipping.")
+            return data
         
-        # For each year, calculate the first value and then the percentage change
-        ytd_changes = []
-        
-        for idx, value in data[column].items():
-            year = pd.DatetimeIndex([idx]).year[0]
-            # Get first value of the year
-            year_start = data[column][years == year].iloc[0]
-            # Calculate YTD change
-            ytd_change = (value / year_start - 1) * 100
-            ytd_changes.append(ytd_change)
-            
-        result[f"{column}_ytd"] = ytd_changes
+        if not isinstance(scalar, (int, float)):
+            print(f"Warning: Scalar '{scalar}' is not a number. Skipping division for column '{column}'.")
+            return data
+
+        if scalar == 0:
+            print(f"Warning: Scalar is zero. Division by zero is not allowed for column '{column}'. Skipping.")
+            return data
+
+        result = data.copy()
+        new_column_name = f"{column}_divided_by_{scalar}"
+        result[new_column_name] = result[column] / scalar
         
         return result
 
@@ -396,7 +422,8 @@ TRANSFORMERS = {
     "rolling_max": RollingMaxTransformer,
     "rolling_min": RollingMinTransformer,
     "relative_performance": RelativePerformanceTransformer,
-    "ytd_change": YTDChangeTransformer,
+    "multiply": MultiplyTransformer,
+    "divide": DivideTransformer,
     "default": DataTransformer,
 }
 

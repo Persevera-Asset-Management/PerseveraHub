@@ -79,8 +79,13 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
                 window = t_conf.get("window", 252)
                 new_col_name = f"{original_col_name}_min{window}"
                 break
-            elif transform_type == "ytd_change":
-                new_col_name = f"{original_col_name}_ytd"
+            elif transform_type == "multiply":
+                scalar = t_conf.get("scalar", 1)
+                new_col_name = f"{original_col_name}_multiplied_by_{scalar}"
+                break
+            elif transform_type == "divide":
+                scalar = t_conf.get("scalar", 1)
+                new_col_name = f"{original_col_name}_divided_by_{scalar}"
                 break
             # Add other specific single-column input transformers here
 
@@ -356,4 +361,4 @@ def render_chart_group_with_context(data, chart_configs_original, context, group
                         hct.streamlit_highcharts(chart_object_to_render, key=unique_key)
 
         if is_explicit_block_header:
-            st.markdown("<br>", unsafe_allow_html=True) # Add some space after an explicit block
+            st.markdown("<br>", unsafe_allow_html=True)
