@@ -7,7 +7,7 @@ from utils.chart_helpers import create_chart
 
 st.set_page_config(
     page_title="Planejamento Financeiro | Persevera",
-    page_icon="�",
+    page_icon="💹",
     layout="wide"
 )
 
@@ -25,7 +25,7 @@ periodo_acumulacao = st.sidebar.number_input("Período de Acumulação (anos):",
 if periodo_acumulacao == 0:
     aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f", disabled=True)
 else:
-    aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f")
+    aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=5000.0, step=1000.0, format="%.0f")
 
 st.sidebar.subheader("Fase de Distribuição")
 periodo_distribuicao = st.sidebar.number_input("Período de Distribuição (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
@@ -196,8 +196,8 @@ evolucao_options = create_chart(
 
 hct.streamlit_highcharts(evolucao_options)
 
-# Análise adicional - gráfico de barras comparativas
-st.subheader("Análise Comparativa Anual")
+# Análise adicional
+st.subheader("Contribuições para o Patrimônio")
 
 categories_bar = ["Patrimônio Inicial", "Rendimentos", "Aportes", "Resgates", "Patrimônio Final"]
 values_bar = [

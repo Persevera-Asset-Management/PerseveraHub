@@ -16,7 +16,7 @@ st.set_page_config(
 # Common meetings header with navigation links
 st.title("Brasil Asset III")
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
+@st.cache_data(ttl=3600)
 def load_data(codes, start_date):
     try:
         return get_series(codes, start_date=start_date, field='close')
