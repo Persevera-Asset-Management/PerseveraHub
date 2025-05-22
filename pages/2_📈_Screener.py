@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from configs.pages.screener import FACTOR_OPTIONS_SCREENER
 from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
 
 st.set_page_config(
@@ -72,21 +73,9 @@ def style_screener_table(df_to_style):
 
 st.title('Screener')
 
-selected_cols_options = {
-    'ADTV (21d)': 'median_dollar_volume_traded_21d',
-    'Momentum (1m)': 'momentum_1m',
-    'Momentum (6m)': 'momentum_6m',
-    'Momentum (12m)': 'momentum_12m',
-    'P/E Fwd': 'price_to_earnings_fwd',
-    'EV/EBITDA Fwd': 'ev_to_ebitda_fwd',
-    'Volume (7d/63d)': 'delta_volume_7d_63d',
-    'Volume (21d/63d)': 'delta_volume_21d_63d',
-    'EBIT Margin (%)': 'ebit_margin',
-    'FCF Margin (%)': 'fcf_margin',
-    'ROE': 'roe'
-}
+selected_cols_options = FACTOR_OPTIONS_SCREENER
 
-default_selected_display_names = ['ADTV (21d)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE']
+default_selected_display_names = ['ADTV (21d)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
 
 st.sidebar.header("Filtros")
 
