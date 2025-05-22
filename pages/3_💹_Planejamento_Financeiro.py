@@ -214,19 +214,19 @@ values_bar = [
 ]
 
 df_bar_data = pd.DataFrame({
-    'Category': categories_bar,
-    'Value': values_bar
+    'Categoria': categories_bar,
+    'Valor': values_bar
 })
 
 barras_options = create_chart(
     data=df_bar_data,
-    columns='Value',
+    columns='Valor',
     names='Valores',
     chart_type='column',
     title="",
     y_axis_title="Valor (R$)",
     x_axis_title="",
-    x_column='Category',
+    x_column='Categoria'
 )
 hct.streamlit_highcharts(barras_options, height=400)
 
