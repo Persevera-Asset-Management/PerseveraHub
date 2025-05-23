@@ -8,7 +8,7 @@ from persevera_tools.data import get_descriptors, get_securities_by_exchange, ge
 
 st.set_page_config(
     page_title="Screener | Persevera",
-    page_icon="🗓️",
+    page_icon="📈",
     layout="wide"
 )
 
@@ -32,7 +32,6 @@ def load_sectors(codes):
 st.title('Screener')
 
 selected_cols_options = FACTOR_OPTIONS_SCREENER
-
 default_selected_display_names = ['ADTV (21d)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
 
 st.sidebar.header("Filtros")

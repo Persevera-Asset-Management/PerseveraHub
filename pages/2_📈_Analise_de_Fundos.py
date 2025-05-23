@@ -9,7 +9,7 @@ import streamlit_highcharts as hct
 
 st.set_page_config(
     page_title="Análise de Fundos | Persevera",
-    page_icon="🗓️",
+    page_icon="📈",
     layout="wide"
 )
 
@@ -119,7 +119,7 @@ def get_performance_table(nav, total_equity, start_date, end_date):
         'custom_rank': (df[start_date:end_date].iloc[-1] / df[start_date:end_date].iloc[0] - 1).rank(ascending=False),
     }
     df = pd.DataFrame(time_frames)
-    df = df.apply(lambda x: round(x * 100, 2) if 'rank' not in x.name else x)
+    df = df.apply(lambda x: x * 100 if 'rank' not in x.name else x)
     df = df.assign(PL=total_equity.iloc[-1])
     df['type'] = df.index.map(lambda x: 'Persevera' if 'Persevera' in x else ('Benchmark' if x in ['CDI', 'Ibovespa', 'SMLL'] else 'Peer'))
     col_order = ['type', 'PL']

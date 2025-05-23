@@ -13,7 +13,7 @@ if not os.path.exists(assets_dir):
 # Configure the page
 st.set_page_config(
     page_title="Persevera Dashboard",
-    page_icon="��",
+    page_icon="assets/logo.svg",
     layout="wide"
 )
 
