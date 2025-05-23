@@ -40,7 +40,7 @@ except FileNotFoundError:
 
 # Main content
 st.title("Persevera Asset Management")
-st.write("This dashboard provides tools and analytics for financial analysis across different asset classes.")
+# st.write("This dashboard provides tools and analytics for financial analysis across different asset classes.")
 
 # Footer
 st.info("© 2025 Persevera Asset Management") 

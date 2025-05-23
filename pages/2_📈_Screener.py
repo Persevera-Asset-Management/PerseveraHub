@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from configs.pages.screener import FACTOR_OPTIONS_SCREENER
+from utils.table import style_table
 from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
 
 st.set_page_config(
@@ -27,47 +28,6 @@ def load_sectors(codes):
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
-
-def style_screener_table(df_to_style):
-    """Applies styling to the screener DataFrame using Pandas Styler."""
-    if df_to_style.empty:
-        return pd.DataFrame().style
-
-    df_styled = df_to_style.copy()
-    formatters = {}
-
-    # Identify columns for formatting based on their names
-    for col_name in df_styled.columns:
-        if 'ADTV' in col_name:
-            formatters[col_name] = "{:,.0f}"  # Comma for thousands, no decimal places
-        else:
-            formatters[col_name] = "{:.2f}"  # Two decimal places for general numbers
-        # 'Setor' column and 'ticker' (index) will not be in formatters by default.
-
-    styled_obj = df_styled.style.format(formatters)
-
-    # Define alignment styles
-    alignment_styles = [
-        # Left-align index header and values
-        {'selector': 'th.row_heading', 'props': [('text-align', 'left'), ('min-width', '80px')]},
-        {'selector': 'td.data.row_heading', 'props': [('text-align', 'left')]}
-    ]
-
-    for i, col_name in enumerate(df_styled.columns):
-        col_selector_th = f'th.col_heading.col{i}'
-        col_selector_td = f'td.col{i}'
-        
-        if col_name == 'Setor':
-            alignment_styles.append({'selector': col_selector_th, 'props': [('text-align', 'left')]})
-            alignment_styles.append({'selector': col_selector_td, 'props': [('text-align', 'left'), ('min-width', '150px')]})
-        elif col_name in formatters:  # Numeric columns that were formatted
-            alignment_styles.append({'selector': col_selector_th, 'props': [('text-align', 'right')]})
-            alignment_styles.append({'selector': col_selector_td, 'props': [('text-align', 'right')]})
-        # Else, default alignment for other columns
-
-    styled_obj = styled_obj.set_table_styles(alignment_styles, overwrite=False)
-
-    return styled_obj
 
 st.title('Screener')
 
@@ -130,7 +90,7 @@ if not data.empty:
             data = data[cols]
             
     # Apply styling
-    styled_data = style_screener_table(data)
+    styled_data = style_table(data, numeric_cols_format_as_int=['ADTV (21d)'], numeric_cols_format_as_float=list(data.columns.drop('ADTV (21d)')))
     st.write(styled_data)
 
 else:
