@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+from pandas.io.formats.style import Styler
 from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 
 def style_table(
@@ -15,7 +15,7 @@ def style_table(
     left_align_cols: Optional[List[str]] = None,
     center_align_cols: Optional[List[str]] = None,
     right_align_cols: Optional[List[str]] = None
-) -> pd.io.formats.style.Styler:
+) -> Styler:
     """Applies generic styling to a DataFrame.
     Allows specifying columns for percentage formatting, 
     integer formatting (with thousands separators), 

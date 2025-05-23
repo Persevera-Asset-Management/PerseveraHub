@@ -9,7 +9,7 @@ import streamlit_highcharts as hct
 
 st.set_page_config(
     page_title="Análise de Fundos | Persevera",
-    page_icon="�",
+    page_icon="🗓️",
     layout="wide"
 )
 
@@ -131,13 +131,13 @@ def get_performance_table(nav, total_equity, start_date, end_date):
 
 @st.cache_data(ttl=3600)
 def calculate_performance(df):
-    if df.empty or df.shape[0] < 2: # Need at least two rows to calculate pct_change
+    if df.empty or df.shape[0] < 2:
         return df
     df_pct_change = df.ffill().pct_change(fill_method=None)
     cumulative_returns = (1 + df_pct_change).cumprod()
     cumulative_returns.iloc[0] = 1 
     final_returns = cumulative_returns.sub(1)
-    final_returns = final_returns.ffill() # Forward fill any NaNs that might have occurred
+    final_returns = final_returns.ffill()
     return final_returns
 
 @st.cache_data(ttl=3600)
