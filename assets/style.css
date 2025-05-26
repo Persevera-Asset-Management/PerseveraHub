@@ -1,4 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
 /* General Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
 h1 {
     color: #0A2647;
     font-weight: 700;
@@ -135,6 +141,12 @@ div[data-testid="stMetric"]:hover {
 /* Selectbox */
 [data-baseweb="select"] > div {
     border-radius: 0.3rem;
+}
+
+/* Multiselect */
+[data-baseweb="select"] [role="listbox"] {
+    border-radius: 0.3rem;
+    max-height: 10px;
 }
 
 /* Slider */
