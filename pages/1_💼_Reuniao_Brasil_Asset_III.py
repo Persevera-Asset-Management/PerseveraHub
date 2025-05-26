@@ -1,17 +1,23 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 from datetime import datetime, timedelta
 from persevera_tools.data import get_series
 from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.reuniao_brasil_asset import CHARTS_BRASIL_ASSET
-
 
 st.set_page_config(
     page_title="Brasil Asset III | Persevera",
     page_icon="🗓️",
     layout="wide"
 )
+
+# Inclusão do CSS
+assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
+css_path = os.path.join(assets_dir, 'style.css')
+with open(css_path) as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # Common meetings header with navigation links
 st.title("Brasil Asset III")

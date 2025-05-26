@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 from dateutil.relativedelta import relativedelta
 from utils.table import style_table
 from persevera_tools.data import get_funds_data, get_persevera_peers, get_series
@@ -12,6 +13,12 @@ st.set_page_config(
     page_icon="📈",
     layout="wide"
 )
+
+# Inclusão do CSS
+assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
+css_path = os.path.join(assets_dir, 'style.css')
+with open(css_path) as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 st.title("Análise de Fundos")
 

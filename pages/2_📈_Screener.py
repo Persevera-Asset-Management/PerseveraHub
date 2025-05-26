@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 from datetime import datetime, timedelta
 from configs.pages.screener import FACTOR_OPTIONS_SCREENER
 from utils.table import style_table
@@ -11,6 +12,12 @@ st.set_page_config(
     page_icon="📈",
     layout="wide"
 )
+
+# Inclusão do CSS
+assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
+css_path = os.path.join(assets_dir, 'style.css')
+with open(css_path) as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 @st.cache_data(ttl=3600)
 def load_data(start_date, descriptors_list):
