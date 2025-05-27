@@ -45,75 +45,115 @@ def create_chart(data, columns, names, chart_type, title, y_axis_title=None, x_a
         **kwargs
     )
 
-def _get_transformed_column_name(original_col_name: str, transformations_list: List[Dict[str, Any]]) -> str:
-    """Determines the new column name after transformations."""
-    new_col_name = original_col_name
-    if not transformations_list: # No transformations, return original name
-        return new_col_name
+def _get_transformed_column_name(original_col_name: str, transformations_list: List[Dict[str, Any]]) -> Union[str, List[str]]:
+    """
+    Determines the new column name(s) after transformations.
+    If multiple transformations apply to the same original_col_name as a direct 'column' input,
+    a list of new names is returned.
+    Otherwise, a single new name or the original name is returned.
+    """
+    if not transformations_list:
+        return original_col_name
 
+    collected_direct_input_names = []
+    # First pass: Collect all names from transformations where original_col_name is a direct 'column' input.
     for t_conf in transformations_list:
-        transform_type = t_conf.get("type")
-        # Check if this transformation applies to the current original column (most common case)
         if t_conf.get("column") == original_col_name:
+            transform_type = t_conf.get("type")
+            generated_name_this_iteration = ""
+            
             if transform_type == "yearly_variation":
-                new_col_name = f"{original_col_name}_yoy"
-                break 
+                generated_name_this_iteration = f"{original_col_name}_yoy"
             elif transform_type == "monthly_variation":
-                new_col_name = f"{original_col_name}_mom"
-                break
+                generated_name_this_iteration = f"{original_col_name}_mom"
             elif transform_type == "quarterly_variation":
-                new_col_name = f"{original_col_name}_qoq"
-                break
+                generated_name_this_iteration = f"{original_col_name}_qoq"
             elif transform_type == "monthly_difference":
-                new_col_name = f"{original_col_name}_mom_diff"
-                break
+                generated_name_this_iteration = f"{original_col_name}_mom_diff"
             elif transform_type == "moving_average":
                 window = t_conf.get("window", 21) 
-                new_col_name = f"{original_col_name}_ma{window}"
-                break
+                generated_name_this_iteration = f"{original_col_name}_ma{window}"
             elif transform_type == "rolling_max":
                 window = t_conf.get("window", 252)
-                new_col_name = f"{original_col_name}_max{window}"
-                break
+                generated_name_this_iteration = f"{original_col_name}_max{window}"
             elif transform_type == "rolling_min":
                 window = t_conf.get("window", 252)
-                new_col_name = f"{original_col_name}_min{window}"
-                break
+                generated_name_this_iteration = f"{original_col_name}_min{window}"
             elif transform_type == "multiply":
                 scalar = t_conf.get("scalar", 1)
-                new_col_name = f"{original_col_name}_multiplied_by_{scalar}"
-                break
+                generated_name_this_iteration = f"{original_col_name}_multiplied_by_{scalar}"
             elif transform_type == "divide":
                 scalar = t_conf.get("scalar", 1)
-                new_col_name = f"{original_col_name}_divided_by_{scalar}"
-                break
+                generated_name_this_iteration = f"{original_col_name}_divided_by_{scalar}"
             elif transform_type == "saar":
                 period_months = t_conf.get("period_months", 12)
-                new_col_name = f"{original_col_name}_saar_{period_months}m"
-                break
-            # Add other specific single-column input transformers here
+                generated_name_this_iteration = f"{original_col_name}_saar_{period_months}m"
+            elif transform_type == "rolling_volatility":
+                window = t_conf.get("window", 252)
+                annualized = t_conf.get("annualized", False)
+                calculate_on_returns = t_conf.get("calculate_on_returns", True)
+                name_prefix = original_col_name
+                if calculate_on_returns:
+                    name_prefix = f"{original_col_name}_returns"
+                generated_name_this_iteration = f"{name_prefix}_vol{window}_annualized" if annualized else f"{name_prefix}_vol{window}"
+            elif transform_type == "rolling_beta":
+                dependent_col = t_conf.get("dependent_column")
+                independent_col = t_conf.get("independent_column")
+                window = t_conf.get("window", 252)
+                generated_name_this_iteration = f"beta_{dependent_col}_vs_{independent_col}_w{window}"
 
-        # Handle transformers that don't use 'column' but whose output name might match original_col_name
-        # if it was, for instance, the target_column of such a transformation.
-        elif transform_type == "relative_performance":
-            if t_conf.get("target_column") == original_col_name:
-                base_column = t_conf.get("base_column")
-                if base_column: 
-                    new_col_name = f"{original_col_name}_vs_{base_column}"
-                    break 
-    return new_col_name
+            if generated_name_this_iteration:
+                 collected_direct_input_names.append(generated_name_this_iteration)
+    
+    # If direct input transformations were found, these take precedence.
+    if collected_direct_input_names:
+        if len(collected_direct_input_names) == 1:
+            return collected_direct_input_names[0]
+        else:
+            return collected_direct_input_names
+
+    # Second pass (only if NO direct input transformations were found): 
+    # Check for other types of relations (e.g., original_col_name as a 'target_column').
+    # This part mimics the original "find first special match and return" behavior.
+    for t_conf in transformations_list:
+        transform_type = t_conf.get("type")
+        
+        if t_conf.get("column") != original_col_name: # Avoid re-processing direct input columns handled above
+            if transform_type == "relative_performance":
+                if t_conf.get("target_column") == original_col_name:
+                    base_column = t_conf.get("base_column")
+                    if base_column: 
+                        return f"{original_col_name}_vs_{base_column}"
+            elif transform_type == "rolling_beta":
+                # If original_col_name is an expected output of a rolling_beta transform
+                dependent_col = t_conf.get("dependent_column")
+                independent_col = t_conf.get("independent_column")
+                window = t_conf.get("window", 252)
+                if dependent_col and independent_col:
+                    expected_beta_col_name = f"beta_{dependent_col}_vs_{independent_col}_w{window}"
+                    if original_col_name == expected_beta_col_name:
+                        return original_col_name # The name is already the transformed name
+            # Add other similar 'elif' blocks here
+
+    return original_col_name # Fallback if no transformation applied
 
 def _update_column_names_recursively(columns_structure: Union[str, List[Any]], transformations_list: List[Dict[str, Any]]) -> Union[str, List[Any]]:
     """Recursively updates column names in simple or nested list structures."""
     if isinstance(columns_structure, str):
+        # _get_transformed_column_name now returns Union[str, List[str]]
         return _get_transformed_column_name(columns_structure, transformations_list)
     elif isinstance(columns_structure, list):
         updated_list = []
         for item in columns_structure:
-            updated_list.append(_update_column_names_recursively(item, transformations_list))
+            # result_from_transform can be str or List[str]
+            result_from_transform = _update_column_names_recursively(item, transformations_list)
+            if isinstance(result_from_transform, list):
+                updated_list.extend(result_from_transform) # Key change: extend if list
+            else:
+                updated_list.append(result_from_transform) # Append if str (or other non-list item)
         return updated_list
     else:
-        # For any other type, return as is (should not happen with expected config)
+        # For any other type, return as is
         return columns_structure
 
 def extract_codes_from_config(chart_configs):

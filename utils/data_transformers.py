@@ -293,6 +293,7 @@ class MovingAverageTransformer(DataTransformer):
         window = config.get('window', 21)  # Default to 21 days (approx. 1 month)
         
         if not column or column not in data.columns:
+            print(f"Warning: Column '{column}' not found for moving average. Skipping.")
             return data
             
         result = data.copy()
@@ -333,6 +334,47 @@ class RollingMinTransformer(DataTransformer):
         
         # Calculate rolling minimum
         result[f"{column}_min{window}"] = result[column].rolling(window=window).min()
+        
+        return result
+
+class RollingVolatilityTransformer(DataTransformer):
+    """Calculates rolling volatility (standard deviation) for a given column"""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        window = config.get('window', 252)  # Default to 252 days (approx. 1 year)
+        annualized = config.get('annualized', False)  # Option to annualize volatility
+        periods_in_year = config.get('periods_in_year', 252) # Added for flexible annualization
+        calculate_on_returns = config.get('calculate_on_returns', True) # New: control return calculation
+
+        if not column: # Check if column name itself is missing or empty
+            print(f"Warning: 'column' parameter is missing or invalid in the configuration for RollingVolatilityTransformer. Skipping.")
+            return data
+
+        if column not in data.columns: # Check if the specified column exists in the DataFrame
+            print(f"Warning: Column '{column}' not found in DataFrame for rolling volatility. Skipping.")
+            return data
+            
+        result = data.copy()
+        
+        series_to_calculate_on = result[column]
+        name_prefix = column
+
+        if calculate_on_returns:
+            # Calculate 1-period percentage change (returns)
+            returns = result[column].pct_change()
+            series_to_calculate_on = returns
+            name_prefix = f"{column}_returns"
+
+        # Calculate rolling standard deviation
+        rolling_std_dev = series_to_calculate_on.rolling(window=window).std()
+        
+        # Annualize volatility if requested
+        if annualized:
+            annualized_vol = rolling_std_dev * np.sqrt(periods_in_year)
+            result[f"{name_prefix}_vol{window}_annualized"] = annualized_vol * 100
+        else:
+            result[f"{name_prefix}_vol{window}"] = rolling_std_dev * 100
         
         return result
 
@@ -470,6 +512,50 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
         
         return result
 
+class RollingBetaTransformer(DataTransformer):
+    """Calculates rolling beta of a dependent series returns against an independent series returns."""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        dependent_col_name = config.get('dependent_column')
+        independent_col_name = config.get('independent_column')
+        window = config.get('window', 252)  # Default to 252 periods
+
+        if not dependent_col_name:
+            print(f"Warning: 'dependent_column' parameter is missing in the configuration for RollingBetaTransformer. Skipping.")
+            return data
+        if not independent_col_name:
+            print(f"Warning: 'independent_column' parameter is missing in the configuration for RollingBetaTransformer. Skipping.")
+            return data
+
+        if dependent_col_name not in data.columns:
+            print(f"Warning: Dependent column '{dependent_col_name}' not found in DataFrame for rolling beta. Skipping.")
+            return data
+        if independent_col_name not in data.columns:
+            print(f"Warning: Independent column '{independent_col_name}' not found in DataFrame for rolling beta. Skipping.")
+            return data
+            
+        result = data.copy()
+
+        # Calculate 1-period percentage change (returns) for both series
+        dependent_returns = result[dependent_col_name].pct_change()
+        independent_returns = result[independent_col_name].pct_change()
+
+        # Calculate rolling covariance between dependent and independent returns
+        rolling_cov = dependent_returns.rolling(window=window).cov(independent_returns)
+        
+        # Calculate rolling variance of independent returns
+        rolling_var_independent = independent_returns.rolling(window=window).var()
+
+        # Calculate rolling beta
+        # Beta = Cov(Dep, Ind) / Var(Ind)
+        # Handle potential division by zero if variance is zero or NaN, resulting in NaN beta
+        rolling_beta = rolling_cov / rolling_var_independent
+        
+        new_column_name = f"beta_{dependent_col_name}_vs_{independent_col_name}_w{window}"
+        result[new_column_name] = rolling_beta
+        
+        return result
+
 # Register all transformers in a dictionary for easy lookup
 TRANSFORMERS = {
     "yearly_variation": YearlyVariationTransformer,
@@ -479,6 +565,8 @@ TRANSFORMERS = {
     "moving_average": MovingAverageTransformer,
     "rolling_max": RollingMaxTransformer,
     "rolling_min": RollingMinTransformer,
+    "rolling_volatility": RollingVolatilityTransformer,
+    "rolling_beta": RollingBetaTransformer,
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
