@@ -12,6 +12,9 @@ FACTOR_OPTIONS = {
     'brl_usd': 'BRL/USD',
     'gold': 'Gold',
     'crude_oil_wti': 'Crude Oil WTI',
+    'bitcoin_usd': 'Bitcoin',
+    'china_kweb': 'China KWEB',
+    'us_nasdaq100': 'Nasdaq 100',
 }
 
 FACTOR_OPTIONS_SELECTED = {
