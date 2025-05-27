@@ -37,7 +37,7 @@ CODES = extract_codes_from_config(chart_configs)
 
 # Date range selector
 st.sidebar.header("Filtros")
-start_date = st.sidebar.date_input("Data Inicial", min_value=datetime(1990, 1, 1), value=datetime(2020, 1, 1), format="DD/MM/YYYY")
+start_date = st.sidebar.date_input("Data Inicial", min_value=datetime(1990, 1, 1), value=datetime(2015, 1, 1), format="DD/MM/YYYY")
 start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
