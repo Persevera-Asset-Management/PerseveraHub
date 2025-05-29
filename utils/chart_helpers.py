@@ -148,7 +148,13 @@ def _update_column_names_recursively(columns_structure: Union[str, List[Any]], t
             # result_from_transform can be str or List[str]
             result_from_transform = _update_column_names_recursively(item, transformations_list)
             if isinstance(result_from_transform, list):
-                updated_list.extend(result_from_transform) # Key change: extend if list
+                # Check if we're dealing with a nested structure (dual-axis format)
+                # If the original item was a list, preserve the structure by appending the result as a list
+                # If the original item was a string, then extend to flatten single-level transformations
+                if isinstance(item, list):
+                    updated_list.append(result_from_transform)  # Preserve nested structure for dual-axis
+                else:
+                    updated_list.extend(result_from_transform)  # Flatten for single-level transformations
             else:
                 updated_list.append(result_from_transform) # Append if str (or other non-list item)
         return updated_list

@@ -1106,7 +1106,21 @@ CHARTS_ECONOMIA = {
         "group": "Emprego",
         "block_title": "PNAD"
     },
-    
+    "br_pnad_personal_real_income": {
+        "chart_config": {
+            "columns": ["br_pnad_personal_real_income_formal_work_contract", "br_pnad_personal_real_income_non_formal_work_contract", "br_pnad_personal_real_income_private_sector", "br_pnad_personal_real_income_total"],
+            "names": ["Formal", "Não Formal", "Setor Privado", "Total"],
+            "chart_type": "line",
+            "title": "Renda Real Mensal",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "br_pnad_personal_real_income_formal_work_contract", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pnad_personal_real_income_non_formal_work_contract", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pnad_personal_real_income_private_sector", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pnad_personal_real_income_total", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Emprego",
+        "block_title": "PNAD"
+    },
+
     # Crédito
     "br_bcb_credit_outstanding": {
         "chart_config": {
