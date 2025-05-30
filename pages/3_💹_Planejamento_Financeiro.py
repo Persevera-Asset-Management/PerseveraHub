@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
+import datetime
 import os
 from utils.chart_helpers import create_chart
 
@@ -22,11 +23,23 @@ st.title("Planejamento Financeiro")
 # Definição dos parâmetros
 st.sidebar.header("Parâmetros")
 
+st.sidebar.subheader("Características Pessoais")
+data_nascimento = st.sidebar.date_input("Data de Nascimento:", value=datetime.date(1980, 1, 1), min_value=datetime.date(1900, 1, 1), max_value=datetime.date.today(), format="DD/MM/YYYY")
+# idade_atual = st.sidebar.number_input("Idade Atual:", min_value=18, max_value=100, value=35, step=1, format="%d")
+idade_atual = st.sidebar.number_input("Idade Atual:", min_value=18, max_value=100, value=datetime.date.today().year - data_nascimento.year, step=1, format="%d", disabled=True)
+
+# Escolha do método de definição
+metodo_calculo = st.sidebar.radio(
+    "Método de Planejamento:",
+    options=["Expectativa de Vida", "Período de Distribuição"],
+    help="Escolha se quer definir sua expectativa de vida ou o período de distribuição dos recursos"
+)
+
 st.sidebar.subheader("Patrimônio")
 patrimonio_inicial = st.sidebar.number_input("Patrimônio Inicial (R$):", min_value=0.0, value=100000.0, step=10000.0, format="%.0f")
 
 st.sidebar.subheader("Fase de Acumulação")
-periodo_acumulacao = st.sidebar.number_input("Período de Acumulação (anos):", min_value=0.0, value=10.0, step=1.0, format="%.0f")
+periodo_acumulacao = st.sidebar.number_input("Período de Acumulação (anos):", min_value=0.0, value=20.0, step=1.0, format="%.0f")
 
 if periodo_acumulacao == 0:
     aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f", disabled=True)
@@ -34,17 +47,89 @@ else:
     aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=5000.0, step=1000.0, format="%.0f")
 
 st.sidebar.subheader("Fase de Distribuição")
-periodo_distribuicao = st.sidebar.number_input("Período de Distribuição (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
+
+# Lógica condicional baseada na escolha do usuário
+if metodo_calculo == "Expectativa de Vida":
+    expectativa_vida = st.sidebar.number_input("Expectativa de Vida:", min_value=int(idade_atual + periodo_acumulacao), max_value=120, value=85, step=1, format="%d")
+    
+    # Calcular período de distribuição automaticamente
+    periodo_distribuicao_calculado = expectativa_vida - idade_atual - periodo_acumulacao
+    
+    if periodo_distribuicao_calculado <= 0:
+        st.sidebar.error("⚠️ Período de distribuição resultaria em valor negativo ou zero. Ajuste a expectativa de vida ou período de acumulação.")
+        periodo_distribuicao = 1.0  # Valor mínimo para evitar erros
+    else:
+        periodo_distribuicao = periodo_distribuicao_calculado
+    
+    # Campo desabilitado mostrando o valor calculado
+    st.sidebar.number_input(
+        "Período de Distribuição (anos) - Calculado:",
+        value=float(periodo_distribuicao),
+        disabled=True,
+        format="%.0f",
+        help=f"Calculado como: {expectativa_vida} - {idade_atual} - {periodo_acumulacao:.0f} = {periodo_distribuicao:.0f} anos"
+    )
+    
+else:  # "Definir Período de Distribuição"
+    periodo_distribuicao = st.sidebar.number_input("Período de Distribuição (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
+    
+    # Calcular expectativa de vida automaticamente
+    expectativa_vida = idade_atual + periodo_acumulacao + periodo_distribuicao
+    
+    # Campo desabilitado mostrando o valor calculado
+    st.sidebar.number_input("Expectativa de Vida - Calculada:", value=int(expectativa_vida), disabled=True, format="%d", help=f"Calculada como: {idade_atual} + {periodo_acumulacao:.0f} + {periodo_distribuicao:.0f} = {expectativa_vida:.0f} anos")
+
 resgate_mensal = st.sidebar.number_input("Resgate Mensal (R$):", min_value=0.0, value=10000.0, step=1000.0, format="%.0f")
+
+# Validação da expectativa de vida (agora que a variável está definida)
+if metodo_calculo == "Definir Expectativa de Vida" and expectativa_vida <= idade_atual:
+    st.sidebar.error("A expectativa de vida deve ser maior que a idade atual!")
 
 st.sidebar.subheader("Hipóteses de Mercado")
 rentabilidade_nominal_esperada = st.sidebar.number_input("Rentabilidade Nominal Esperada (% a.a):", min_value=0.0, value=10.0, step=0.1, format="%.1f")
-inflacao_esperada = st.sidebar.number_input("Inflação Esperada (% a.a):", min_value=0.0, value=2.0, step=0.1, format="%.1f")
+inflacao_esperada = st.sidebar.number_input("Inflação Esperada (% a.a):", min_value=0.0, value=4.0, step=0.1, format="%.1f")
 aliquota_irrf = st.sidebar.number_input("Alíquota de Impostos (%):", min_value=0.0, value=15.0, step=0.1, format="%.1f")
 
 # Definindo as taxas anuais a partir dos inputs da sidebar (necessário para cálculos posteriores)
 rentabilidade_anual = rentabilidade_nominal_esperada / 100.0
 inflacao_anual = inflacao_esperada / 100.0
+
+# Informações contextuais baseadas na idade
+anos_restantes = expectativa_vida - idade_atual
+idade_fim_acumulacao = idade_atual + periodo_acumulacao
+idade_inicio_distribuicao = idade_fim_acumulacao
+idade_fim_distribuicao = idade_inicio_distribuicao + periodo_distribuicao
+
+# Mostrar método de cálculo escolhido
+st.info(f"**Método Ativo:** {metodo_calculo} \n\n **Expectativa de Vida:** {expectativa_vida:.0f} anos \n\n **Período de Distribuição:** {periodo_distribuicao:.0f} anos")
+
+info_cols = st.columns(3)
+
+with info_cols[0]:
+    st.info(f"**Idade Atual:** {idade_atual} anos\n\n**Anos Restantes:** {anos_restantes} anos")
+
+with info_cols[1]:
+    if periodo_acumulacao > 0:
+        st.info(f"**Fase de Acumulação:**\n\n{idade_atual} → {idade_fim_acumulacao:.0f} anos")
+    else:
+        st.info(f"**Sem Fase de Acumulação**\n\nIniciando distribuição aos {idade_atual} anos")
+
+with info_cols[2]:
+    st.info(f"**Fase de Distribuição:**\n\n{idade_inicio_distribuicao:.0f} → {idade_fim_distribuicao:.0f} anos")
+
+# Alertas se necessário
+if idade_fim_distribuicao > expectativa_vida:
+    st.warning(f"⚠️ **Atenção:** O período de distribuição se estende até os {idade_fim_distribuicao:.0f} anos, ultrapassando a expectativa de vida de {expectativa_vida} anos.")
+
+if anos_restantes < (periodo_acumulacao + periodo_distribuicao):
+    st.warning(f"⚠️ **Atenção:** O período total do planejamento ({periodo_acumulacao + periodo_distribuicao:.0f} anos) é maior que os anos restantes de vida ({anos_restantes} anos).")
+
+# Alertas específicos por método
+if metodo_calculo == "Definir Expectativa de Vida" and periodo_distribuicao <= 5:
+    st.warning(f"⚠️ **Período curto:** Com sua expectativa de vida de {expectativa_vida} anos, você terá apenas {periodo_distribuicao:.0f} anos para distribuição. Considere reduzir o período de acumulação ou aumentar a expectativa de vida.")
+
+if metodo_calculo == "Definir Período de Distribuição" and expectativa_vida > 100:
+    st.info(f"📊 **Expectativa alta:** Sua expectativa de vida calculada é de {expectativa_vida:.0f} anos. Se desejar um planejamento mais conservador, considere usar o método 'Definir Expectativa de Vida'.")
 
 # Função para simular a evolução patrimonial
 def simular_patrimonio(patrimonio_inicial, periodo_acumulacao, periodo_distribuicao, resgate_mensal, aporte_mensal, inflacao_esperada, rentabilidade_nominal_esperada, aliquota_irrf):
@@ -192,6 +277,7 @@ with metricas_col2:
     st.metric("Total Aportado", f"R$ {ultima_linha['Aporte Acumulado']:,.2f}", border=True)
     st.metric("Crescimento Real", f"{crescimento_real:.2f}%", border=True)
 
+# Evolução do Patrimônio
 st.subheader("Evolução do Patrimônio")
 
 evolucao_options = create_chart(
