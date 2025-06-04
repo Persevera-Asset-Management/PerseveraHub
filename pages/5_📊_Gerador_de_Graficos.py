@@ -118,6 +118,7 @@ selected_chart_type = st.sidebar.selectbox("Tipo de Gráfico", chart_type_option
 stacking_options = [None, 'normal', 'percent']
 selected_stacking = st.sidebar.selectbox("Tipo de Empilhamento", stacking_options)
 height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=500, step=50)
+width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=600, step=50)
 
 # Inputs Condicionais
 if data_source == "Buscar por Códigos":
@@ -199,7 +200,6 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
 # --- Seção de Exibição do Gráfico e Download (PNG) --- 
 if st.session_state.get('chart_options_for_download'):
     current_chart_options_for_display_and_dl = st.session_state.chart_options_for_download
-    st.subheader(current_chart_options_for_display_and_dl.get("title", {}).get("text", "Gráfico")) # Exibe o título do gráfico
     
     export_scripts = """
     <script src="https://code.highcharts.com/modules/exporting.js"></script>
@@ -222,7 +222,7 @@ if st.session_state.get('chart_options_for_download'):
             export_data_payload = {
                 "infile": json.dumps(current_chart_options_for_display_and_dl),
                 "type": "image/png",
-                "width": current_chart_options_for_display_and_dl.get("chart",{}).get("width", 800), # Usar largura definida no gráfico se houver
+                "width": width_input,
                 "scale": 2
             }
             with st.spinner("Gerando PNG..."):
