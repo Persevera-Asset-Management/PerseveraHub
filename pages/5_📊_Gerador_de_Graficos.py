@@ -110,15 +110,30 @@ st.sidebar.header("Configurações do Gráfico")
 data_source = st.sidebar.radio("Fonte dos Dados", ("Buscar por Códigos", "Colar Dados Personalizados"), key="data_source")
 
 # Inputs Comuns
-title_name_input = st.sidebar.text_input("Título do Gráfico", placeholder="EXEMPLO: Meu Gráfico Fantástico")
+title_name_input = st.sidebar.text_input("Título do Gráfico")
 series_names_override_input = st.sidebar.text_input("Nomes das Séries (sobrescrever, separados por ;)", placeholder="EXEMPLO: Série A;Série B")
 y_axis_title_input = st.sidebar.text_input("Título do Eixo Y", placeholder="EXEMPLO: Valor (R$)")
 chart_type_options = ['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area']
 selected_chart_type = st.sidebar.selectbox("Tipo de Gráfico", chart_type_options)
 stacking_options = [None, 'normal', 'percent']
 selected_stacking = st.sidebar.selectbox("Tipo de Empilhamento", stacking_options)
-height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=400, step=50)
-width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=600, step=50)
+
+# Pré-seleção de altura e largura do gráfico
+chart_size_selection = st.sidebar.radio("Disposição do Gráfico", ["Linha Completa", "Lado a Lado"], horizontal=True, index=0, key="chart_size_radio")
+
+# Definir valores padrão de altura e largura com base na seleção
+if chart_size_selection == "Linha Completa":
+    default_width = 1200
+    default_height = 500
+elif chart_size_selection == "Lado a Lado":
+    default_width = 600
+    default_height = 500
+else: # Fallback, embora não deva acontecer com st.radio
+    default_width = 600
+    default_height = 400
+
+height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=default_height, step=50, key="height_num_input")
+width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=default_width, step=50, key="width_num_input")
 
 # Inputs Condicionais
 if data_source == "Buscar por Códigos":
