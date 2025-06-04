@@ -34,9 +34,9 @@ except FileNotFoundError:
 st.title('Gerador de Gráficos')
 
 @st.cache_data(ttl=3600)
-def load_series_data(codes, start_date):
+def load_series_data(codes, start_date, end_date):
     try:
-        df = get_series(codes, start_date=start_date, field='close')
+        df = get_series(codes, start_date=start_date, end_date=end_date, field='close')
         if not isinstance(df.index, pd.DatetimeIndex):
             try:
                 df.index = pd.to_datetime(df.index)
@@ -117,13 +117,14 @@ chart_type_options = ['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline
 selected_chart_type = st.sidebar.selectbox("Tipo de Gráfico", chart_type_options)
 stacking_options = [None, 'normal', 'percent']
 selected_stacking = st.sidebar.selectbox("Tipo de Empilhamento", stacking_options)
-height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=500, step=50)
+height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=400, step=50)
 width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=600, step=50)
 
 # Inputs Condicionais
 if data_source == "Buscar por Códigos":
     codes_input_series = st.sidebar.text_input("Códigos das Séries (separados por ;)", placeholder="EXEMPLO: CODE1;CODE2", key="codes_series")
     start_date_input = st.sidebar.date_input("Data de Início", value=datetime.now() - timedelta(days=365*5), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY", key="start_date_series")
+    end_date_input = st.sidebar.date_input("Data de Fim", value=datetime.now(), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY", key="end_date_series")
 else: # Colar Dados Personalizados
     pasted_data_area = st.sidebar.text_area("Cole seus dados aqui (Ex: do Excel, CSV)", height=200, key="pasted_data")
     has_header_check = st.sidebar.checkbox("Primeira linha é cabeçalho?", value=True, key="has_header")
@@ -143,10 +144,13 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             if not codes_list:
                 st.sidebar.error("Por favor, insira códigos de séries válidos.")
                 st.stop()
+
             start_date_str = start_date_input.strftime('%Y-%m-%d')
-            chart_data = load_series_data(codes_list, start_date_str)
-            y_columns_for_chart = codes_list # Para séries buscadas, os códigos são as colunas
-            legend_names_for_chart = codes_list # E por padrão, os nomes da legenda também
+            end_date_str = end_date_input.strftime('%Y-%m-%d')
+
+            chart_data = load_series_data(codes_list, start_date_str, end_date_str)
+            y_columns_for_chart = codes_list
+            legend_names_for_chart = codes_list
         else:
             st.sidebar.error("Por favor, insira códigos de séries.")
             st.stop()
