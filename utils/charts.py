@@ -20,7 +20,8 @@ def create_highcharts_options(
     animation: bool = False,
     decimal_precision: int = 2,
     point_name_column: Optional[str] = None,
-    tooltip_point_format: Optional[str] = None
+    tooltip_point_format: Optional[str] = None,
+    exporting: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Generate Highcharts options for various chart types.
@@ -76,6 +77,8 @@ def create_highcharts_options(
         Column to use for individual point names, especially for scatter charts.
     tooltip_point_format : str, optional
         Custom HTML string format for the tooltip's point display.
+    exporting : Dict[str, Any], optional
+        Configuration for the exporting module (e.g., {"enabled": True}).
         
     Returns:
     --------
@@ -577,6 +580,10 @@ def create_highcharts_options(
     if point_markers and chart_type != 'pie':
         for marker in point_markers:
             chart_options["series"].append(marker)
+    
+    # Add exporting options if provided
+    if exporting is not None:
+        chart_options["exporting"] = exporting
     
     return chart_options
 
