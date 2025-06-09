@@ -4,7 +4,8 @@ from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 
 def create_highcharts_options(
     data: pd.DataFrame,
-    y_column: Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]],
+    y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
+    instruments: Optional[List[Dict[str, str]]] = None,
     x_column: Optional[str] = None,
     chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area'] = 'line',
     stacking: Optional[Literal['normal', 'percent']] = None,
@@ -30,12 +31,16 @@ def create_highcharts_options(
     -----------
     data : pd.DataFrame
         DataFrame containing the data to be plotted
-    y_column : str or List[str] or Tuple[str, str] or Tuple[List[str], List[str]]
+    y_column : str or List[str] or Tuple[str, str] or Tuple[List[str], List[str]], optional
         Name(s) of the column(s) containing y-axis data. 
         - For single-axis charts: a string or a list of strings.
         - For 'dual_axis_line' or 'dual_axis_line_area': 
             - Tuple[str, str] for one series per axis (e.g., ('col_L', 'col_R')).
             - Tuple[List[str], List[str]] for potentially multiple series per axis (e.g., (['col_L1'], ['col_R1', 'col_R2'])).
+    instruments : List[Dict[str, str]], optional
+        A list of dictionaries, where each dictionary represents a series and has 'id' (column name) and 'name' (series name) keys.
+        This is a convenient alternative to providing `y_column` and `series_name` separately for single-axis charts.
+        If provided, `instruments` takes precedence over `y_column` and `series_name` for single-axis charts. Not for use with dual-axis charts.
     x_column : str, optional
         Name of the column containing x-axis data (usually dates). If None, the DataFrame index is used.
     chart_type : str, optional
@@ -85,6 +90,16 @@ def create_highcharts_options(
     Dict[str, Any]
         Highcharts configuration options
     """
+    if instruments:
+        if chart_type in ['dual_axis_line', 'dual_axis_line_area']:
+            raise ValueError("The 'instruments' parameter is not supported for dual-axis chart types.")
+        
+        y_column = [inst['id'] for inst in instruments]
+        if series_name is None:
+            series_name = [inst['name'] for inst in instruments]
+    elif y_column is None:
+        raise ValueError("Either 'y_column' or 'instruments' must be provided.")
+
     is_dual_axis = chart_type in ['dual_axis_line', 'dual_axis_line_area']
 
     # Variables for processed parameters - will be populated based on chart type

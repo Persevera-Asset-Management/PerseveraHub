@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional, Union, Tuple
 from utils.charts import create_highcharts_options
 from utils.data_transformers import apply_transformations
 
-def create_chart(data, columns, names, chart_type, title, y_axis_title=None, x_axis_title=None, colors=None, **kwargs):
+def create_chart(data, chart_type, title, y_axis_title=None, x_axis_title=None, columns=None, names=None, colors=None, instruments=None, **kwargs):
     """
     Creates a Highcharts chart configuration with specified parameters.
     
@@ -36,6 +36,7 @@ def create_chart(data, columns, names, chart_type, title, y_axis_title=None, x_a
     return create_highcharts_options(
         data=data,
         y_column=columns,
+        instruments=instruments,
         chart_type=chart_type,
         title=title,
         y_axis_title=y_axis_title or "Value",
@@ -167,42 +168,40 @@ def extract_codes_from_config(chart_configs):
     Extracts all unique column codes from chart configurations.
     Also considers columns used in transformations if they are not primary plot columns.
     """
-    all_codes = [] 
-    processed_for_chart_columns = set() # To store raw column names for plotting
+    all_codes = set()
 
     for config_id, config_entry in chart_configs.items():
-        # Determine the actual chart configuration part
-        actual_chart_conf = config_entry.get("chart_config", config_entry) # Handles both nested and flat
+        actual_chart_conf = config_entry.get("chart_config", config_entry)
+
+        if "instruments" in actual_chart_conf:
+            instruments = actual_chart_conf.get("instruments", [])
+            for instrument in instruments:
+                all_codes.add(instrument['id'])
         
-        # Extract columns intended for plotting
         columns_for_plotting = actual_chart_conf.get("columns", [])
         if isinstance(columns_for_plotting, str):
-            processed_for_chart_columns.add(columns_for_plotting)
+            all_codes.add(columns_for_plotting)
         elif isinstance(columns_for_plotting, list):
             def _flatten_plot_cols(cols_struct):
                 if isinstance(cols_struct, str):
-                    processed_for_chart_columns.add(cols_struct)
+                    all_codes.add(cols_struct)
                 elif isinstance(cols_struct, list):
                     for item in cols_struct:
                         _flatten_plot_cols(item)
             _flatten_plot_cols(columns_for_plotting)
 
-        # Extract columns used in transformations
-        transformations = config_entry.get("transformations", []) # From the outer config_entry
+        transformations = config_entry.get("transformations", [])
         if transformations:
             for t_conf in transformations:
-                if "column" in t_conf: # e.g., yearly_variation, moving_average
-                    if isinstance(t_conf["column"], str):
-                         processed_for_chart_columns.add(t_conf["column"])
-                elif "base_column" in t_conf and "target_column" in t_conf: # e.g., relative_performance
+                if "column" in t_conf and isinstance(t_conf["column"], str):
+                    all_codes.add(t_conf["column"])
+                elif "base_column" in t_conf and "target_column" in t_conf:
                     if isinstance(t_conf["base_column"], str):
-                        processed_for_chart_columns.add(t_conf["base_column"])
+                        all_codes.add(t_conf["base_column"])
                     if isinstance(t_conf["target_column"], str):
-                        processed_for_chart_columns.add(t_conf["target_column"])
-                # Add other transformation-specific column extractions if needed
+                        all_codes.add(t_conf["target_column"])
                 
-    all_codes = list(processed_for_chart_columns)
-    return all_codes
+    return list(all_codes)
 
 def organize_charts_by_group(chart_configs):
     """
