@@ -315,6 +315,7 @@ if not performance_table_data.empty:
         rank_cols_identifier='rank',
         numeric_cols_format_as_int=['PL'],
         numeric_cols_format_as_float=['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'],
+        highlight_quartile=['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'],
         highlight_row_by_column='type',
         highlight_row_if_value_equals='Persevera',
         highlight_color='lightblue'

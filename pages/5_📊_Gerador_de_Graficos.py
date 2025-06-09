@@ -4,7 +4,7 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 from persevera_tools.data import get_series
-from utils.chart_helpers import create_chart # Apenas create_chart é usado diretamente aqui
+from utils.chart_helpers import create_chart
 import streamlit_highcharts as hct
 import requests
 import json
