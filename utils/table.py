@@ -13,6 +13,8 @@ def style_table(
     highlight_row_if_value_equals: Optional[Any] = None,
     highlight_color: str = 'lightblue',
     highlight_quartile: Optional[List[str]] = None,
+    quartile_exclude_row_by_column: Optional[str] = None,
+    quartile_exclude_row_if_value_is: Optional[List[Any]] = None,
     left_align_cols: Optional[List[str]] = None,
     center_align_cols: Optional[List[str]] = None,
     right_align_cols: Optional[List[str]] = None
@@ -22,7 +24,7 @@ def style_table(
     integer formatting (with thousands separators), 
     float formatting (to 2 decimal places), 
     and currency-style formatting (integers with thousands separators).
-    Allows conditional row highlighting, color-coding of columns by quartile, and custom alignment for specified columns.
+    Allows conditional row highlighting, color-coding of columns by quartile, and custom alignment for specified columns. Quartile calculations can exclude specified rows.
     """
     df_styled = df.copy()
     formatters = {}
@@ -65,8 +67,17 @@ def style_table(
     if highlight_quartile:
         def color_by_quartile(column):
             try:
+                column_for_calc = column
+                # Exclude specified rows from quartile calculation
+                if quartile_exclude_row_by_column and \
+                   quartile_exclude_row_if_value_is and \
+                   quartile_exclude_row_by_column in df_styled.columns:
+                    
+                    exclusion_mask = df_styled[quartile_exclude_row_by_column].isin(quartile_exclude_row_if_value_is)
+                    column_for_calc = column[~exclusion_mask]
+
                 # Convert to numeric, coercing errors, and drop NaNs for quartile calculation
-                numeric_col = pd.to_numeric(column, errors='coerce').dropna()
+                numeric_col = pd.to_numeric(column_for_calc, errors='coerce').dropna()
                 if numeric_col.empty:
                     return [''] * len(column)
                 
@@ -75,10 +86,10 @@ def style_table(
                 # Colors from a sequential palette (e.g., Yellow-Green-Blue from ColorBrewer)
                 # Higher values get darker colors. For the darkest color, we switch text to white for readability.
                 colors = {
-                    0: 'background-color: #ffffd9',  # 1st quartile (lowest)
-                    1: 'background-color: #c7e9b4',  # 2nd quartile
-                    2: 'background-color: #41b6c4',  # 3rd quartile
-                    3: 'background-color: #225ea8; color: white'   # 4th quartile (highest)
+                    0: 'background-color: #faf099',  # 1st quartile (lowest)
+                    1: 'background-color: #cbe08c',  # 2nd quartile
+                    2: 'background-color: #96ce7e',  # 3rd quartile
+                    3: 'background-color: #66ba7b'   # 4th quartile (highest)
                 }
 
                 # Create a styled series with the same index as the original column

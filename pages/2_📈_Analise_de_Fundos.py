@@ -100,41 +100,73 @@ def load_fund_data(fund_name):
 @st.cache_data(ttl=3600)
 def get_performance_table(nav, total_equity, start_date, end_date):
     df = nav.ffill()
+    if df.empty:
+        return pd.DataFrame()
+
     gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
     gp_monthly = df.groupby(pd.Grouper(level='date', freq="ME")).last()
     gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
 
-    time_frames = {
-        'day': gp_daily.pct_change(fill_method=None).iloc[-1],
-        'mtd': gp_monthly.pct_change(fill_method=None).iloc[-1],
-        'ytd': gp_yearly.pct_change(fill_method=None).iloc[-1],
-        '3m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=3):].iloc[0] - 1),
-        '6m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=6):].iloc[0] - 1),
-        '12m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=12):].iloc[0] - 1),
-        '24m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=24):].iloc[0] - 1),
-        '36m': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=36):].iloc[0] - 1),
-        'custom': df[start_date:end_date].iloc[-1] / df[start_date:end_date].iloc[0] - 1,
+    benchmarks = ['CDI', 'Ibovespa', 'SMLL']
 
-        'day_rank': gp_daily.pct_change(fill_method=None).iloc[-1].rank(ascending=False),
-        'mtd_rank': gp_monthly.pct_change(fill_method=None).iloc[-1].rank(ascending=False),
-        'ytd_rank': gp_yearly.pct_change(fill_method=None).iloc[-1].rank(ascending=False),
-        '3m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=3):].iloc[0] - 1).rank(ascending=False),
-        '6m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=6):].iloc[0] - 1).rank(ascending=False),
-        '12m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=12):].iloc[0] - 1).rank(ascending=False),
-        '24m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=24):].iloc[0] - 1).rank(ascending=False),
-        '36m_rank': (df.iloc[-1] / df[df.iloc[-1].name - relativedelta(months=36):].iloc[0] - 1).rank(ascending=False),
-        'custom_rank': (df[start_date:end_date].iloc[-1] / df[start_date:end_date].iloc[0] - 1).rank(ascending=False),
+    day_ret = gp_daily.pct_change(fill_method=None).iloc[-1]
+    mtd_ret = gp_monthly.pct_change(fill_method=None).iloc[-1]
+    ytd_ret = gp_yearly.pct_change(fill_method=None).iloc[-1]
+
+    def get_relative_return(months):
+        start_date_calc = df.index[-1] - relativedelta(months=months)
+        period_df = df.loc[start_date_calc:]
+        if len(period_df) > 1:
+            return df.iloc[-1] / period_df.iloc[0] - 1
+        return pd.Series(np.nan, index=df.columns)
+
+    ret_3m = get_relative_return(3)
+    ret_6m = get_relative_return(6)
+    ret_12m = get_relative_return(12)
+    ret_24m = get_relative_return(24)
+    ret_36m = get_relative_return(36)
+
+    custom_period_df = df.loc[start_date:end_date]
+    if len(custom_period_df) > 1:
+        custom_ret = custom_period_df.iloc[-1] / custom_period_df.iloc[0] - 1
+    else:
+        custom_ret = pd.Series(np.nan, index=df.columns)
+
+    returns = {
+        'day': day_ret,
+        'mtd': mtd_ret,
+        'ytd': ytd_ret,
+        '3m': ret_3m,
+        '6m': ret_6m,
+        '12m': ret_12m,
+        '24m': ret_24m,
+        '36m': ret_36m,
+        'custom': custom_ret,
     }
-    df = pd.DataFrame(time_frames)
-    df = df.apply(lambda x: x * 100 if 'rank' not in x.name else x)
-    df = df.assign(PL=total_equity.iloc[-1])
-    df['type'] = df.index.map(lambda x: 'Persevera' if 'Persevera' in x else ('Benchmark' if x in ['CDI', 'Ibovespa', 'SMLL'] else 'Peer'))
-    col_order = ['type', 'PL']
-    col_order.extend(time_frames.keys())
-    df = df[col_order]
-    df = df.reset_index()
-    df = df.rename(columns={'index': 'fund_name'})
-    return df
+
+    ranks = {
+        f'{key}_rank': value.drop(benchmarks, errors='ignore').rank(ascending=False)
+        for key, value in returns.items()
+    }
+
+    time_frames = {**returns, **ranks}
+
+    df_result = pd.DataFrame(time_frames)
+    df_result = df_result.apply(lambda x: x * 100 if 'rank' not in x.name else x)
+    
+    pl_series = pd.Series(np.nan, index=df_result.index)
+    if not total_equity.empty:
+        last_pl = total_equity.iloc[-1]
+        pl_series = last_pl.reindex(df_result.index)
+
+    df_result = df_result.assign(PL=pl_series)
+    df_result['type'] = df_result.index.map(lambda x: 'Persevera' if 'Persevera' in x else ('Benchmark' if x in benchmarks else 'Peer'))
+    
+    col_order = ['type', 'PL'] + list(time_frames.keys())
+    df_result = df_result[col_order]
+    
+    df_result = df_result.reset_index().rename(columns={'index': 'fund_name'})
+    return df_result
 
 @st.cache_data(ttl=3600)
 def calculate_performance(df):
@@ -316,6 +348,8 @@ if not performance_table_data.empty:
         numeric_cols_format_as_int=['PL'],
         numeric_cols_format_as_float=['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'],
         highlight_quartile=['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'],
+        quartile_exclude_row_by_column='type',
+        quartile_exclude_row_if_value_is=['Benchmark'],
         highlight_row_by_column='type',
         highlight_row_if_value_equals='Persevera',
         highlight_color='lightblue'
