@@ -63,6 +63,13 @@ def style_table(
 
     styled_obj = df_styled.style.format(formatters)
 
+    # Conditional row highlighting
+    if highlight_row_by_column and highlight_row_if_value_equals is not None and highlight_row_by_column in df_styled.columns:
+        def highlight_matching_rows(row):
+            color_to_apply = f'background-color: {highlight_color}' if row[highlight_row_by_column] == highlight_row_if_value_equals else ''
+            return [color_to_apply] * len(row)
+        styled_obj = styled_obj.apply(highlight_matching_rows, axis=1)
+
     # Quartile-based column coloring
     if highlight_quartile:
         def color_by_quartile(column):
@@ -108,13 +115,6 @@ def style_table(
             if col in df_styled.columns:
                 # The 'axis=0' is crucial for applying the function column-wise
                 styled_obj = styled_obj.apply(color_by_quartile, subset=[col], axis=0)
-
-    # Conditional row highlighting
-    if highlight_row_by_column and highlight_row_if_value_equals is not None and highlight_row_by_column in df_styled.columns:
-        def highlight_matching_rows(row):
-            color_to_apply = f'background-color: {highlight_color}' if row[highlight_row_by_column] == highlight_row_if_value_equals else ''
-            return [color_to_apply] * len(row)
-        styled_obj = styled_obj.apply(highlight_matching_rows, axis=1)
 
     alignment_styles = []
     
