@@ -37,7 +37,7 @@ except Exception as e:
     st.error(f"Erro ao inicializar FinancialDataService: {e}")
     st.stop()
 
-row_1 = st.columns(3)
+row_1 = st.columns(4)
 
 # FRED
 with row_1[0]:
@@ -77,4 +77,17 @@ with row_1[2]:
             st.success('Dados do Simplify baixados e salvos com sucesso!')
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
+
+# SGS
+with row_1[3]:
+    if st.button('Baixar dados do SGS', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do SGS...'):
+                sgs_data = fds.get_data(
+                    source='sgs',
+                    save_to_db=True,
+                )
+            st.success('Dados do SGS baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do SGS: {e}")
 
