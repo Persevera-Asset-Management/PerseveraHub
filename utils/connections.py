@@ -1,7 +1,7 @@
 from persevera_tools.data import FinancialDataService
 import streamlit as st
 
-@st.singleton
+@st.cache_resource
 def get_financial_data_service(start_date):
     """
     Inicializa e retorna uma instância única do FinancialDataService.
