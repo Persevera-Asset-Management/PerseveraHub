@@ -37,6 +37,8 @@ except Exception as e:
     st.error(f"Erro ao inicializar FinancialDataService: {e}")
     st.stop()
 
+# --- Fontes Independentes --- 
+st.write("#### Fontes Independentes")
 row_1 = st.columns(4)
 
 # FRED
@@ -91,3 +93,48 @@ with row_1[3]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do SGS: {e}")
 
+st.write("#### Bloomberg")
+row_2 = st.columns(4)
+
+# --- Bloomberg ---
+# Commodity
+with row_2[0]:
+    if st.button('Commodity', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Bloomberg...'):
+                bloomberg_data = fds.get_bloomberg_data(
+                    category='commodity',
+                    data_type='market',
+                    save_to_db=True
+                )
+            st.success('Dados do Bloomberg/Commodity baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Bloomberg: {e}")
+
+# Equity
+with row_2[1]:
+    if st.button('Equity', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Bloomberg...'):
+                bloomberg_data = fds.get_bloomberg_data(
+                    category='commodity',
+                    data_type='market',
+                    save_to_db=True
+                )
+            st.success('Dados do Bloomberg/Equity baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Bloomberg: {e}")
+
+# FX
+with row_2[2]:
+    if st.button('Currency', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Bloomberg...'):
+                bloomberg_data = fds.get_bloomberg_data(
+                    category='currency',
+                    data_type='market',
+                    save_to_db=True
+                )
+            st.success('Dados do Bloomberg/Currency baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Bloomberg: {e}")
