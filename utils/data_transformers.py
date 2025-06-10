@@ -503,9 +503,7 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
  
             aligned_saar = saar_pct_values.reindex(result.index) # User removed ffill, kept here
             result[new_column_name] = aligned_saar
-            
-            print(saar_pct_values) # User's print statement
-            print(result)          # User's print statement
+
         except Exception as e:
             print(f"Error during SAAR calculation for column '{column}': {e}. Output column '{new_column_name}' will remain NaN.")
             # new_column_name is already NaN if error occurs here

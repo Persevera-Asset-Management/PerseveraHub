@@ -23,8 +23,6 @@ load_css()
 
 st.title('Download de Dados')
 
-st.write(os.getenv("FRED_API_KEY"))
-
 st.markdown("Abaixo estão os botões que executam os scripts de download de dados.")
 
 # --- Inputs do Usuário --- 
