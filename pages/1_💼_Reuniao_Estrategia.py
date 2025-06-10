@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta
+from utils.ui import display_logo, load_css
 
 st.set_page_config(
     page_title="Reunião Estratégia | Persevera",
@@ -10,10 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inclusão do CSS
-assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
-css_path = os.path.join(assets_dir, 'style.css')
-with open(css_path) as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+display_logo()
+load_css()
 
 st.title('Reunião Estratégia')

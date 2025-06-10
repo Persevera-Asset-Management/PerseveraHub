@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+from utils.ui import display_logo, load_css
 
 # Load environment variables
 load_dotenv()
@@ -8,15 +9,12 @@ load_dotenv()
 # Configure the page
 st.set_page_config(
     page_title="Persevera Hub",
-    page_icon="assets/logo.svg",
+    page_icon="assets/logo_page.png",
     layout="wide"
 )
 
-# Add custom CSS
-assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
-css_path = os.path.join(assets_dir, 'style.css')
-with open(css_path) as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+display_logo()
+load_css()
 
 # Main content
 st.title("Persevera Asset Management")

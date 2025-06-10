@@ -12,6 +12,7 @@ from utils.chart_helpers import create_chart
 from utils.table import style_table
 import streamlit_highcharts as hct
 from configs.pages.style_analysis import FACTOR_OPTIONS, FACTOR_OPTIONS_SELECTED
+from utils.ui import display_logo, load_css
 
 st.set_page_config(
     page_title="Style Analysis | Persevera",
@@ -19,11 +20,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inclusão do CSS
-assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
-css_path = os.path.join(assets_dir, 'style.css')
-with open(css_path) as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+display_logo()
+load_css()
 
 st.title("Style Analysis")
 

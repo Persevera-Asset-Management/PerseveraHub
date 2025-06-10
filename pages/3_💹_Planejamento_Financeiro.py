@@ -5,6 +5,7 @@ import numpy as np
 import datetime
 import os
 from utils.chart_helpers import create_chart
+from utils.ui import display_logo, load_css
 
 st.set_page_config(
     page_title="Planejamento Financeiro | Persevera",
@@ -12,11 +13,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inclusão do CSS
-assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
-css_path = os.path.join(assets_dir, 'style.css')
-with open(css_path) as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+display_logo()
+load_css()
 
 st.title("Planejamento Financeiro")
 

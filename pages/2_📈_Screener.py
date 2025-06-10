@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from configs.pages.screener import FACTOR_OPTIONS_SCREENER
 from utils.table import style_table
 from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
+from utils.ui import display_logo, load_css
 
 st.set_page_config(
     page_title="Screener | Persevera",
@@ -13,11 +14,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inclusão do CSS
-assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
-css_path = os.path.join(assets_dir, 'style.css')
-with open(css_path) as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+display_logo()
+load_css()
 
 @st.cache_data(ttl=3600)
 def load_data(start_date, descriptors_list):

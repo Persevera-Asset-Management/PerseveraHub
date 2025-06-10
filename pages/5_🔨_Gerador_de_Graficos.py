@@ -9,6 +9,7 @@ import streamlit_highcharts as hct
 import requests
 import json
 import io
+from utils.ui import display_logo, load_css
 
 # Initialize session state variables
 if 'chart_options_for_download' not in st.session_state:
@@ -18,18 +19,12 @@ if 'png_payload' not in st.session_state:
 
 st.set_page_config(
     page_title="Gerador de Gráficos | Persevera",
-    page_icon="📊",
+    page_icon=":hammer:",
     layout="wide"
 )
 
-# Inclusão do CSS
-try:
-    assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
-    css_path = os.path.join(assets_dir, 'style.css')
-    with open(css_path) as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-except FileNotFoundError:
-    st.warning("Arquivo CSS não encontrado. Verifique o caminho para 'assets/style.css'.")
+display_logo()
+load_css()
 
 st.title('Gerador de Gráficos')
 
