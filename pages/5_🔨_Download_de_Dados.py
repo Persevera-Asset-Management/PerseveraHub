@@ -1,14 +1,6 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import os
 from datetime import datetime, timedelta
-from persevera_tools.data import get_series
-from utils.chart_helpers import create_chart
-import streamlit_highcharts as hct
-import requests
-import json
-import os
+from xbbg import blp
 from persevera_tools.data import FinancialDataService
 from utils.ui import display_logo, load_css
 
@@ -117,7 +109,7 @@ with row_2[1]:
         try:
             with st.spinner('Baixando dados do Bloomberg...'):
                 bloomberg_data = fds.get_bloomberg_data(
-                    category='commodity',
+                    category='equity',
                     data_type='market',
                     save_to_db=True
                 )
@@ -130,11 +122,7 @@ with row_2[2]:
     if st.button('Currency', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Bloomberg...'):
-                bloomberg_data = fds.get_bloomberg_data(
-                    category='currency',
-                    data_type='market',
-                    save_to_db=True
-                )
+                bloomberg_data = blp.bdp(tickers='AAPL US Equity', flds='PX_LAST')
             st.success('Dados do Bloomberg/Currency baixados e salvos com sucesso!')
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Bloomberg: {e}")
