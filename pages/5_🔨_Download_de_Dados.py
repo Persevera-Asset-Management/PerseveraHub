@@ -41,7 +41,7 @@ row_1 = st.columns(4)
 
 # FRED
 with row_1[0]:
-    if st.button('Baixar dados do FRED', use_container_width=True):
+    if st.button('FRED', use_container_width=True):
         try:
             with st.spinner('Baixando dados do FRED...'):
                 fred_data = fds.get_data(
@@ -54,7 +54,7 @@ with row_1[0]:
 
 # ANBIMA
 with row_1[1]:
-    if st.button('Baixar dados da ANBIMA', use_container_width=True):
+    if st.button('ANBIMA', use_container_width=True):
         try:
             with st.spinner('Baixando dados da ANBIMA...'):
                 anbima_data = fds.get_data(
@@ -67,7 +67,7 @@ with row_1[1]:
 
 # Simplify
 with row_1[2]:
-    if st.button('Baixar dados do Simplify', use_container_width=True):
+    if st.button('Simplify', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Simplify...'):
                 simplify_data = fds.get_data(
@@ -80,7 +80,7 @@ with row_1[2]:
 
 # SGS
 with row_1[3]:
-    if st.button('Baixar dados do SGS', use_container_width=True):
+    if st.button('SGS', use_container_width=True):
         try:
             with st.spinner('Baixando dados do SGS...'):
                 sgs_data = fds.get_data(
