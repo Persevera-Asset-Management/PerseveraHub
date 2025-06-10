@@ -1,8 +1,8 @@
 import streamlit as st
 from datetime import datetime, timedelta
 from xbbg import blp
-from persevera_tools.data import FinancialDataService
 from utils.ui import display_logo, load_css
+from utils.connections import get_financial_data_service
 
 st.set_page_config(
     page_title="Download de Dados | Persevera",
@@ -23,10 +23,10 @@ st.sidebar.header("Configurações")
 start_date = st.sidebar.date_input("Data de Início", value=datetime.now() - timedelta(days=365), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY")
 start_date_str = start_date.strftime('%Y-%m-%d')
 
-try:
-    fds = FinancialDataService(start_date=start_date_str)
-except Exception as e:
-    st.error(f"Erro ao inicializar FinancialDataService: {e}")
+fds = get_financial_data_service(start_date=start_date_str)
+
+if not fds:
+    st.error("Não foi possível inicializar o serviço de dados financeiros. As operações de download estão desabilitadas.")
     st.stop()
 
 # --- Fontes Independentes --- 
@@ -122,7 +122,11 @@ with row_2[2]:
     if st.button('Currency', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Bloomberg...'):
-                bloomberg_data = blp.bdp(tickers='AAPL US Equity', flds='PX_LAST')
+                bloomberg_data = fds.get_bloomberg_data(
+                    category='currency',
+                    data_type='market',
+                    save_to_db=True
+                )
             st.success('Dados do Bloomberg/Currency baixados e salvos com sucesso!')
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Bloomberg: {e}")
