@@ -8,7 +8,7 @@ from utils.chart_helpers import create_chart
 import streamlit_highcharts as hct
 import requests
 import json
-import io
+import os
 from persevera_tools.data import FinancialDataService
 from utils.ui import display_logo, load_css
 
@@ -22,6 +22,8 @@ display_logo()
 load_css()
 
 st.title('Download de Dados')
+
+st.write(os.getenv("FRED_API_KEY"))
 
 st.markdown("Abaixo estão os botões que executam os scripts de download de dados.")
 
