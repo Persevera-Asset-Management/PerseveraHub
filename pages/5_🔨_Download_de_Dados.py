@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime, timedelta
 from persevera_tools.data import FinancialDataService
+from persevera_tools.data.funds import get_persevera_peers
 from utils.ui import display_logo, load_css
 
 st.set_page_config(
@@ -83,3 +84,21 @@ with row_1[3]:
             st.success('Dados do SGS baixados e salvos com sucesso!')
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do SGS: {e}")
+
+# --- CVM --- 
+st.write("#### Fundos de Investimento (CVM)")
+row_1 = st.columns(4)
+
+# Fundos de Investimento
+with row_1[0]:
+    if st.button('Todos os Fundos', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados dos Fundos de Investimento...'):
+                cnpjs = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
+                cvm_data = fds.get_cvm_data(
+                    cnpjs=cnpjs,
+                    save_to_db=True
+                )
+            st.success('Dados dos Fundos de Investimento baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados dos Fundos de Investimento: {e}")

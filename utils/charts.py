@@ -519,9 +519,7 @@ def create_highcharts_options(
                 series_options = {
                     "name": series_name_val,
                     "data": series_data,
-                    "tooltip": {
-                        "valueDecimals": decimal_precision
-                    }
+                    "tooltip": {"valueDecimals": decimal_precision}
                 }
             
                 # Add color if specified
@@ -558,10 +556,13 @@ def create_highcharts_options(
             "cursor": "pointer",
             "dataLabels": {
                 "enabled": True,
-                "format": "<b>{point.name}</b>: {point.percentage:.1f} %"
+                "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}} %"
+            },
+            "tooltip": {
+                "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision}f}}</b>'
             }
         }
-        
+
         # Prepare pie chart data
         pie_data = []
         # Use only the first y_column for pie charts (from y_cols_for_single_axis)
