@@ -18,9 +18,7 @@ load_css()
 
 st.title("Visualizador de Carteiras")
 
-st.write("Faça o upload do arquivo Excel exportado pelo ComDinheiro.")
-
-uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx", "xls"])
+uploaded_file = st.file_uploader("Faça o upload do arquivo Excel exportado pelo ComDinheiro", type=["xlsx", "xls"], accept_multiple_files=False)
 # uploaded_file = r"C:\Users\Thales Carmo\Downloads\Relatório_Gestão_raw.xlsx"
 
 if uploaded_file is not None:
