@@ -27,6 +27,7 @@ FACTOR_OPTIONS_SCREENER = {
     'Momentum (9m1)': 'momentum_9m1',
     'Momentum (12m)': 'momentum_12m',
     'Momentum (12m1)': 'momentum_12m1',
+    'Price Range': 'price_range',
     'RSI (3d)': 'rsi_3d',
     'RSI (9d)': 'rsi_9d',
     'RSI (14d)': 'rsi_14d',
@@ -51,7 +52,6 @@ FACTOR_OPTIONS_SCREENER = {
     # Múltiplos e Valuation
     'P/E Fwd': 'price_to_earnings_fwd',
     'EV/EBITDA Fwd': 'ev_to_ebitda_fwd',
-    'Price Range': 'price_range',
     'Price Target': 'price_target',
     'Market Cap': 'market_cap',
     'Book Value per Share': 'book_value_per_share',
@@ -135,4 +135,36 @@ FACTOR_OPTIONS_SCREENER = {
     'EPS Fwd': 'earnings_per_share_fwd',
     'EPS LTM': 'earnings_per_share_ltm',
     'Long Term Growth (%)': 'long_term_growth'
+}
+
+FACTOR_MOMENTUM_COMPONENTS = {
+    'Momentum (6m)': 'momentum_6m',
+    'Momentum (12m)': 'momentum_12m',
+}
+
+FACTOR_VALUE_COMPONENTS = {
+    'Earnings Yield Fwd': 'earnings_yield_fwd',
+    'EBITDA Yield Fwd': 'ebitda_yield_fwd',
+    'FCF Yield Fwd': 'fcf_yield_fwd',
+}
+
+FACTOR_LIQUIDITY_COMPONENTS = {
+    'Dollar Volume (7d/63d)': 'delta_dollar_volume_7d_63d',
+    'Dollar Volume (14d/63d)': 'delta_dollar_volume_14d_63d',
+    'Dollar Volume (21d/63d)': 'delta_dollar_volume_21d_63d',
+}
+
+FACTOR_RISK_COMPONENTS = {
+    'Beta': 'beta',
+    'Volatility (1m)': 'volatility_1m',
+    'Volatility (12m)': 'volatility_12m',
+}
+
+FACTOR_QUALITY_COMPONENTS = {
+    'EBITDA Margin (%)': 'ebitda_margin',
+    'FCF Margin (%)': 'fcf_margin',
+    'Gross Margin (%)': 'gross_margin',
+    'Net Margin (%)': 'net_margin',
+    'ROE (%)': 'roe',
+    'ROIC (%)': 'roic'
 }
