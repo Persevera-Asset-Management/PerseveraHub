@@ -31,7 +31,7 @@ except Exception as e:
 
 # --- Fontes Independentes --- 
 st.write("#### Fontes Independentes")
-row_1 = st.columns(4)
+row_1 = st.columns(3)
 
 # FRED
 with row_1[0]:
@@ -59,21 +59,8 @@ with row_1[1]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados da ANBIMA: {e}")
 
-# Simplify
-with row_1[2]:
-    if st.button('Simplify', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do Simplify...'):
-                simplify_data = fds.get_data(
-                    source='simplify',
-                    save_to_db=True,
-                )
-            st.success('Dados do Simplify baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
-
 # SGS
-with row_1[3]:
+with row_1[2]:
     if st.button('SGS', use_container_width=True):
         try:
             with st.spinner('Baixando dados do SGS...'):
@@ -85,12 +72,40 @@ with row_1[3]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do SGS: {e}")
 
+row_2 = st.columns(3)
+
+# Simplify
+with row_2[0]:
+    if st.button('Simplify', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Simplify...'):
+                simplify_data = fds.get_data(
+                    source='simplify',
+                    save_to_db=True,
+                )
+            st.success('Dados do Simplify baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
+
+# Invesco
+with row_2[1]:
+    if st.button('Invesco', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Invesco...'):
+                simplify_data = fds.get_data(
+                    source='invesco',
+                    save_to_db=True,
+                )
+            st.success('Dados do Invesco baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
+
 # --- CVM --- 
 st.write("#### Fundos de Investimento (CVM)")
-row_1 = st.columns(4)
+row_3 = st.columns(3)
 
 # Fundos de Investimento
-with row_1[0]:
+with row_3[0]:
     if st.button('Todos os Fundos', use_container_width=True):
         try:
             with st.spinner('Baixando dados dos Fundos de Investimento...'):

@@ -43,7 +43,7 @@ start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
 with st.spinner("Carregando dados econômicos..."):
-    data_cta_weight = load_data(CODES, field='cta_weight', start_date=start_date_str) * 100
+    data_cta_weight = load_data(CODES, field='weight_cta_simplify', start_date=start_date_str) * 100
     data_close = load_data(CODES, field='close', start_date=start_date_str)
     data_close = data_close.add_suffix('_close', axis=1)
 
