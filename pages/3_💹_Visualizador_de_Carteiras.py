@@ -91,9 +91,34 @@ if uploaded_file is not None:
         with row_3[0]:
             selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['Ativo'].unique()))
             if selected_asset != "":
-                saldo_ativo_selecionado = df[df['Ativo'] == selected_asset][['Carteira', 'Ativo', 'Descrição','Saldo Bruto']].set_index('Carteira').sort_values('Saldo Bruto', ascending=False)
+                total_saldo_carteira = df.groupby('Carteira')['Saldo Bruto'].sum()
+                df_asset = df[df['Ativo'] == selected_asset]
+
+                saldo_ativo_selecionado = (
+                    df_asset
+                    .groupby('Carteira')
+                    .agg(
+                        Ativo=('Ativo', 'first'),
+                        Descrição=('Descrição', 'first'),
+                        Saldo_Bruto=('Saldo Bruto', 'sum')
+                    )
+                    .rename(columns={'Saldo_Bruto': 'Saldo Bruto'})
+                )
+
+                # Percentual que o ativo representa dentro de cada Carteira
+                saldo_ativo_selecionado['Percentual da Carteira'] = saldo_ativo_selecionado['Saldo Bruto'] / total_saldo_carteira * 100
+
+                # Ordena pelo saldo do ativo
+                saldo_ativo_selecionado = saldo_ativo_selecionado.sort_values('Saldo Bruto', ascending=False)
+
                 st.write(f"Saldo do Ativo Selecionado: R$ {saldo_ativo_selecionado['Saldo Bruto'].sum():,.2f}")
-                st.dataframe(style_table(saldo_ativo_selecionado, currency_cols=['Saldo Bruto']))
+                st.dataframe(
+                    style_table(
+                        saldo_ativo_selecionado,
+                        currency_cols=['Saldo Bruto'],
+                        percent_cols=['Percentual da Carteira']
+                    )
+                )
         with row_3[1]:
             if selected_asset != "":
                 chart_saldo_ativos_carteiras = create_chart(

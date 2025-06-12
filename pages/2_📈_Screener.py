@@ -217,6 +217,6 @@ if not raw_data.empty:
         highlight_quartile=['Momentum Score', 'Value Score', 'Liquidity Score', 'Risk Score', 'Quality Score']
     )
     st.write(styled_data)
-
+    
 else:
     st.warning("No data available for the selected metrics and date.")
