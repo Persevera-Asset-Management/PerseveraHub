@@ -1,10 +1,9 @@
 import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
-import numpy as np
-import datetime
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
+from utils.table import style_table
 import streamlit_highcharts as hct
 
 st.set_page_config(
@@ -19,7 +18,7 @@ load_css()
 st.title("Visualizador de Carteiras")
 
 uploaded_file = st.file_uploader("Faça o upload do arquivo Excel exportado pelo ComDinheiro", type=["xlsx", "xls"], accept_multiple_files=False)
-# uploaded_file = r"C:\Users\Thales Carmo\Downloads\Relatório_Gestão_raw.xlsx"
+# uploaded_file = r"C:\Users\ThalesCarmo\Downloads\Relatório_Gestão_raw.xlsx"
 
 if uploaded_file is not None:
     try:
@@ -27,7 +26,7 @@ if uploaded_file is not None:
         st.success("Arquivo carregado com sucesso!")
         
         st.subheader("Dados Brutos")
-        st.dataframe(df, hide_index=True)
+        st.dataframe(style_table(df, currency_cols=['Saldo Bruto']), hide_index=True)
 
         # Calculo das agregações
         saldo_carteiras = df.groupby('Carteira').agg(
@@ -42,7 +41,7 @@ if uploaded_file is not None:
 
         st.subheader("Agregação das Carteiras")
 
-        # Gráfico de saldo bruto das carteiras
+        # Saldo bruto das carteiras
         row_1 = st.columns(2)
         with row_1[0]:
             chart_saldo_carteiras_total = create_chart(
@@ -76,7 +75,6 @@ if uploaded_file is not None:
                 y_axis_title="R$",
             )
             hct.streamlit_highcharts(chart_saldo_inst_financeiras)
-
         with row_2[1]:
             chart_saldo_tipo_ativos = create_chart(
                 data=saldo_tipo_ativos,
@@ -84,9 +82,29 @@ if uploaded_file is not None:
                 names=['Total'],
                 chart_type='pie',
                 title="Saldo por Tipo de Ativo",
-                y_axis_title="R$",
             )
             hct.streamlit_highcharts(chart_saldo_tipo_ativos)
+
+        # Busca por Ativos
+        st.subheader("Busca por Ativos")
+        row_3 = st.columns(2)
+        with row_3[0]:
+            selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['Ativo'].unique()))
+            if selected_asset != "":
+                saldo_ativo_selecionado = df[df['Ativo'] == selected_asset][['Carteira', 'Ativo', 'Descrição','Saldo Bruto']].set_index('Carteira').sort_values('Saldo Bruto', ascending=False)
+                st.write(f"Saldo do Ativo Selecionado: R$ {saldo_ativo_selecionado['Saldo Bruto'].sum():,.2f}")
+                st.dataframe(style_table(saldo_ativo_selecionado, currency_cols=['Saldo Bruto']))
+        with row_3[1]:
+            if selected_asset != "":
+                chart_saldo_ativos_carteiras = create_chart(
+                    data=saldo_ativo_selecionado,
+                    columns=['Saldo Bruto'],
+                    names=['Saldo Bruto'],
+                    chart_type='pie',
+                    title="Saldo por Carteira",
+                    y_axis_title="R$",
+                )
+                hct.streamlit_highcharts(chart_saldo_ativos_carteiras)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
