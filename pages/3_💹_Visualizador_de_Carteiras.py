@@ -27,6 +27,7 @@ with st.sidebar.form(key='visualizador_de_carteiras_form', border=False):
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
     btn_run = st.form_submit_button("Run")
 
+df = None
 if btn_run:
     with st.spinner("Carregando dados..."):
         provider = ComdinheiroProvider()
