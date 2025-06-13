@@ -25,8 +25,8 @@ if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
         st.success("Arquivo carregado com sucesso!")
         
-        st.subheader("Dados Brutos")
-        st.dataframe(style_table(df, currency_cols=['Saldo Bruto']), hide_index=True)
+        with st.expander("Dados Brutos", expanded=False):
+            st.dataframe(style_table(df, currency_cols=['Saldo Bruto']), hide_index=True)
 
         # Calculo das agregações
         saldo_carteiras = df.groupby('Carteira').agg(
@@ -41,9 +41,26 @@ if uploaded_file is not None:
 
         st.subheader("Agregação das Carteiras")
 
-        # Saldo bruto das carteiras
-        row_1 = st.columns(2)
+        # Big numbers
+        row_1 = st.columns(3)
         with row_1[0]:
+            st.metric("PL Total", f"R$ {saldo_carteiras['Saldo Bruto'].sum():,.2f}")
+        with row_1[1]:
+            st.metric("PL Médio", f"R$ {saldo_carteiras['Saldo Bruto'].mean():,.2f}")
+        with row_1[2]:
+            st.metric("PL Mediano", f"R$ {saldo_carteiras['Saldo Bruto'].median():,.2f}")
+
+        row_2 = st.columns(3)
+        with row_2[0]:
+            st.metric("PL Total (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['Saldo Bruto'] > 1e6]['Saldo Bruto'].sum():,.2f}")
+        with row_2[1]:
+            st.metric("PL Médio (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['Saldo Bruto'] > 1e6]['Saldo Bruto'].mean():,.2f}")
+        with row_2[2]:
+            st.metric("PL Mediano (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['Saldo Bruto'] > 1e6]['Saldo Bruto'].median():,.2f}")
+
+        # Saldo bruto das carteiras
+        row_3 = st.columns(2)
+        with row_3[0]:
             chart_saldo_carteiras_total = create_chart(
                 data=saldo_carteiras,
                 columns=['Saldo Bruto'],
@@ -54,7 +71,7 @@ if uploaded_file is not None:
                 x_axis_title="Carteira",
             )
             hct.streamlit_highcharts(chart_saldo_carteiras_total)
-        with row_1[1]:
+        with row_3[1]:
             chart_saldo_carteiras_total = create_chart(
                 data=saldo_carteiras,
                 columns=['Saldo Bruto'],
@@ -64,8 +81,8 @@ if uploaded_file is not None:
             )
             hct.streamlit_highcharts(chart_saldo_carteiras_total)
 
-        row_2 = st.columns(2)
-        with row_2[0]:
+        row_4 = st.columns(2)
+        with row_4[0]:
             chart_saldo_inst_financeiras = create_chart(
                 data=saldo_inst_financeiras,
                 columns=['Total'],
@@ -75,7 +92,7 @@ if uploaded_file is not None:
                 y_axis_title="R$",
             )
             hct.streamlit_highcharts(chart_saldo_inst_financeiras)
-        with row_2[1]:
+        with row_4[1]:
             chart_saldo_tipo_ativos = create_chart(
                 data=saldo_tipo_ativos,
                 columns=['Total'],
@@ -87,8 +104,8 @@ if uploaded_file is not None:
 
         # Busca por Ativos
         st.subheader("Busca por Ativos")
-        row_3 = st.columns(2)
-        with row_3[0]:
+        row_5 = st.columns(2)
+        with row_5[0]:
             selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['Ativo'].unique()))
             if selected_asset != "":
                 total_saldo_carteira = df.groupby('Carteira')['Saldo Bruto'].sum()
@@ -119,7 +136,7 @@ if uploaded_file is not None:
                         percent_cols=['Percentual da Carteira']
                     )
                 )
-        with row_3[1]:
+        with row_5[1]:
             if selected_asset != "":
                 chart_saldo_ativos_carteiras = create_chart(
                     data=saldo_ativo_selecionado,
