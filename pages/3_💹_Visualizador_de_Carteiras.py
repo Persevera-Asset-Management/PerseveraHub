@@ -21,60 +21,60 @@ st.title("Visualizador de Carteiras")
 
 uploaded_file = st.file_uploader("Faça o upload do arquivo Excel exportado pelo ComDinheiro", type=["xlsx", "xls"], accept_multiple_files=False)
 # uploaded_file = r"C:\Users\ThalesCarmo\Downloads\Relatório_Gestão_raw.xlsx"
+portfolio_names = ["ABBR", "ALSA", "ARBB", "BRST"]
+provider = ComdinheiroProvider()
+df = provider.get_data(
+    category='portfolio_positions',
+    portfolios=portfolio_names,
+    date_str=datetime.now().strftime('%d%m%Y')
+)
+
 
 if uploaded_file is not None:
     try:
         # df = pd.read_excel(uploaded_file)
-        portfolio_names = ["ABBR", "ALSA", "ARBB", "BRST"]
-        provider = ComdinheiroProvider()
-        df = provider.get_data(
-            category='portfolio_positions',
-            portfolios=portfolio_names,
-            date_str=datetime.now().strftime('%d%m%Y')
-        )
-
         st.success("Arquivo carregado com sucesso!")
         
         with st.expander("Dados Brutos", expanded=False):
-            st.dataframe(style_table(df, currency_cols=['Saldo Bruto']), hide_index=True)
+            st.dataframe(style_table(df, currency_cols=['saldo_bruto']), hide_index=True)
 
         # Calculo das agregações
-        saldo_carteiras = df.groupby('Carteira').agg(
+        saldo_carteiras = df.groupby('carteira').agg(
             **{
-                'Saldo Bruto': ('Saldo Bruto', 'sum'),
-                'Percentual': ('Saldo Bruto', lambda x: x.sum() / df['Saldo Bruto'].sum() * 100)
+                'saldo_bruto': ('saldo_bruto', 'sum'),
+                'Percentual': ('saldo_bruto', lambda x: x.sum() / df['saldo_bruto'].sum() * 100)
             }
-        ).sort_values('Saldo Bruto', ascending=False)
+        ).sort_values('saldo_bruto', ascending=False)
 
-        saldo_inst_financeiras = df.groupby('Instituição Financeira do Ativo')['Saldo Bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
-        saldo_tipo_ativos = df.groupby('Tipo Ativo')['Saldo Bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
+        saldo_inst_financeiras = df.groupby('Instituição Financeira do Ativo')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
+        saldo_tipo_ativos = df.groupby('tipo_ativo')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
 
         st.subheader("Agregação das Carteiras")
 
         # Big numbers
         row_1 = st.columns(3)
         with row_1[0]:
-            st.metric("PL Total", f"R$ {saldo_carteiras['Saldo Bruto'].sum():,.2f}")
+            st.metric("PL Total", f"R$ {saldo_carteiras['saldo_bruto'].sum():,.2f}")
         with row_1[1]:
-            st.metric("PL Médio", f"R$ {saldo_carteiras['Saldo Bruto'].mean():,.2f}")
+            st.metric("PL Médio", f"R$ {saldo_carteiras['saldo_bruto'].mean():,.2f}")
         with row_1[2]:
-            st.metric("PL Mediano", f"R$ {saldo_carteiras['Saldo Bruto'].median():,.2f}")
+            st.metric("PL Mediano", f"R$ {saldo_carteiras['saldo_bruto'].median():,.2f}")
 
         row_2 = st.columns(3)
         with row_2[0]:
-            st.metric("PL Total (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['Saldo Bruto'] > 1e6]['Saldo Bruto'].sum():,.2f}")
+            st.metric("PL Total (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['saldo_bruto'] > 1e6]['saldo_bruto'].sum():,.2f}")
         with row_2[1]:
-            st.metric("PL Médio (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['Saldo Bruto'] > 1e6]['Saldo Bruto'].mean():,.2f}")
+            st.metric("PL Médio (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['saldo_bruto'] > 1e6]['saldo_bruto'].mean():,.2f}")
         with row_2[2]:
-            st.metric("PL Mediano (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['Saldo Bruto'] > 1e6]['Saldo Bruto'].median():,.2f}")
+            st.metric("PL Mediano (acima de R$ 1MM)", f"R$ {saldo_carteiras[saldo_carteiras['saldo_bruto'] > 1e6]['saldo_bruto'].median():,.2f}")
 
-        # Saldo bruto das carteiras
+        # saldo_bruto das carteiras
         row_3 = st.columns(2)
         with row_3[0]:
             chart_saldo_carteiras_total = create_chart(
                 data=saldo_carteiras,
-                columns=['Saldo Bruto'],
-                names=['Saldo Bruto'],
+                columns=['saldo_bruto'],
+                names=['saldo_bruto'],
                 chart_type='column',
                 title="Saldo das Carteiras",
                 y_axis_title="R$",
@@ -84,8 +84,8 @@ if uploaded_file is not None:
         with row_3[1]:
             chart_saldo_carteiras_total = create_chart(
                 data=saldo_carteiras,
-                columns=['Saldo Bruto'],
-                names=['Saldo Bruto'],
+                columns=['saldo_bruto'],
+                names=['saldo_bruto'],
                 chart_type='pie',
                 title="Percentual de Alocação das Carteiras"
             )
@@ -116,33 +116,33 @@ if uploaded_file is not None:
         st.subheader("Busca por Ativos")
         row_5 = st.columns(2)
         with row_5[0]:
-            selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['Ativo'].unique()))
+            selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['ativo'].unique()))
             if selected_asset != "":
-                total_saldo_carteira = df.groupby('Carteira')['Saldo Bruto'].sum()
-                df_asset = df[df['Ativo'] == selected_asset]
+                total_saldo_carteira = df.groupby('carteira')['saldo_bruto'].sum()
+                df_asset = df[df['ativo'] == selected_asset]
 
                 saldo_ativo_selecionado = (
                     df_asset
-                    .groupby('Carteira')
+                    .groupby('carteira')
                     .agg(
-                        Ativo=('Ativo', 'first'),
-                        Descrição=('Descrição', 'first'),
-                        Saldo_Bruto=('Saldo Bruto', 'sum')
+                        Ativo=('ativo', 'first'),
+                        Descrição=('descricao', 'first'),
+                        Saldo_Bruto=('saldo_bruto', 'sum')
                     )
-                    .rename(columns={'Saldo_Bruto': 'Saldo Bruto'})
+                    .rename(columns={'saldo_bruto': 'saldo_bruto'})
                 )
 
                 # Percentual que o ativo representa dentro de cada Carteira
-                saldo_ativo_selecionado['Percentual da Carteira'] = saldo_ativo_selecionado['Saldo Bruto'] / total_saldo_carteira * 100
+                saldo_ativo_selecionado['Percentual da Carteira'] = saldo_ativo_selecionado['saldo_bruto'] / total_saldo_carteira * 100
 
                 # Ordena pelo saldo do ativo
-                saldo_ativo_selecionado = saldo_ativo_selecionado.sort_values('Saldo Bruto', ascending=False)
+                saldo_ativo_selecionado = saldo_ativo_selecionado.sort_values('saldo_bruto', ascending=False)
 
-                st.write(f"Saldo do Ativo Selecionado: R$ {saldo_ativo_selecionado['Saldo Bruto'].sum():,.2f}")
+                st.write(f"Saldo do Ativo Selecionado: R$ {saldo_ativo_selecionado['saldo_bruto'].sum():,.2f}")
                 st.dataframe(
                     style_table(
                         saldo_ativo_selecionado,
-                        currency_cols=['Saldo Bruto'],
+                        currency_cols=['saldo_bruto'],
                         percent_cols=['Percentual da Carteira']
                     )
                 )
@@ -150,8 +150,8 @@ if uploaded_file is not None:
             if selected_asset != "":
                 chart_saldo_ativos_carteiras = create_chart(
                     data=saldo_ativo_selecionado,
-                    columns=['Saldo Bruto'],
-                    names=['Saldo Bruto'],
+                    columns=['saldo_bruto'],
+                    names=['saldo_bruto'],
                     chart_type='pie',
                     title="Saldo por Carteira",
                     y_axis_title="R$",
