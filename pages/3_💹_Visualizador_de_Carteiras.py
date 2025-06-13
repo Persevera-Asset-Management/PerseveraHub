@@ -24,7 +24,7 @@ st.title("Visualizador de Carteiras")
 st.sidebar.header("Parâmetros")
 
 with st.sidebar.form(key='visualizador_de_carteiras_form', border=False):
-    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS[:10])
+    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
     btn_run = st.form_submit_button("Run")
 
 if 'df' not in st.session_state:
@@ -129,20 +129,19 @@ if df is not None:
             if selected_asset != "":
                 total_saldo_carteira = df.groupby('carteira')['saldo_bruto'].sum()
                 df_asset = df[df['ativo'] == selected_asset]
-
+                
                 saldo_ativo_selecionado = (
                     df_asset
                     .groupby('carteira')
                     .agg(
-                        Ativo=('ativo', 'first'),
-                        Descrição=('descricao', 'first'),
-                        Saldo_Bruto=('saldo_bruto', 'sum')
+                        ativo=('ativo', 'first'),
+                        descricao=('descricao', 'first'),
+                        saldo_bruto=('saldo_bruto', 'sum')
                     )
-                    # .rename(columns={'saldo_bruto': 'saldo_bruto'})
                 )
-
+                
                 # Percentual que o ativo representa dentro de cada Carteira
-                saldo_ativo_selecionado['Percentual da Carteira'] = saldo_ativo_selecionado['saldo_bruto'] / total_saldo_carteira * 100
+                saldo_ativo_selecionado['pct_carteira'] = saldo_ativo_selecionado['saldo_bruto'] / total_saldo_carteira * 100
 
                 # Ordena pelo saldo do ativo
                 saldo_ativo_selecionado = saldo_ativo_selecionado.sort_values('saldo_bruto', ascending=False)
@@ -152,7 +151,7 @@ if df is not None:
                     style_table(
                         saldo_ativo_selecionado,
                         currency_cols=['saldo_bruto'],
-                        percent_cols=['Percentual da Carteira']
+                        percent_cols=['pct_carteira']
                     )
                 )
         with row_5[1]:
