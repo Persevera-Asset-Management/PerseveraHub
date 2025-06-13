@@ -1,10 +1,12 @@
 import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
+from datetime import datetime
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 import streamlit_highcharts as hct
+from persevera_tools.data.providers import ComdinheiroProvider
 
 st.set_page_config(
     page_title="Visualizador de Carteiras | Persevera",
@@ -22,7 +24,15 @@ uploaded_file = st.file_uploader("Faça o upload do arquivo Excel exportado pelo
 
 if uploaded_file is not None:
     try:
-        df = pd.read_excel(uploaded_file)
+        # df = pd.read_excel(uploaded_file)
+        portfolio_names = ["ABBR", "ALSA", "ARBB", "BRST"]
+        provider = ComdinheiroProvider()
+        df = provider.get_data(
+            category='portfolio_positions',
+            portfolios=portfolio_names,
+            date_str=datetime.now().strftime('%d%m%Y')
+        )
+
         st.success("Arquivo carregado com sucesso!")
         
         with st.expander("Dados Brutos", expanded=False):
