@@ -138,7 +138,7 @@ if df is not None:
                         Descrição=('descricao', 'first'),
                         Saldo_Bruto=('saldo_bruto', 'sum')
                     )
-                    .rename(columns={'saldo_bruto': 'saldo_bruto'})
+                    # .rename(columns={'saldo_bruto': 'saldo_bruto'})
                 )
 
                 # Percentual que o ativo representa dentro de cada Carteira
