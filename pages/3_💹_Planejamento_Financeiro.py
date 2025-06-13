@@ -19,74 +19,74 @@ load_css()
 st.title("Planejamento Financeiro")
 
 # Definição dos parâmetros
-st.sidebar.header("Parâmetros")
+with st.sidebar:
+    st.header("Parâmetros")
 
-st.sidebar.subheader("Características Pessoais")
-data_nascimento = st.sidebar.date_input("Data de Nascimento:", value=datetime.date(1980, 1, 1), min_value=datetime.date(1900, 1, 1), max_value=datetime.date.today(), format="DD/MM/YYYY")
-# idade_atual = st.sidebar.number_input("Idade Atual:", min_value=18, max_value=100, value=35, step=1, format="%d")
-idade_atual = st.sidebar.number_input("Idade Atual:", min_value=18, max_value=100, value=datetime.date.today().year - data_nascimento.year, step=1, format="%d", disabled=True)
+    st.subheader("Características Pessoais")
+    data_nascimento = st.date_input("Data de Nascimento:", value=datetime.date(1980, 1, 1), min_value=datetime.date(1900, 1, 1), max_value=datetime.date.today(), format="DD/MM/YYYY")
+    idade_atual = st.number_input("Idade Atual:", min_value=18, max_value=100, value=datetime.date.today().year - data_nascimento.year, step=1, format="%d", disabled=True)
 
-# Escolha do método de definição
-metodo_calculo = st.sidebar.radio(
-    "Método de Planejamento:",
-    options=["Expectativa de Vida", "Período de Distribuição"],
-    help="Escolha se quer definir sua expectativa de vida ou o período de distribuição dos recursos"
-)
-
-st.sidebar.subheader("Patrimônio")
-patrimonio_inicial = st.sidebar.number_input("Patrimônio Inicial (R$):", min_value=0.0, value=100000.0, step=10000.0, format="%.0f")
-
-st.sidebar.subheader("Fase de Acumulação")
-periodo_acumulacao = st.sidebar.number_input("Período de Acumulação (anos):", min_value=0.0, value=20.0, step=1.0, format="%.0f")
-
-if periodo_acumulacao == 0:
-    aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f", disabled=True)
-else:
-    aporte_mensal = st.sidebar.number_input("Aporte Mensal (R$):", min_value=0.0, value=5000.0, step=1000.0, format="%.0f")
-
-st.sidebar.subheader("Fase de Distribuição")
-
-# Lógica condicional baseada na escolha do usuário
-if metodo_calculo == "Expectativa de Vida":
-    expectativa_vida = st.sidebar.number_input("Expectativa de Vida:", min_value=int(idade_atual + periodo_acumulacao), max_value=120, value=85, step=1, format="%d")
-    
-    # Calcular período de distribuição automaticamente
-    periodo_distribuicao_calculado = expectativa_vida - idade_atual - periodo_acumulacao
-    
-    if periodo_distribuicao_calculado <= 0:
-        st.sidebar.error("⚠️ Período de distribuição resultaria em valor negativo ou zero. Ajuste a expectativa de vida ou período de acumulação.")
-        periodo_distribuicao = 1.0  # Valor mínimo para evitar erros
-    else:
-        periodo_distribuicao = periodo_distribuicao_calculado
-    
-    # Campo desabilitado mostrando o valor calculado
-    st.sidebar.number_input(
-        "Período de Distribuição (anos) - Calculado:",
-        value=float(periodo_distribuicao),
-        disabled=True,
-        format="%.0f",
-        help=f"Calculado como: {expectativa_vida} - {idade_atual} - {periodo_acumulacao:.0f} = {periodo_distribuicao:.0f} anos"
+    # Escolha do método de definição
+    metodo_calculo = st.radio(
+        "Método de Planejamento:",
+        options=["Expectativa de Vida", "Período de Distribuição"],
+        help="Escolha se quer definir sua expectativa de vida ou o período de distribuição dos recursos"
     )
-    
-else:  # "Definir Período de Distribuição"
-    periodo_distribuicao = st.sidebar.number_input("Período de Distribuição (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
-    
-    # Calcular expectativa de vida automaticamente
-    expectativa_vida = idade_atual + periodo_acumulacao + periodo_distribuicao
-    
-    # Campo desabilitado mostrando o valor calculado
-    st.sidebar.number_input("Expectativa de Vida - Calculada:", value=int(expectativa_vida), disabled=True, format="%d", help=f"Calculada como: {idade_atual} + {periodo_acumulacao:.0f} + {periodo_distribuicao:.0f} = {expectativa_vida:.0f} anos")
 
-resgate_mensal = st.sidebar.number_input("Resgate Mensal (R$):", min_value=0.0, value=10000.0, step=1000.0, format="%.0f")
+    st.subheader("Patrimônio")
+    patrimonio_inicial = st.number_input("Patrimônio Inicial (R$):", min_value=0.0, value=100000.0, step=10000.0, format="%.0f")
 
-# Validação da expectativa de vida (agora que a variável está definida)
-if metodo_calculo == "Definir Expectativa de Vida" and expectativa_vida <= idade_atual:
-    st.sidebar.error("A expectativa de vida deve ser maior que a idade atual!")
+    st.subheader("Fase de Acumulação")
+    periodo_acumulacao = st.number_input("Período de Acumulação (anos):", min_value=0.0, value=20.0, step=1.0, format="%.0f")
 
-st.sidebar.subheader("Hipóteses de Mercado")
-rentabilidade_nominal_esperada = st.sidebar.number_input("Rentabilidade Nominal Esperada (% a.a):", min_value=0.0, value=10.0, step=0.1, format="%.1f")
-inflacao_esperada = st.sidebar.number_input("Inflação Esperada (% a.a):", min_value=0.0, value=4.0, step=0.1, format="%.1f")
-aliquota_irrf = st.sidebar.number_input("Alíquota de Impostos (%):", min_value=0.0, value=15.0, step=0.1, format="%.1f")
+    if periodo_acumulacao == 0:
+        aporte_mensal = st.number_input("Aporte Mensal (R$):", min_value=0.0, value=0.0, step=1000.0, format="%.0f", disabled=True)
+    else:
+        aporte_mensal = st.number_input("Aporte Mensal (R$):", min_value=0.0, value=5000.0, step=1000.0, format="%.0f")
+
+    st.subheader("Fase de Distribuição")
+
+    # Lógica condicional baseada na escolha do usuário
+    if metodo_calculo == "Expectativa de Vida":
+        expectativa_vida = st.number_input("Expectativa de Vida:", min_value=int(idade_atual + periodo_acumulacao), max_value=120, value=85, step=1, format="%d")
+        
+        # Calcular período de distribuição automaticamente
+        periodo_distribuicao_calculado = expectativa_vida - idade_atual - periodo_acumulacao
+        
+        if periodo_distribuicao_calculado <= 0:
+            st.error("⚠️ Período de distribuição resultaria em valor negativo ou zero. Ajuste a expectativa de vida ou período de acumulação.")
+            periodo_distribuicao = 1.0  # Valor mínimo para evitar erros
+        else:
+            periodo_distribuicao = periodo_distribuicao_calculado
+        
+        # Campo desabilitado mostrando o valor calculado
+        st.number_input(
+            "Período de Distribuição (anos) - Calculado:",
+            value=float(periodo_distribuicao),
+            disabled=True,
+            format="%.0f",
+            help=f"Calculado como: {expectativa_vida} - {idade_atual} - {periodo_acumulacao:.0f} = {periodo_distribuicao:.0f} anos"
+        )
+        
+    else:  # "Definir Período de Distribuição"
+        periodo_distribuicao = st.number_input("Período de Distribuição (anos):", min_value=1.0, value=10.0, step=1.0, format="%.0f")
+        
+        # Calcular expectativa de vida automaticamente
+        expectativa_vida = idade_atual + periodo_acumulacao + periodo_distribuicao
+        
+        # Campo desabilitado mostrando o valor calculado
+        st.number_input("Expectativa de Vida - Calculada:", value=int(expectativa_vida), disabled=True, format="%d", help=f"Calculada como: {idade_atual} + {periodo_acumulacao:.0f} + {periodo_distribuicao:.0f} = {expectativa_vida:.0f} anos")
+
+    resgate_mensal = st.number_input("Resgate Mensal (R$):", min_value=0.0, value=10000.0, step=1000.0, format="%.0f")
+
+    # Validação da expectativa de vida (agora que a variável está definida)
+    if metodo_calculo == "Definir Expectativa de Vida" and expectativa_vida <= idade_atual:
+        st.error("A expectativa de vida deve ser maior que a idade atual!")
+
+    st.subheader("Hipóteses de Mercado")
+    rentabilidade_nominal_esperada = st.number_input("Rentabilidade Nominal Esperada (% a.a):", min_value=0.0, value=10.0, step=0.1, format="%.1f")
+    inflacao_esperada = st.number_input("Inflação Esperada (% a.a):", min_value=0.0, value=4.0, step=0.1, format="%.1f")
+    aliquota_irrf = st.number_input("Alíquota de Impostos (%):", min_value=0.0, value=15.0, step=0.1, format="%.1f")
 
 # Definindo as taxas anuais a partir dos inputs da sidebar (necessário para cálculos posteriores)
 rentabilidade_anual = rentabilidade_nominal_esperada / 100.0

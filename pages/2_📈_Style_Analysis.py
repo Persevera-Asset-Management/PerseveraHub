@@ -55,23 +55,21 @@ start_date_str = start_date.strftime('%Y-%m-%d')
 peers = load_peers()
 
 # Definição dos parâmetros
-st.sidebar.header("Parâmetros")
-selected_group = st.sidebar.radio("Grupo de Fundos (pré-seleções)", options=['Nenhum'] + list(peers['persevera_group'].unique()), horizontal=True)
+with st.sidebar:
+    st.header("Parâmetros")
+    selected_group = st.radio("Grupo de Fundos (pré-seleções)", options=['Nenhum'] + list(peers['persevera_group'].unique()), horizontal=True)
 
-# Determine default funds based on selected_group
-if selected_group and selected_group != 'Nenhum':
-    default_selected_funds = peers[peers['persevera_group'] == selected_group]['short_name'].tolist()
-else:
-    default_selected_funds = []
-
-with st.sidebar.form(key='style_analysis_form', border=False):
+    # Determine default funds based on selected_group
+    if selected_group and selected_group != 'Nenhum':
+        default_selected_funds = peers[peers['persevera_group'] == selected_group]['short_name'].tolist()
+    else:
+        default_selected_funds = []
     selected_funds = st.multiselect("Fundos Selecionados", options=peers['short_name'].tolist(), default=default_selected_funds)
     selected_factors = st.multiselect("Fatores Selecionados", options=list(FACTOR_OPTIONS.values()), default=list(FACTOR_OPTIONS_SELECTED.values()))
     window_range = st.slider("Janela de Análise", min_value=10, max_value=60, value=(12, 50), step=1)
     min_window, max_window = window_range
     selection_metric = st.selectbox("Métrica de Seleção", options=['aic', 'bic', 'adjr2'], index=2)
-    btn_run = st.form_submit_button("Run")
-
+    btn_run = st.button("Run")
 
 if btn_run:
     start_time = time.time()

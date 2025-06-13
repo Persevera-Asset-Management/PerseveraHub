@@ -35,9 +35,10 @@ chart_configs = CHARTS_BRASIL_ASSET
 CODES = extract_codes_from_config(chart_configs)
 
 # Date range selector
-st.sidebar.header("Filtros")
-start_date = st.sidebar.date_input("Data Inicial", datetime.now() - timedelta(days=365), format="DD/MM/YYYY")
-start_date_str = start_date.strftime('%Y-%m-%d')
+with st.sidebar:
+    st.header("Filtros")
+    start_date = st.date_input("Data Inicial", datetime.now() - timedelta(days=365), format="DD/MM/YYYY")
+    start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
 with st.spinner("Carregando dados de mercado..."):

@@ -21,11 +21,10 @@ load_css()
 st.title("Visualizador de Carteiras")
 
 # Definição dos parâmetros
-st.sidebar.header("Parâmetros")
-
-with st.sidebar.form(key='visualizador_de_carteiras_form', border=False):
+with st.sidebar:
+    st.header("Parâmetros")
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
-    btn_run = st.form_submit_button("Run")
+    btn_run = st.button("Run")
 
 if 'df' not in st.session_state:
     st.session_state.df = None
