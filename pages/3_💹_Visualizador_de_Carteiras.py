@@ -24,19 +24,24 @@ st.title("Visualizador de Carteiras")
 st.sidebar.header("Parâmetros")
 
 with st.sidebar.form(key='visualizador_de_carteiras_form', border=False):
-    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
+    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS[:10])
     btn_run = st.form_submit_button("Run")
 
-df = None
+if 'df' not in st.session_state:
+    st.session_state.df = None
+
 if btn_run:
     with st.spinner("Carregando dados..."):
         provider = ComdinheiroProvider()
-        df = provider.get_data(
+        st.session_state.df = provider.get_data(
             category='portfolio_positions',
             portfolios=selected_carteiras,
             date_str=datetime.now().strftime('%d%m%Y')
         )
+        if "selected_asset" in st.session_state:
+            st.session_state.selected_asset = ""
 
+df = st.session_state.df
 if df is not None:
     try:
         with st.expander("Dados Brutos", expanded=False):
@@ -120,7 +125,7 @@ if df is not None:
         st.subheader("Busca por Ativos")
         row_5 = st.columns(2)
         with row_5[0]:
-            selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['ativo'].unique()))
+            selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['ativo'].unique()), key="selected_asset")
             if selected_asset != "":
                 total_saldo_carteira = df.groupby('carteira')['saldo_bruto'].sum()
                 df_asset = df[df['ativo'] == selected_asset]
