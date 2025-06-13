@@ -24,7 +24,7 @@ st.title("Visualizador de Carteiras")
 st.sidebar.header("Parâmetros")
 
 with st.sidebar.form(key='visualizador_de_carteiras_form', border=False):
-    selected_carteiras = st.multiselect("Carteiras", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
+    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
     btn_run = st.form_submit_button("Run")
 
 
@@ -39,9 +39,6 @@ if btn_run:
 
     if df is not None:
         try:
-            # df = pd.read_excel(uploaded_file)
-            st.success("Arquivo carregado com sucesso!")
-            
             with st.expander("Dados Brutos", expanded=False):
                 st.dataframe(style_table(df, currency_cols=['saldo_bruto']), hide_index=True)
 
