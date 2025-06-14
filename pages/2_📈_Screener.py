@@ -84,55 +84,27 @@ def calculate_factor_exposure(df, factor_name) -> pd.DataFrame:
 
 st.title('Screener')
 
-selected_cols_options = FACTOR_OPTIONS_SCREENER
-default_selected_display_names = ['ADTV (21d)', 'Momentum (1m)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
-
 # Sidebar fields and factors definition
-st.sidebar.header("Filtros")
+with st.sidebar:
+    st.header("Parâmetros")
 
-adtv_filter = st.sidebar.number_input(
-    "ADTV Mínimo (21d):",
-    min_value=0.0,
-    value=8000000.0,
-    step=500000.0,
-    format="%.0f"
-)
+    adtv_filter = st.number_input(
+        "ADTV Mínimo (21d):",
+        min_value=0.0,
+        value=8000000.0,
+        step=500000.0,
+        format="%.0f"
+    )
 
-selected_display_names = st.sidebar.multiselect(
-    "Selecione as métricas para exibir:",
-    options=list(selected_cols_options.keys()),
-    default=default_selected_display_names
-)
+    selected_cols_options = FACTOR_OPTIONS_SCREENER
+    default_selected_display_names = ['ADTV (21d)', 'Momentum (1m)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
 
-selected_momentum_components = st.sidebar.multiselect(
-    "Componentes de Momentum:",
-    options=list(selected_cols_options.keys()),
-    default=list(FACTOR_MOMENTUM_COMPONENTS.keys())
-)
-
-selected_value_components = st.sidebar.multiselect(
-    "Componentes de Value:",
-    options=list(selected_cols_options.keys()),
-    default=list(FACTOR_VALUE_COMPONENTS.keys())
-)
-
-selected_liquidity_components = st.sidebar.multiselect(
-    "Componentes de Liquidity:",
-    options=list(selected_cols_options.keys()),
-    default=list(FACTOR_LIQUIDITY_COMPONENTS.keys())
-)
-
-selected_risk_components = st.sidebar.multiselect(
-    "Componentes de Risk:",
-    options=list(selected_cols_options.keys()),
-    default=list(FACTOR_RISK_COMPONENTS.keys())
-)
-
-selected_quality_components = st.sidebar.multiselect(
-    "Componentes de Quality:",
-    options=list(selected_cols_options.keys()),
-    default=list(FACTOR_QUALITY_COMPONENTS.keys())
-)
+    selected_display_names = st.multiselect("Selecione as métricas para exibir:", options=list(selected_cols_options.keys()), default=default_selected_display_names)
+    selected_momentum_components = st.multiselect("Componentes de Momentum:", options=list(selected_cols_options.keys()), default=list(FACTOR_MOMENTUM_COMPONENTS.keys()))
+    selected_value_components = st.multiselect("Componentes de Value:", options=list(selected_cols_options.keys()), default=list(FACTOR_VALUE_COMPONENTS.keys()))
+    selected_liquidity_components = st.multiselect("Componentes de Liquidity:", options=list(selected_cols_options.keys()), default=list(FACTOR_LIQUIDITY_COMPONENTS.keys()))
+    selected_risk_components = st.multiselect("Componentes de Risk:", options=list(selected_cols_options.keys()), default=list(FACTOR_RISK_COMPONENTS.keys()))
+    selected_quality_components = st.multiselect("Componentes de Quality:", options=list(selected_cols_options.keys()), default=list(FACTOR_QUALITY_COMPONENTS.keys()))
 
 # Filter selected_cols based on user selection
 selected_cols = {name: selected_cols_options[name] for name in selected_display_names}

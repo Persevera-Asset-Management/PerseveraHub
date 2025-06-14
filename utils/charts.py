@@ -7,7 +7,7 @@ def create_highcharts_options(
     y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
     instruments: Optional[List[Dict[str, str]]] = None,
     x_column: Optional[str] = None,
-    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area'] = 'line',
+    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'heatmap'] = 'line',
     stacking: Optional[Literal['normal', 'percent']] = None,
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
@@ -90,6 +90,64 @@ def create_highcharts_options(
     Dict[str, Any]
         Highcharts configuration options
     """
+    if chart_type == 'heatmap':
+        # Heatmap logic
+        heatmap_data = []
+        # Assuming `data` is the correlation matrix for the heatmap
+        correlation_matrix = data
+        for i, col in enumerate(correlation_matrix.columns):
+            for j, idx in enumerate(correlation_matrix.index):
+                value = correlation_matrix.iloc[j, i]
+                point_value = round(value, 2) if pd.notna(value) else None
+                heatmap_data.append([i, j, point_value])
+        
+        options = {
+            'chart': {
+                'type': 'heatmap',
+                'marginTop': 40,
+                'marginBottom': 80,
+                'plotBorderWidth': 1,
+                'height': height,
+            },
+            'title': {
+                'text': title
+            },
+            'xAxis': {
+                'categories': list(correlation_matrix.columns)
+            },
+            'yAxis': {
+                'categories': list(correlation_matrix.index),
+                'title': None,
+            },
+            'colorAxis': {
+                # 'min': -1,
+                # 'max': 1,
+                'minColor': '#FFFFFF',
+                'maxColor': '#0d2340'
+            },
+            'legend': {
+                'align': 'right',
+                'layout': 'vertical',
+                'margin': 0,
+                'verticalAlign': 'top',
+                'y': 25,
+                'symbolHeight': 280
+            },
+            'tooltip': {
+                'formatter': "function () { return '<b>' + this.series.xAxis.categories[this.point.x] + '</b> vs <b>' + this.series.yAxis.categories[this.point.y] + '</b>: <b>' + this.point.value + '</b>'; }"
+            },
+            'series': [{
+                'name': 'Correlation',
+                'borderWidth': 1,
+                'data': heatmap_data,
+                'dataLabels': {
+                    'enabled': True,
+                    'color': '#000000'
+                }
+            }]
+        }
+        return options
+
     if instruments:
         if chart_type in ['dual_axis_line', 'dual_axis_line_area']:
             raise ValueError("The 'instruments' parameter is not supported for dual-axis chart types.")
