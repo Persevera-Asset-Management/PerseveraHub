@@ -8,6 +8,7 @@ from utils.ui import display_logo, load_css
 from utils.table import style_table
 import streamlit_highcharts as hct
 from persevera_tools.data import get_descriptors, get_securities_by_exchange
+from persevera_tools.quant_research.matrix import corr_to_cov, find_nearest_corr
 from configs.pages.carteira_rv import ACOES_RV
 
 st.set_page_config(
@@ -51,16 +52,17 @@ with st.sidebar:
     selected_stocks = st.multiselect("Ações selecionadas", options=active_securities, default=ACOES_RV)
 
 data = get_descriptors(selected_stocks, start_date=datetime.now() - timedelta(days=365), descriptors=['price_close', 'beta'])
+data = data.swaplevel(axis=1)
 
 if data.empty or len(selected_stocks) == 0:
     st.warning("Por favor, selecione ao menos uma ação para continuar.")
 else:
-    returns = data.swaplevel(axis=1)['price_close'].pct_change().dropna()
+    returns = data['price_close'].pct_change().dropna()
 
     st.subheader("Composição do Portfólio")
 
     # Inicializa a tabela de alocação
-    betas_df = data.swaplevel(axis=1)['beta'].iloc[-1].to_frame("Bloomberg Beta")
+    betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
 
     # Permite a edição dos Betas
     with st.expander("Editar Betas", expanded=False):
