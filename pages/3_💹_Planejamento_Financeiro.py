@@ -8,6 +8,8 @@ import os
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
+# from utils.financial_logic import simular_patrimonio, goal_seek
+from persevera_tools.quant_research.sma import simular_patrimonio, goal_seek
 
 st.set_page_config(
     page_title="Planejamento Financeiro | Persevera",
@@ -20,163 +22,9 @@ load_css()
 
 st.title("Planejamento Financeiro")
 
-def simular_patrimonio(data_nascimento, patrimonio_inicial, periodo_acumulacao, periodo_distribuicao, resgate_mensal, aporte_mensal, inflacao_esperada, rentabilidade_nominal_esperada, aliquota_irrf):
-    
-    # Convertendo taxas anuais para mensais
-    rentabilidade_mensal_bruta_taxa = (1 + rentabilidade_nominal_esperada / 100.0) ** (1/12) - 1
-    inflacao_mensal_calc = (1 + inflacao_esperada / 100.0) ** (1/12) - 1
-    
-    # Inicializando variáveis para armazenar resultados
-    patrimonio_atual_para_prox_mes = patrimonio_inicial
-    resgate_total = 0.0
-    aporte_total = 0.0
-    rendimento_total = 0.0
-    data_atual = datetime.date.today()
-    
-    # Adicionar o estado inicial (Mês 0)
-    resultados = [{
-        "Data": data_atual,
-        "Patrimônio Inicial Mês": patrimonio_inicial,
-        "Rendimento Mensal": 0.0,
-        "Aporte Mensal Ajustado": 0.0,
-        "Resgate Mensal Ajustado": 0.0,
-        "Patrimônio Final Mês": patrimonio_inicial,
-        "Rendimento Acumulado": rendimento_total,
-        "Resgate Acumulado": resgate_total,
-        "Aporte Acumulado": aporte_total,
-        "Fator Inflação": 1.0,
-        "Inflação Acumulada": 0.0
-    }]
-
-    meses_acumulacao = int(periodo_acumulacao * 12)
-    meses_distribuicao = int(periodo_distribuicao * 12)
-    meses_totais_simulacao = meses_acumulacao + meses_distribuicao
-    
-    # Simulação mês a mês
-    for mes in range(1, meses_totais_simulacao + 1):
-        patrimonio_inicial_mes_corrente = patrimonio_atual_para_prox_mes
-
-        # Aplicar rendimento
-        rendimento_bruto_mes = patrimonio_inicial_mes_corrente * rentabilidade_mensal_bruta_taxa
-        rendimento_liquido_mes_corrente = rendimento_bruto_mes * (1 - aliquota_irrf / 100.0)
-        rendimento_total += rendimento_liquido_mes_corrente
-        
-        fator_inflacao = (1 + inflacao_mensal_calc) ** (mes - 1)
-        
-        aporte_do_mes_base = 0.0
-        resgate_do_mes_base = 0.0
-
-        if mes <= meses_acumulacao:
-            # Fase de Acumulação
-            aporte_do_mes_base = aporte_mensal
-        else:
-            # Fase de Distribuição (ocorre após os meses de acumulação)
-            resgate_do_mes_base = resgate_mensal
-        
-        # Aplicar resgate ajustado pela inflação
-        resgate_ajustado_mes_corrente = resgate_do_mes_base * fator_inflacao
-        resgate_total += resgate_ajustado_mes_corrente
-        
-        # Adicionar aportes (também ajustados pela inflação)
-        aporte_ajustado_mes_corrente = aporte_do_mes_base * fator_inflacao
-        aporte_total += aporte_ajustado_mes_corrente
-        
-        # Calcular novo patrimônio (final do mês)
-        patrimonio_final_mes_corrente = patrimonio_inicial_mes_corrente + rendimento_liquido_mes_corrente - resgate_ajustado_mes_corrente + aporte_ajustado_mes_corrente
-        
-        patrimonio_atual_para_prox_mes = patrimonio_final_mes_corrente # Atualizar para o início do próximo mês
-        
-        # Atualizar data para o próximo mês
-        if data_atual.month == 12:
-            data_atual = datetime.date(data_atual.year + 1, 1, 1)
-        else:
-            data_atual = datetime.date(data_atual.year, data_atual.month + 1, 1)
-
-        # Armazenar resultado para cada mês (depois agruparemos por ano)
-        resultados.append({
-            "Data": data_atual,
-            "Patrimônio Inicial Mês": patrimonio_inicial_mes_corrente,
-            "Rendimento Mensal": rendimento_liquido_mes_corrente,
-            "Aporte Mensal Ajustado": aporte_ajustado_mes_corrente,
-            "Resgate Mensal Ajustado": resgate_ajustado_mes_corrente,
-            "Patrimônio Final Mês": patrimonio_final_mes_corrente,
-            "Rendimento Acumulado": rendimento_total,
-            "Resgate Acumulado": resgate_total,
-            "Aporte Acumulado": aporte_total,
-            "Fator Inflação": fator_inflacao,
-            "Inflação Acumulada": (1 + inflacao_mensal_calc) ** (mes - 1) - 1
-        })
-    
-    # Converter para DataFrame
-    df_resultados = pd.DataFrame(resultados)
-    
-    # CORREÇÃO: Converter a coluna para datetime antes de usar o acessor .dt
-    df_resultados['Data'] = pd.to_datetime(df_resultados['Data'])
-    
-    # Inclui a idade do usuário no DataFrame e as colunas necessárias para as tabelas/gráficos
-    df_resultados['Idade Contínua'] = (df_resultados['Data'] - pd.to_datetime(data_nascimento)).dt.days / 365.25
-    df_resultados['Idade Anos'] = df_resultados['Idade Contínua'].astype(int)
-    df_resultados['Idade Meses'] = ((df_resultados['Idade Contínua'] - df_resultados['Idade Anos']) * 12).apply(np.floor)
-    df_resultados['Idade Completa'] = df_resultados.apply(lambda x: f"{int(x['Idade Anos'])} anos e {int(x['Idade Meses'])} meses", axis=1)
-
-    # Reordenar colunas
-    df_resultados = df_resultados[['Data', 'Idade Anos', 'Idade Meses', 'Idade Completa', 'Idade Contínua', 'Patrimônio Inicial Mês', 'Rendimento Mensal', 'Aporte Mensal Ajustado', 'Resgate Mensal Ajustado', 'Patrimônio Final Mês', 'Rendimento Acumulado', 'Resgate Acumulado', 'Aporte Acumulado', 'Fator Inflação', 'Inflação Acumulada']]
-
-    # st.write(df_resultados)
-    return df_resultados
-
-def goal_seek_solver(
-    data_nascimento,
-    target_value,
-    variable_to_solve,
-    guess_params,
-    low_bound,
-    high_bound,
-    tolerance=1.0,  # Tolera uma diferença de R$1.00
-    max_iterations=100
-):
-    """
-    Encontra o valor de `variable_to_solve` que faz com que o resultado da simulação
-    resulte em um patrimônio final igual a `target_value`.
-    Usa o método da bisseção.
-    """
-    low = low_bound
-    high = high_bound
-
-    def get_final_patrimony(value):
-        params = guess_params.copy()
-        params[variable_to_solve] = value
-        df_sim = simular_patrimonio(data_nascimento=data_nascimento, **params)
-        return df_sim.iloc[-1]["Patrimônio Final Mês"]
-
-    val_low = get_final_patrimony(low)
-    val_high = get_final_patrimony(high)
-
-    # Verifica se o alvo é alcançável dentro dos limites
-    # A função deve ser monotônica (ou seja, sempre crescer ou diminuir com a variável)
-    if (val_low - target_value) * (val_high - target_value) > 0:
-        return None  # Alvo fora do intervalo alcançável com os limites fornecidos
-
-    for _ in range(max_iterations):
-        mid = (low + high) / 2
-        val_mid = get_final_patrimony(mid)
-
-        if abs(val_mid - target_value) < tolerance:
-            return mid
-
-        if (val_mid - target_value) * (val_low - target_value) < 0:
-            high = mid
-        else:
-            low = mid
-            val_low = val_mid
-    
-    return (low + high) / 2
-
-
 # Definição dos parâmetros
 with st.sidebar:
     with st.container(border=True):
-        # st.header("Modo de Planejamento")
         st.markdown("#### Modo de Planejamento")
         modo_planejamento = st.radio(
             "Escolha seu objetivo:",
@@ -190,7 +38,7 @@ with st.sidebar:
 
     st.markdown("#### Características Pessoais")
     data_nascimento = st.date_input("Data de Nascimento:", value=datetime.date(1980, 1, 2), min_value=datetime.date(1900, 1, 2), max_value=datetime.date.today(), format="DD/MM/YYYY")
-    idade_atual = st.number_input("Idade Atual:", min_value=18, max_value=100, value=datetime.date.today().year - data_nascimento.year, step=1, format="%d", disabled=True)
+    idade_atual = st.number_input("Idade Atual:", min_value=18, max_value=100, value=int(np.floor((datetime.date.today() - data_nascimento).days / 365.25)), step=1, format="%d", disabled=True)
 
     # Escolha do método de definição
     metodo_calculo = st.radio(
@@ -272,6 +120,7 @@ if modo_planejamento == "Meta":
 
     # Parâmetros base para o solver
     params = {
+        'data_nascimento': data_nascimento,
         'patrimonio_inicial': patrimonio_inicial,
         'periodo_acumulacao': periodo_acumulacao,
         'periodo_distribuicao': periodo_distribuicao,
@@ -292,27 +141,26 @@ if modo_planejamento == "Meta":
     var_name = var_info['name']
     
     # Roda o solver
-    resultado = goal_seek_solver(
-        data_nascimento=data_nascimento,
-        target_value=patrimonio_final_alvo,
-        variable_to_solve=var_name,
-        guess_params=params,
-        low_bound=var_info['bounds'][0],
-        high_bound=var_info['bounds'][1]
+    res_solver = goal_seek(
+        valor_target=patrimonio_final_alvo,
+        variavel_target=var_name,
+        parametros_base=params,
+        limite_inferior=var_info['bounds'][0],
+        limite_superior=var_info['bounds'][1],
+        tol=0.1
     )
     
-    if resultado is not None:
-        st.metric(f"Valor Necessário para: {variavel_a_calcular}", var_info['format'].format(resultado))
+    if res_solver is not None:
+        st.metric(f"Valor Necessário para: {variavel_a_calcular}", var_info['format'].format(res_solver))
         # Atualiza a variável com o valor encontrado para rodar a simulação
         if var_name == 'aporte_mensal':
-            aporte_mensal = resultado
+            aporte_mensal = res_solver
         elif var_name == 'resgate_mensal':
-            resgate_mensal = resultado
+            resgate_mensal = res_solver
         elif var_name == 'rentabilidade_nominal_esperada':
-            rentabilidade_nominal_esperada = resultado
+            rentabilidade_nominal_esperada = res_solver
     else:
         st.error(f"Não foi possível atingir o patrimônio final de R$ {patrimonio_final_alvo:,.2f} ajustando a variável '{variavel_a_calcular}'. Tente ajustar outros parâmetros ou os limites da busca.")
-
 
 # Definindo as taxas anuais a partir dos inputs da sidebar (necessário para cálculos posteriores)
 rentabilidade_anual = rentabilidade_nominal_esperada / 100.0
@@ -474,7 +322,10 @@ with tab_anual:
     st.dataframe(
         style_table(
             df_anual,
-            numeric_cols_format_as_float=['Patrimônio Inicial Ano', 'Patrimônio Final Ano', 'Rendimento Acumulado', 'Resgate Acumulado', 'Aporte Acumulado'], percent_cols=['Inflação Acumulada']))
+            numeric_cols_format_as_float=["Patrimônio Inicial Ano", "Patrimônio Final Ano", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
+            percent_cols=["Inflação Acumulada"]
+        )
+    )
 
 with tab_mensal:
     df_memoria_mensal = df_simulacao.copy()
@@ -492,14 +343,14 @@ with tab_mensal:
         "Aporte Acumulado",
         "Inflação Acumulada"
     ]]
-    df_memoria_mensal['Idade'] = df_memoria_mensal.apply(lambda x: f"{int(x['Idade Anos'])} anos e {int(x['Idade Meses'])} meses", axis=1)
+    df_memoria_mensal["Idade"] = df_memoria_mensal.apply(lambda x: f"{int(x['Idade Anos'])} anos e {int(x['Idade Meses'])} meses", axis=1)
     df_memoria_mensal.set_index(["Idade"], inplace=True)
     df_memoria_mensal.drop(columns=["Idade Anos", "Idade Meses"], inplace=True)
 
     st.dataframe(
         style_table(
             df_memoria_mensal,
-            numeric_cols_format_as_float=['Patrimônio Inicial Mês', 'Rendimento Mensal', 'Aporte Mensal Ajustado', 'Resgate Mensal Ajustado', 'Patrimônio Final Mês', 'Rendimento Acumulado', 'Resgate Acumulado', 'Aporte Acumulado'],
-            percent_cols=['Inflação Acumulada']
+            numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
+            percent_cols=["Inflação Acumulada"]
         )
     )
