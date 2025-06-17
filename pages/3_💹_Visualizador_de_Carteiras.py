@@ -5,9 +5,9 @@ from datetime import datetime
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
-import streamlit_highcharts as hct
 from persevera_tools.data.providers import ComdinheiroProvider
 from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Visualizador de Carteiras | Persevera",
@@ -17,6 +17,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title("Visualizador de Carteiras")
 

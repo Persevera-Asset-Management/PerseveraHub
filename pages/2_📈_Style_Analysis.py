@@ -13,6 +13,7 @@ from utils.table import style_table
 import streamlit_highcharts as hct
 from configs.pages.style_analysis import FACTOR_OPTIONS, FACTOR_OPTIONS_SELECTED
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Style Analysis | Persevera",
@@ -22,6 +23,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title("Style Analysis")
 

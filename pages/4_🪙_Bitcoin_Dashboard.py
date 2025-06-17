@@ -7,6 +7,7 @@ from persevera_tools.data import get_series
 from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.dashboard_bitcoin import BITCOIN_DASHBOARD
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Bitcoin Dashboard | Persevera",
@@ -16,6 +17,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title('Bitcoin Dashboard')
 

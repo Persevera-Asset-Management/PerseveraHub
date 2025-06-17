@@ -10,6 +10,7 @@ import requests
 import json
 import io
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 # Initialize session state variables
 if 'chart_options_for_download' not in st.session_state:
@@ -25,6 +26,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title('Gerador de Gráficos')
 

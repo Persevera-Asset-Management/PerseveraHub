@@ -10,6 +10,7 @@ from utils.chart_helpers import create_chart
 import streamlit_highcharts as hct
 from utils.table import style_table
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="CTA Dashboard | Persevera",
@@ -19,6 +20,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title('CTA Dashboard')
 

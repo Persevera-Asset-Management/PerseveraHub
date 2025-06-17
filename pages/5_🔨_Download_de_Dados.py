@@ -3,15 +3,16 @@ from datetime import datetime, timedelta
 from persevera_tools.data import FinancialDataService
 from persevera_tools.data.funds import get_persevera_peers
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Download de Dados | Persevera",
     page_icon=":hammer:",
     layout="wide"
 )
-
 display_logo()
 load_css()
+check_authentication()
 
 st.title('Download de Dados')
 

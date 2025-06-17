@@ -7,6 +7,7 @@ from configs.pages.screener import FACTOR_OPTIONS_SCREENER, FACTOR_MOMENTUM_COMP
 from utils.table import style_table
 from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Screener | Persevera",
@@ -16,6 +17,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 @st.cache_data(ttl=3600)
 def load_data(start_date, descriptors_list):

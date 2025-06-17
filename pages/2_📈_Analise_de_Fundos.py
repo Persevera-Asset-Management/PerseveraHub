@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import os
-from dateutil.relativedelta import relativedelta
-from utils.table import style_table
-from persevera_tools.data import get_funds_data, get_persevera_peers, get_series
-from utils.chart_helpers import create_chart
 import streamlit_highcharts as hct
+from dateutil.relativedelta import relativedelta
+from persevera_tools.data import get_funds_data, get_persevera_peers, get_series
+from utils.table import style_table
+from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Análise de Fundos | Persevera",
@@ -17,6 +17,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title("Análise de Fundos")
 

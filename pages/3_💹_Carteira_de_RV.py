@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
-import streamlit_highcharts as hct
 from persevera_tools.data import get_descriptors, get_securities_by_exchange
 from persevera_tools.quant_research.matrix import corr_to_cov, find_nearest_corr
 from configs.pages.carteira_rv import ACOES_RV
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Carteira de RV | Persevera",
@@ -19,6 +19,7 @@ st.set_page_config(
 
 display_logo()
 load_css()
+check_authentication()
 
 st.title("Carteira de RV")
 
