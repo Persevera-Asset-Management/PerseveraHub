@@ -191,4 +191,33 @@ CHARTS_ESTRATEGIA = {
         "group": "Performance",
         "block_title": "Performance"
     },
+
+    # === Equities ===
+    # Valuation
+    "valuation_dm_equities": {
+        "chart_config": {
+            "columns": ["us_sp500", "us_magnificent_7", "us_russell2000", "germany_dax40", "japan_nikkei225", "uk_ukx"],
+            "names": ["S&P 500", "Mag 7", "Russell 2000", "DAX 40", "Nikkei 225", "UKX"],
+            "chart_type": "line",
+            "title": "Desenvolvidos",
+            "y_axis_title": "Valor (P/E)",
+        },
+        "width": 6,
+        "context": "Equities",
+        "group": "Valuation",
+        "block_title": "Valuation"
+    },
+    "valuation_em_equities": {
+        "chart_config": {
+            "columns": ["br_ibovespa", "china_csi300", "south_africa_top40", "mexico_bmv", "chile_ipsa", "india_nifty50"],
+            "names": ["Ibovespa", "CSI 300", "South Africa Top 40", "BMV", "IPSA", "Nifty 50"],
+            "chart_type": "line",
+            "title": "Emergentes",
+            "y_axis_title": "Valor (P/E)",
+        },
+        "width": 6,
+        "context": "Equities",
+        "group": "Valuation",
+        "block_title": "Valuation"
+    },
 }

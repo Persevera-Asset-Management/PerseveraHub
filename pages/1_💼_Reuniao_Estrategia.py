@@ -20,9 +20,9 @@ check_authentication()
 st.title('Reunião Estratégia')
 
 @st.cache_data(ttl=3600)
-def load_data(codes, start_date):
+def load_data(codes, start_date, field='close'):
     try:
-        return get_series(codes, start_date=start_date, field='close')
+        return get_series(codes, start_date=start_date, field=field)
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
@@ -42,8 +42,9 @@ with st.sidebar:
 # Load data with progress indicator
 with st.spinner("Carregando dados econômicos..."):
     data = load_data(CODES, start_date=start_date_str)
+    data_valuation = load_data(CODES, start_date=start_date_str, field='price_to_earnings_fwd')
 
-if data.empty:
+if data.empty or data_valuation.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
     # Organize charts by context and group
@@ -108,3 +109,11 @@ else:
                 render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
 
     # Tab 5: Equities
+    with tabs[4]:
+        equities_context = charts_by_context.get("Equities", {})
+        equities_tabs = st.tabs(["Valuation"])
+
+        # Valuation
+        with equities_tabs[0]:
+            if "Valuation" in equities_context:
+                render_chart_group_with_context(data_valuation, chart_configs, "Equities", "Valuation", charts_by_context)
