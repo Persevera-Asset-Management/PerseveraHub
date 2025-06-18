@@ -18,11 +18,10 @@ st.title('Download de Dados')
 
 st.markdown("Abaixo estão os botões que executam os scripts de download de dados.")
 
-# --- Inputs do Usuário --- 
-st.sidebar.header("Configurações")
-
-start_date = st.sidebar.date_input("Data de Início", value=datetime.now() - timedelta(days=365), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY")
-start_date_str = start_date.strftime('%Y-%m-%d')
+with st.sidebar:
+    st.header("Configurações")
+    start_date = st.date_input("Data de Início", value=datetime.now() - timedelta(days=365), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY")
+    start_date_str = start_date.strftime('%Y-%m-%d')
 
 try:
     fds = FinancialDataService(start_date=start_date_str)

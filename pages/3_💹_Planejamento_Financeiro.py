@@ -54,7 +54,7 @@ with st.sidebar:
     periodo_acumulacao = st.number_input("Período de Acumulação (anos):", min_value=0.0, value=20.0, step=1.0, format="%.0f")
 
     # Inputs são definidos aqui e podem ser desabilitados no modo "Meta"
-    aporte_mensal_input = st.number_input("Aporte Mensal (R$):", min_value=0.0, value=5000.0, step=1000.0, format="%.0f", key="aporte_input")
+    aporte_mensal_input = st.number_input("Aporte Mensal (R$):", min_value=0.0, value=5000.0, step=1000.0, format="%.0f", key="aporte_input", disabled=(periodo_acumulacao == 0))
     
     st.markdown("#### Fase de Distribuição")
 
@@ -104,14 +104,19 @@ with st.sidebar:
     if modo_planejamento == "Meta":
         st.markdown("#### Configuração da Meta")
         patrimonio_final_alvo = st.number_input("Patrimônio Final Alvo (R$):", min_value=0.0, value=1000000.0, step=50000.0, format="%.0f")
+        
+        opcoes_meta = ["Aporte Mensal", "Resgate Mensal", "Rentabilidade Nominal Esperada"]
+        if periodo_acumulacao == 0:
+            opcoes_meta.remove("Aporte Mensal")
+
         variavel_a_calcular = st.selectbox(
             "Calcular qual variável?",
-            ("Aporte Mensal", "Resgate Mensal", "Rentabilidade Nominal Esperada")
+            opcoes_meta
         )
 
 # --- LÓGICA PRINCIPAL ---
 # Define os valores padrão das variáveis
-aporte_mensal = aporte_mensal_input
+aporte_mensal = aporte_mensal_input if periodo_acumulacao > 0 else 0
 resgate_mensal = resgate_mensal_input
 rentabilidade_nominal_esperada = rentabilidade_nominal_input
 
