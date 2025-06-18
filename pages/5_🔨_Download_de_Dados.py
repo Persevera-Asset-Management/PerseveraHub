@@ -74,8 +74,21 @@ with row_1[2]:
 
 row_2 = st.columns(3)
 
-# Simplify
+# Focus (BCB)
 with row_2[0]:
+    if st.button('Focus (BCB)', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Focus (BCB)...'):
+                focus_data = fds.get_data(
+                    source='bcb_focus',
+                    save_to_db=True,
+                )
+            st.success('Dados do Focus (BCB) baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Focus (BCB): {e}")
+
+# Simplify
+with row_2[1]:
     if st.button('Simplify', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Simplify...'):
@@ -88,7 +101,7 @@ with row_2[0]:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
 
 # Invesco
-with row_2[1]:
+with row_2[2]:
     if st.button('Invesco', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Invesco...'):
