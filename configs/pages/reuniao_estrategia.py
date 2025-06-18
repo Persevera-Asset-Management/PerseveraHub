@@ -148,6 +148,19 @@ CHARTS_ESTRATEGIA = {
         "group": "Taxas de Juros (BR)",
         "block_title": "Taxas de Juros (BR)"
     },
+    "br_focus_selic": {
+        "chart_config": {
+            "columns": ["br_focus_selic_median_2025R5", "br_focus_selic_median_2025R6", "br_focus_selic_median_2025R7", "br_focus_selic_median_2025R8"],
+            "names": ["R5 (jul)", "R6 (set)", "R7 (nov)", "R8 (dez)"],
+            "chart_type": "line",
+            "title": "SELIC Focus (Próximas Reuniões)",
+            "y_axis_title": "%",
+        },
+        "width": 6,
+        "context": "Juros",
+        "group": "Taxas de Juros (BR)",
+        "block_title": "Taxas de Juros (BR)"
+    },
 
     # === Moedas ===
     # Modelo Cambial
@@ -164,6 +177,7 @@ CHARTS_ESTRATEGIA = {
         "group": "Modelo Cambial",
         "block_title": "Modelo Cambial"
     },
+    
     # Performance
     "currency_performance_dxy": {
         "chart_config": {
