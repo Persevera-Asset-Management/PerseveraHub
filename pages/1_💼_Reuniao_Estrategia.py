@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import os
 from datetime import datetime, timedelta
-from utils.auth import check_authentication
+from persevera_tools.data import get_series
+from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
+from configs.pages.reuniao_estrategia import CHARTS_ESTRATEGIA
 from utils.ui import display_logo, load_css
+from utils.auth import check_authentication
 
 st.set_page_config(
     page_title="Reunião Estratégia | Persevera",
@@ -17,3 +18,93 @@ load_css()
 check_authentication()
 
 st.title('Reunião Estratégia')
+
+@st.cache_data(ttl=3600)
+def load_data(codes, start_date):
+    try:
+        return get_series(codes, start_date=start_date, field='close')
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return pd.DataFrame()
+
+# Chart configurations
+chart_configs = CHARTS_ESTRATEGIA
+
+# Extract all unique column codes
+CODES = extract_codes_from_config(chart_configs)
+
+# Date range selector
+with st.sidebar:
+    st.header("Filtros")
+    start_date = st.date_input("Data Inicial", min_value=datetime(1990, 1, 1), value=datetime(2010, 1, 1), format="DD/MM/YYYY")
+    start_date_str = start_date.strftime('%Y-%m-%d')
+
+# Load data with progress indicator
+with st.spinner("Carregando dados econômicos..."):
+    data = load_data(CODES, start_date=start_date_str)
+
+if data.empty:
+    st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
+else:
+    # Organize charts by context and group
+    charts_by_context = organize_charts_by_context(chart_configs)
+        
+    # Create tabs for different regions
+    tabs = st.tabs(["Juros", "Cenários", "Commodities", "Moedas", "Equities"])
+    
+    # Tab 1: Juros
+    with tabs[0]:
+        juros_context = charts_by_context.get("Juros", {})        
+        juros_tabs = st.tabs(["Taxas de Juros (US)", "Taxas Corporativas (US)", "Taxas de Juros (BR)"])
+        
+        # Taxas de Juros (US)
+        with juros_tabs[0]:
+            if "Taxas de Juros (US)" in juros_context:
+                render_chart_group_with_context(data, chart_configs, "Juros", "Taxas de Juros (US)", charts_by_context)
+
+        # Taxas Corporativas (US)
+        with juros_tabs[1]:
+            if "Taxas Corporativas (US)" in juros_context:
+                render_chart_group_with_context(data, chart_configs, "Juros", "Taxas Corporativas (US)", charts_by_context)
+
+        # Taxas de Juros (BR)
+        with juros_tabs[2]:
+            if "Taxas de Juros (BR)" in juros_context:
+                render_chart_group_with_context(data, chart_configs, "Juros", "Taxas de Juros (BR)", charts_by_context)
+
+    # Tab 2: Cenários
+    with tabs[1]:
+        cenarios_context = charts_by_context.get("Cenários", {})
+        cenarios_tabs = st.tabs(["Cenários"])
+
+        # Cenários
+        with cenarios_tabs[0]:
+            if "Cenários" in cenarios_context:
+                render_chart_group_with_context(data, chart_configs, "Cenários", "Cenários", charts_by_context)
+    
+    # Tab 3: Commodities
+    with tabs[2]:
+        commodities_context = charts_by_context.get("Commodities", {})
+        commodities_tabs = st.tabs(["Commodities"])
+
+        # Commodities
+        with commodities_tabs[0]:
+            if "Commodities" in commodities_context:
+                render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
+
+    # Tab 4: Moedas
+    with tabs[3]:
+        moedas_context = charts_by_context.get("Moedas", {})
+        moedas_tabs = st.tabs(["Modelo Cambial", "Performance"])
+
+        # Modelo Cambial
+        with moedas_tabs[0]:
+            if "Modelo Cambial" in moedas_context:
+                render_chart_group_with_context(data, chart_configs, "Moedas", "Modelo Cambial", charts_by_context)
+
+        # Performance
+        with moedas_tabs[1]:
+            if "Performance" in moedas_context:
+                render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
+
+    # Tab 5: Equities
