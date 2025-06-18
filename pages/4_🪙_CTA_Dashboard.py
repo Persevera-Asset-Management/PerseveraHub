@@ -32,17 +32,15 @@ def load_data(codes, field, start_date):
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
 
-# Date range selector
-st.sidebar.header("Filtros")
-start_date = st.sidebar.date_input("Data Inicial", min_value=datetime(2025, 1, 23), value=datetime(2025, 1, 23), format="DD/MM/YYYY")
-start_date_str = start_date.strftime('%Y-%m-%d')
+with st.sidebar:
+    st.header("Parâmetros")
+    start_date = st.date_input("Data Inicial", min_value=datetime(2025, 1, 23), value=datetime(2025, 1, 23), format="DD/MM/YYYY")
+    start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
 with st.spinner("Carregando dados econômicos..."):
     data = load_data(list(CTA_DASHBOARD.keys()), field=['close', 'weight_cta_simplify', 'weight_cta_invesco'], start_date=start_date_str)
     data = data.swaplevel(axis=1)
-    # data_close = load_data(list(CTA_DASHBOARD.keys()), field='close', start_date=start_date_str)
-    # data_close = data_close.add_suffix('_close', axis=1)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")

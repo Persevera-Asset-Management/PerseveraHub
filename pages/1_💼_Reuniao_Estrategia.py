@@ -33,9 +33,8 @@ chart_configs = CHARTS_ESTRATEGIA
 # Extract all unique column codes
 CODES = extract_codes_from_config(chart_configs)
 
-# Date range selector
 with st.sidebar:
-    st.header("Filtros")
+    st.header("Parâmetros")
     start_date = st.date_input("Data Inicial", min_value=datetime(1990, 1, 1), value=datetime(2010, 1, 1), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 

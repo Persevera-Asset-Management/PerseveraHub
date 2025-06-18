@@ -34,9 +34,8 @@ chart_configs = CHARTS_BRASIL_ASSET
 # Extract all unique column codes
 CODES = extract_codes_from_config(chart_configs)
 
-# Date range selector
 with st.sidebar:
-    st.header("Filtros")
+    st.header("Parâmetros")
     start_date = st.date_input("Data Inicial", datetime.now() - timedelta(days=365), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
