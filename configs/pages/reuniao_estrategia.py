@@ -150,8 +150,8 @@ CHARTS_ESTRATEGIA = {
     },
     "br_focus_selic": {
         "chart_config": {
-            "columns": ["br_selic_target", "br_focus_selic_median_2025R5", "br_focus_selic_median_2025R6", "br_focus_selic_median_2025R7", "br_focus_selic_median_2025R8"],
-            "names": ["Selic", "R5 (jul)", "R6 (set)", "R7 (nov)", "R8 (dez)"],
+            "columns": ["br_focus_selic_median_2025R5", "br_focus_selic_median_2025R6", "br_focus_selic_median_2025R7", "br_focus_selic_median_2025R8"],
+            "names": ["R5 (jul)", "R6 (set)", "R7 (nov)", "R8 (dez)"],
             "chart_type": "line",
             "title": "SELIC Focus (Próximas Reuniões)",
             "y_axis_title": "%",
