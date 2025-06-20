@@ -25,6 +25,7 @@ st.title("Visualizador de Carteiras")
 with st.sidebar:
     st.header("Parâmetros")
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
+    selected_date = st.date_input("Data", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
     btn_run = st.button("Run")
 
 if 'df' not in st.session_state:
@@ -36,7 +37,7 @@ if btn_run:
         st.session_state.df = provider.get_data(
             category='portfolio_positions',
             portfolios=selected_carteiras,
-            date_str=datetime.now().strftime('%d%m%Y')
+            date_str=selected_date.strftime('%d%m%Y')
         )
         if "selected_asset" in st.session_state:
             st.session_state.selected_asset = ""
