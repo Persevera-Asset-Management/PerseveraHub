@@ -1438,12 +1438,12 @@ CHARTS_ECONOMIA = {
     "br_ipca_yoy": {
         "chart_config": {
             "columns": ["br_ipca_yoy", "br_ipca_sa_mom"],
-            "names": ["IPCA", "3-month SAAR"],
+            "names": ["IPCA", "3-month SAAR", "6-month SAAR"],
             "chart_type": "line",
             "title": "IPCA (var. Anual %)",
             "y_axis_title": "Taxa (%)",
         },
-        "transformations": [{"type": "saar", "column": "br_ipca_sa_mom", "period_months": 3, "calculate_pct_change": False}],
+        "transformations": [{"type": "saar", "column": "br_ipca_sa_mom", "period_months": 3, "calculate_pct_change": False}, {"type": "saar", "column": "br_ipca_sa_mom", "period_months": 6, "calculate_pct_change": False}],
         "width": 6,
         "context": "Brasil",
         "group": "Inflação",
