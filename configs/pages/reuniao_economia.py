@@ -1422,8 +1422,8 @@ CHARTS_ECONOMIA = {
     },
     "br_focus_ipca_median": {
         "chart_config": {
-            "columns": ["2025", "2026", "2027"], # Special case: columns derived from pivoted focus data
-            "names": "IPCA (Mediana)",
+            "columns": ["br_focus_ipca_median_2025", "br_focus_ipca_median_2026", "br_focus_ipca_median_2027"],
+            "names": ["2025", "2026", "2027"],
             "chart_type": "line",
             "title": "IPCA (Mediana)",
             "y_axis_title": "Taxa (%)",
