@@ -734,6 +734,20 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Consumidor"
     },
+    "us_cpi_saar": {
+        "chart_config": {
+            "columns": ["us_cpi_index", "us_cpi_core_index"],
+            "names": ["CPI", "CPI (3-month SAAR)", "Core CPI", "Core CPI (3-month SAAR)"],
+            "chart_type": "line",
+            "title": "CPI (3-month SAAR)",
+            "y_axis_title": "Taxa (%)",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "us_cpi_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_cpi_core_index", "frequency": "MS"}, {"type": "saar", "column": "us_cpi_index", "period_months": 3, "calculate_pct_change": True}, {"type": "saar", "column": "us_cpi_core_index", "period_months": 3, "calculate_pct_change": True}],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Inflação",
+        "block_title": "Inflação ao Consumidor"
+    },
     "us_pce_saar": {
         "chart_config": {
             "columns": ["us_pce_index", "us_pce_core_index"],
@@ -748,6 +762,7 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Consumidor"
     },
+
     "us_ppi_yoy": {
         "chart_config": {
             "columns": "us_ppi_index",
