@@ -737,7 +737,7 @@ CHARTS_ECONOMIA = {
     "us_pce_saar": {
         "chart_config": {
             "columns": ["us_pce_index", "us_pce_core_index"],
-            "names": ["PCE", "Core PCE", "PCE (3-month SAAR)", "Core PCE (3-month SAAR)"],
+            "names": ["PCE", "PCE (3-month SAAR)", "Core PCE", "Core PCE (3-month SAAR)"],
             "chart_type": "line",
             "title": "PCE (3-month SAAR)",
             "y_axis_title": "Taxa (%)",
