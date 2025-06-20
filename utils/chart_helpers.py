@@ -82,7 +82,7 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
                 generated_name_this_iteration = f"{original_col_name}_min{window}"
             elif transform_type == "rolling_sum_plus_yearly_variation":
                 window = t_conf.get("window", 12)
-                generated_name_this_iteration = f"{original_col_name}_rolling_sum_yoy{window}"
+                generated_name_this_iteration = f"{original_col_name}_rolling_sum_yoy"
             elif transform_type == "multiply":
                 scalar = t_conf.get("scalar", 1)
                 generated_name_this_iteration = f"{original_col_name}_multiplied_by_{scalar}"
