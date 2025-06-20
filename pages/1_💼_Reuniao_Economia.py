@@ -19,7 +19,7 @@ check_authentication()
 
 st.title('Reunião Economia')
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=7200)
 def load_data(codes, start_date):
     try:
         return get_series(codes, start_date=start_date, field='close')

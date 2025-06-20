@@ -1206,6 +1206,20 @@ CHARTS_ECONOMIA = {
         "group": "Crédito",
         "block_title": "Concessão de Crédito"
     },
+    "br_bcb_new_operations_2": {
+        "chart_config": {
+            "columns": ["br_bcb_new_operations_pj", "br_bcb_new_operations_pf"],
+            "names": ["PJ", "PF"],
+            "chart_type": "line",
+            "title": "Concessão de Crédito (var. Anual %)",
+            "y_axis_title": "%",
+        },
+        "transformations": [{"type": "rolling_sum_plus_yearly_variation", "column": "br_bcb_new_operations_pj", "frequency": "MS"}, {"type": "rolling_sum_plus_yearly_variation", "column": "br_bcb_new_operations_pf", "frequency": "MS"}],
+        "width": 6,
+        "context": "Brasil",
+        "group": "Crédito",
+        "block_title": "Concessão de Crédito"
+    },
     "br_bcb_new_operations_details": {
         "chart_config": {
             "columns": ["br_bcb_nonearmarked_new_operations_pj", "br_bcb_earmarked_new_operations_pj", "br_bcb_nonearmarked_new_operations_pf", "br_bcb_earmarked_new_operations_pf"],

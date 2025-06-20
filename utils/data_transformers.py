@@ -303,6 +303,67 @@ class MovingAverageTransformer(DataTransformer):
         
         return result
 
+class RollingSumPlusYearlyVariationTransformer(DataTransformer):
+    """Calculates rolling sum and yearly variation for a given column"""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        window = config.get('window', 12)
+        freq = config.get('frequency') # Get the target frequency ('M', 'Q', 'A', etc.)
+
+        # If frequency is not provided or column doesn't exist, return original data
+        # This maintains backward compatibility for daily data or cases where freq isn't set
+        if not column or column not in data.columns:
+             print(f"Warning: Column '{column}' not found for yearly variation. Skipping.")
+             return data
+
+        result = data.copy()
+        new_column_name = f"{column}_rolling_sum_yoy"
+
+        if not freq:
+            # Original behavior: Assume daily data (252 periods) if frequency not specified
+            print(f"Warning: Frequency not specified for {column}. Assuming daily data for yearly variation.")
+            result[new_column_name] = result[column].rolling(window=window).sum().pct_change(periods=252) * 100
+            return result
+
+        # Proceed with frequency-aware calculation
+        col_data = result[[column]].dropna() # Work on non-NaN data
+
+        # Ensure index is DatetimeIndex
+        if not isinstance(col_data.index, pd.DatetimeIndex):
+            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation.")
+            return data # Return original data to avoid errors
+
+        try:
+            # Resample to the target frequency, taking the last available value in the period
+            resampled_data = col_data.resample(freq).last()
+
+            # Calculate yearly variation on the resampled data
+            # For monthly freq ('M'), periods=12; quarterly ('Q'), periods=4; annual ('A'), periods=1
+            periods_map = {'M': 12, 'Q': 4, 'A': 1}
+            # Handle variations like 'MS' (Month Start), 'QS', 'AS'
+            clean_freq = freq.upper().replace('S', '')
+            periods = periods_map.get(clean_freq)
+
+            if periods is None:
+                 print(f"Warning: Unsupported frequency '{freq}' for yearly variation on {column}. Skipping transformation.")
+                 return result # Return original data
+
+            variation = resampled_data[column].rolling(window=window).sum().pct_change(periods=periods) * 100
+
+            # Reindex back to the original DataFrame's index, forward filling the calculated values
+            # Ensure the index used for reindexing exists entirely in the variation's index
+            # This might require aligning indexes first if resampling created new dates not in original
+            aligned_variation = variation.reindex(result.index)
+            result[new_column_name] = aligned_variation
+
+        except Exception as e:
+            print(f"Error during yearly variation transformation for {column} with freq {freq}: {e}")
+            # Optionally return original data in case of error, or re-raise
+            return data # Safest option for now
+
+        return result
+
 class RollingMaxTransformer(DataTransformer):
     """Calculates rolling maximum for a given column"""
     @staticmethod
@@ -569,6 +630,7 @@ TRANSFORMERS = {
     "rolling_min": RollingMinTransformer,
     "rolling_volatility": RollingVolatilityTransformer,
     "rolling_beta": RollingBetaTransformer,
+    "rolling_sum_plus_yearly_variation": RollingSumPlusYearlyVariationTransformer,
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
