@@ -25,7 +25,7 @@ st.title("Visualizador de Carteiras")
 with st.sidebar:
     st.header("Parâmetros")
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
-    selected_date = st.date_input("Data", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
+    selected_date = st.date_input("Data", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
     btn_run = st.button("Run")
 
 if 'df' not in st.session_state:
