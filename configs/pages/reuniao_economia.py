@@ -762,7 +762,6 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Consumidor"
     },
-
     "us_ppi_yoy": {
         "chart_config": {
             "columns": "us_ppi_index",
@@ -776,6 +775,20 @@ CHARTS_ECONOMIA = {
         "context": "Estados Unidos",
         "group": "Inflação",
         "block_title": "Inflação ao Produtor"
+    },
+    "us_import_price_yoy": {
+        "chart_config": {
+            "columns": ["us_import_price_index", "us_import_price_capital_goods_index", "us_import_price_non_auto_consumer_goods_index"],
+            "names": ["All Goods", "Capital Goods", "Non-Auto Consumer Goods"],
+            "chart_type": "line",
+            "title": "Import Price",
+            "y_axis_title": "Taxa (%)", 
+        },
+        "transformations": [{"type": "yearly_variation", "column": "us_import_price_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_import_price_capital_goods_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_import_price_non_auto_consumer_goods_index", "frequency": "MS"}],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Inflação",
+        "block_title": "Inflação na Importação"
     },
     "us_mfg_surveys_inflation_dual_axis": {
         "chart_config": {
