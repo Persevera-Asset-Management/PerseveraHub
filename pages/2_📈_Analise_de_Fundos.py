@@ -189,6 +189,11 @@ def load_benchmark_data(fund_name, _nav_index):
 
     codes_to_fetch = benchmark_map.get(fund_name, ('br_cdi_index',)) # Default to CDI
     df_benchmark = get_series(list(codes_to_fetch), start_date=_nav_index.min(), field='close')
+    
+    # Ensure df_benchmark is a DataFrame before renaming columns
+    if isinstance(df_benchmark, pd.Series):
+        df_benchmark = df_benchmark.to_frame()
+
     df_benchmark = df_benchmark.rename(columns={'br_cdi_index': 'CDI', 'br_ibovespa': 'Ibovespa', 'br_smll': 'SMLL'})
     return df_benchmark
 
