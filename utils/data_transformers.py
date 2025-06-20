@@ -442,6 +442,7 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
     def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
         column = config.get('column')
         period_months = config.get('period_months')
+        calculate_pct_change = config.get('calculate_pct_change', False)
 
         # Validate essential config for forming the new column name and core logic
         if not isinstance(column, str) or not column:
@@ -494,9 +495,12 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
             
         try:
             # Reconstruct SA index from monthly series
-            # Assumes monthly_series contains MoM % changes.
-            sa_series = np.cumprod(1 + monthly_series/100.0)
-            periodic_growth_rate = sa_series.pct_change(period_months)
+            if calculate_pct_change:
+                periodic_growth_rate = monthly_series.pct_change(period_months)
+            else:
+                # Assumes monthly_series contains MoM % changes.
+                sa_series = np.cumprod(1 + monthly_series/100.0)
+                periodic_growth_rate = sa_series.pct_change(period_months)
             
             # Annualize: ( (1 + periodic_growth_rate) ^ (12 / period_months) ) - 1, then * 100
             saar_pct_values = ((1 + periodic_growth_rate).pow(12.0/period_months) - 1) * 100.0

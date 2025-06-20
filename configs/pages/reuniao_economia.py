@@ -734,6 +734,20 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Consumidor"
     },
+    "us_pce_saar": {
+        "chart_config": {
+            "columns": ["us_pce_index", "us_pce_core_index"],
+            "names": ["PCE", "Core PCE", "PCE (3-month SAAR)", "Core PCE (3-month SAAR)"],
+            "chart_type": "line",
+            "title": "PCE (3-month SAAR)",
+            "y_axis_title": "Taxa (%)",
+        },
+        "transformations": [{"type": "yearly_variation", "column": "us_pce_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_pce_core_index", "frequency": "MS"}, {"type": "saar", "column": "us_pce_index", "period_months": 3, "calculate_pct_change": True}, {"type": "saar", "column": "us_pce_core_index", "period_months": 3, "calculate_pct_change": True}],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Inflação",
+        "block_title": "Inflação ao Consumidor"
+    },
     "us_ppi_yoy": {
         "chart_config": {
             "columns": "us_ppi_index",
@@ -1399,9 +1413,9 @@ CHARTS_ECONOMIA = {
             "names": ["IPCA", "3-month SAAR"],
             "chart_type": "line",
             "title": "IPCA (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Taxa (%)",
         },
-        "transformations": [{"type": "saar", "column": "br_ipca_sa_mom", "period_months": 3}],
+        "transformations": [{"type": "saar", "column": "br_ipca_sa_mom", "period_months": 3, "calculate_pct_change": False}],
         "width": 6,
         "context": "Brasil",
         "group": "Inflação",
@@ -1413,7 +1427,7 @@ CHARTS_ECONOMIA = {
             "names": ["IPCA", "IPCA-15"],
             "chart_type": "column",
             "title": "IPCA (var. Mensal %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Brasil",
@@ -1439,7 +1453,7 @@ CHARTS_ECONOMIA = {
             "names": ["IPCA", "Livres", "Administrados"],
             "chart_type": "line",
             "title": "IPCA Grupos (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Brasil",
