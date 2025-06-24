@@ -87,7 +87,7 @@ with row_2[0]:
             st.error(f"Ocorreu um erro ao baixar os dados do Focus (BCB): {e}")
 
 st.write("#### Fundos Sistemáticos (CTA)")
-row_3 = st.columns(4)
+row_3 = st.columns(3)
 
 # Simplify
 with row_3[0]:
@@ -116,7 +116,7 @@ with row_3[1]:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
 
 # KraneShares
-with row_3[3]:
+with row_3[2]:
     if st.button('KraneShares', use_container_width=True):
         try:
             with st.spinner('Baixando dados do KraneShares...'):
