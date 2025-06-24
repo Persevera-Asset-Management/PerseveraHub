@@ -86,7 +86,7 @@ with row_2[0]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Focus (BCB): {e}")
 
-st.write("#### Fundos Sistemáticos")
+st.write("#### Fundos Sistemáticos (CTA)")
 row_3 = st.columns(4)
 
 # Simplify
@@ -103,7 +103,7 @@ with row_3[0]:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
 
 # Invesco
-with row_2[1]:
+with row_3[1]:
     if st.button('Invesco', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Invesco...'):
@@ -116,7 +116,7 @@ with row_2[1]:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
 
 # KraneShares
-with row_2[3]:
+with row_3[3]:
     if st.button('KraneShares', use_container_width=True):
         try:
             with st.spinner('Baixando dados do KraneShares...'):
