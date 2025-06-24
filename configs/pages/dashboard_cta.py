@@ -1,7 +1,9 @@
 CTA_DASHBOARD = {
+    "aud_usd_futures": "AUD/USD",
     "australia_asx200_futures": "Australia ASX200",
     "australia_govt_bond_10y_futures": "Australia Govt Bond 10Y",
     "australia_govt_bond_3y_futures": "Australia Govt Bond 3Y",
+    "cad_usd_futures": "CAD/USD",
     "canada_corra_3m_futures": "3M Corra",
     "canada_govt_10y_futures": "Canada Govt Bond 10Y",
     "canada_govt_2y_futures": "Canada Govt Bond 2Y",
@@ -31,6 +33,7 @@ CTA_DASHBOARD = {
     "germany_dax_futures": "Germany DAX",
     "gold_100oz_futures": "Gold 100oz",
     "italy_ftse_mib_futures": "Italy FTSE MIB",
+    "japan_govt_bond_10y_futures": "Japan Govt Bond 10Y",
     "japan_topix_futures": "Japan TOPIX",
     "jpy_usd_futures": "JPY/USD",
     "lean_hogs_futures": "Lean Hogs",
@@ -62,5 +65,5 @@ CTA_DASHBOARD = {
     "us_treasury_ultra_bond_futures": "Ultra US Treasury Bond",
     "us_ultra_treasury_note_10y_futures": "Ultra 10Y US Treasury Note",
     "wheat_futures": "Wheat",
-    "wheat_kc_hrw_futures": "KC HRW Wheat"
+    "wheat_kc_hrw_futures": "KC HRW Wheat",
 }

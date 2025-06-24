@@ -4,7 +4,6 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 from persevera_tools.data import get_series
-from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.dashboard_cta import CTA_DASHBOARD
 from utils.chart_helpers import create_chart
 import streamlit_highcharts as hct
@@ -39,7 +38,7 @@ with st.sidebar:
 
 # Load data with progress indicator
 with st.spinner("Carregando dados econômicos..."):
-    data = load_data(list(CTA_DASHBOARD.keys()), field=['close', 'weight_cta_simplify', 'weight_cta_invesco'], start_date=start_date_str)
+    data = load_data(list(CTA_DASHBOARD.keys()), field=['close', 'weight_cta_simplify', 'weight_cta_invesco', 'weight_cta_kraneshares'], start_date=start_date_str)
     data = data.swaplevel(axis=1)
 
 if data.empty:
@@ -101,22 +100,34 @@ else:
     st.subheader("$IMF (Invesco Managed Futures Strategy ETF)")
 
     # Create the table
-    imf_table = data['weight_cta_invesco'].dropna(how='all', axis=0).iloc[-1].T.dropna(how='all')
-    imf_most_recent_date = data['weight_cta_invesco'].dropna(how='all', axis=0).index[-1].date()
-    imf_table.sort_values(ascending=False, inplace=True)
-    imf_table.index = imf_table.index.map(lambda x: CTA_DASHBOARD[x])
+    # imf_table = data['weight_cta_invesco'].dropna(how='all', axis=0).iloc[-1].T.dropna(how='all')
+    # imf_most_recent_date = data['weight_cta_invesco'].dropna(how='all', axis=0).index[-1].date()
+    # imf_table.sort_values(ascending=False, inplace=True)
+    # imf_table.index = imf_table.index.map(lambda x: CTA_DASHBOARD[x])
+    
+    all_cta_data = data.drop(columns='close').dropna(axis=0, how='all').iloc[-1]
+    all_cta_most_recent_date = all_cta_data.name.date()
+    all_cta_data = all_cta_data.to_frame('value').reset_index()
+    all_cta_data = all_cta_data.pivot(index='code', columns='field', values='value')
+    all_cta_data.index = all_cta_data.index.map(lambda x: CTA_DASHBOARD[x])
+    all_cta_data = all_cta_data.mul(100)
 
-    st.write(f"Dado mais recente: {imf_most_recent_date}")
+    all_cta_data['total'] = all_cta_data.mean(axis=1)
+    all_cta_data.sort_values('total', ascending=False, inplace=True)
+    all_cta_data.dropna(axis=0, subset='total', inplace=True)
+    # all_cta_data.drop('total', axis=1, inplace=True)
 
-    imf_chart_options = create_chart(
-        data=imf_table.to_frame('Peso (%)'),
-        columns=['Peso (%)'],
-        names=['Peso (%)'],
+    st.write(f"Dado mais recente: {all_cta_most_recent_date}")
+
+    all_cta_chart_options = create_chart(
+        data=all_cta_data,
+        columns=['weight_cta_invesco', 'weight_cta_kraneshares', 'weight_cta_simplify'],
+        names=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)'],
         chart_type='bar',
         stacking=None,
         title="Posições",
         y_axis_title="Peso (%)",
         x_axis_title="Ativos",
-        height=600,
+        height=800,
     )
-    hct.streamlit_highcharts(imf_chart_options, height=600)
+    hct.streamlit_highcharts(all_cta_chart_options, height=800)
