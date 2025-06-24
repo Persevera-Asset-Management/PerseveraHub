@@ -95,6 +95,7 @@ else:
                     right_index=True,
                     how='left'
                 )
+                chart_data_single_asset = chart_data_single_asset.dropna(subset=[selected_asset])
                 etf_chart_options = create_chart(
                     data=chart_data_single_asset,
                     columns=[selected_asset + '_close', selected_asset],
