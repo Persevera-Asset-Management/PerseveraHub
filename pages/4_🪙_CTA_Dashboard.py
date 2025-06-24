@@ -40,6 +40,7 @@ with st.sidebar:
 with st.spinner("Carregando dados econômicos..."):
     data = load_data(list(CTA_DASHBOARD.keys()), field=['close', 'weight_cta_simplify', 'weight_cta_invesco', 'weight_cta_kraneshares'], start_date=start_date_str)
     data = data.swaplevel(axis=1)
+    data.sort_index(axis=1, inplace=True)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
@@ -96,15 +97,10 @@ else:
     
     hct.streamlit_highcharts(cta_chart_options)
 
-    # $IMF (Invesco Managed Futures Strategy ETF)
-    st.subheader("$IMF (Invesco Managed Futures Strategy ETF)")
+    # Consolidado
+    st.subheader("Consolidado")
 
-    # Create the table
-    # imf_table = data['weight_cta_invesco'].dropna(how='all', axis=0).iloc[-1].T.dropna(how='all')
-    # imf_most_recent_date = data['weight_cta_invesco'].dropna(how='all', axis=0).index[-1].date()
-    # imf_table.sort_values(ascending=False, inplace=True)
-    # imf_table.index = imf_table.index.map(lambda x: CTA_DASHBOARD[x])
-    
+    # Create the table    
     all_cta_data = data.drop(columns='close').dropna(axis=0, how='all').iloc[-1]
     all_cta_most_recent_date = all_cta_data.name.date()
     all_cta_data = all_cta_data.to_frame('value').reset_index()
@@ -115,12 +111,10 @@ else:
     all_cta_data['total'] = all_cta_data.mean(axis=1)
     all_cta_data.sort_values('total', ascending=False, inplace=True)
     all_cta_data.dropna(axis=0, subset='total', inplace=True)
-    # all_cta_data.drop('total', axis=1, inplace=True)
 
     st.write(f"Dado mais recente: {all_cta_most_recent_date}")
-
     all_cta_chart_options = create_chart(
-        data=all_cta_data,
+        data=all_cta_data.fillna(0),
         columns=['weight_cta_invesco', 'weight_cta_kraneshares', 'weight_cta_simplify'],
         names=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)'],
         chart_type='bar',
