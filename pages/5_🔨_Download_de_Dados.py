@@ -31,7 +31,7 @@ except Exception as e:
 
 # --- Fontes Independentes --- 
 st.write("#### Fontes Independentes")
-row_1 = st.columns(3)
+row_1 = st.columns(4)
 
 # FRED
 with row_1[0]:
@@ -72,10 +72,8 @@ with row_1[2]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do SGS: {e}")
 
-row_2 = st.columns(3)
-
 # Focus (BCB)
-with row_2[0]:
+with row_1[3]:
     if st.button('Focus (BCB)', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Focus (BCB)...'):
@@ -87,8 +85,10 @@ with row_2[0]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Focus (BCB): {e}")
 
+row_2 = st.columns(4)
+
 # Simplify
-with row_2[1]:
+with row_2[0]:
     if st.button('Simplify', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Simplify...'):
@@ -101,7 +101,7 @@ with row_2[1]:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
 
 # Invesco
-with row_2[2]:
+with row_2[1]:
     if st.button('Invesco', use_container_width=True):
         try:
             with st.spinner('Baixando dados do Invesco...'):
@@ -113,9 +113,22 @@ with row_2[2]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
 
+# KraneShares
+with row_2[1]:
+    if st.button('KraneShares', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do KraneShares...'):
+                simplify_data = fds.get_data(
+                    source='kraneshares',
+                    save_to_db=True,
+                )
+            st.success('Dados do KraneShares baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do KraneShares: {e}")
+
 # --- CVM --- 
 st.write("#### Fundos de Investimento (CVM)")
-row_3 = st.columns(3)
+row_3 = st.columns(4)
 
 # Fundos de Investimento
 with row_3[0]:
