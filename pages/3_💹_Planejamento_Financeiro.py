@@ -248,7 +248,6 @@ evolucao_options = create_chart(
     title="",
     y_axis_title="Valor (R$)",
     x_axis_title="Idade",
-    # x_column="Idade Contínua",
 )
 
 hct.streamlit_highcharts(evolucao_options)
@@ -317,6 +316,7 @@ with tab_anual:
         'patrimonio_final_ano': 'Patrimônio Final Ano',
         'rendimento_acumulado': 'Rendimento Acumulado',
         'resgate_acumulado': 'Resgate Acumulado',
+        'imposto_pago_acumulado': 'Imposto Pago Acumulado',
         'aporte_acumulado': 'Aporte Acumulado',
         'inflacao_acumulada': 'Inflação Acumulada'
     }, inplace=True)
@@ -340,6 +340,7 @@ with tab_mensal:
         "Idade Meses",
         "Patrimônio Inicial Mês",
         "Rendimento Mensal",
+        "Imposto Pago Mensal",
         "Aporte Mensal Ajustado",
         "Resgate Mensal Ajustado",
         "Patrimônio Final Mês",
@@ -355,7 +356,7 @@ with tab_mensal:
     st.dataframe(
         style_table(
             df_memoria_mensal,
-            numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
+            numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Imposto Pago Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
             percent_cols=["Inflação Acumulada"]
         )
     )
