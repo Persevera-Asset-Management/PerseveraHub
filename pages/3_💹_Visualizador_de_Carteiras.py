@@ -56,7 +56,7 @@ if df is not None:
         saldo_inst_financeiras = df.groupby('instituicao_financeira')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
         saldo_tipo_ativos = df.groupby('tipo_ativo')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
 
-        tabs = st.tabs(["Visão Geral", "Busca por Ativo", "Busca por Cliente"])
+        tabs = st.tabs(["Visão Geral", "Busca por Ativos", "Busca por Cliente"])
 
         with tabs[0]:
             st.subheader("Visão Geral")
@@ -170,6 +170,51 @@ if df is not None:
                         y_axis_title="R$",
                     )
                     hct.streamlit_highcharts(chart_saldo_ativos_carteiras)
+
+        with tabs[2]:
+            st.subheader("Busca por Cliente")
+            
+            selected_carteira_cliente = st.selectbox("Selecione a Carteira", [""] + sorted(df['carteira'].unique()), key="selected_carteira_cliente")
+
+            if selected_carteira_cliente:
+                df_cliente = df[df['carteira'] == selected_carteira_cliente]
+                pl_total_cliente = df_cliente['saldo_bruto'].sum()
+
+                st.metric("PL Total da Carteira", f"R$ {pl_total_cliente:,.2f}")
+
+                # Gráfico de alocação por tipo de ativo
+                alocacao_tipo_ativo = (
+                    df_cliente
+                    .groupby('tipo_ativo')['saldo_bruto']
+                    .sum()
+                    .reset_index()
+                    .sort_values('saldo_bruto', ascending=False)
+                )
+                alocacao_tipo_ativo['Percentual'] = (alocacao_tipo_ativo['saldo_bruto'] / pl_total_cliente) * 100
+                
+                chart_alocacao_tipo_ativo = create_chart(
+                    data=alocacao_tipo_ativo.set_index('tipo_ativo'),
+                    columns=['Percentual'],
+                    names=['Percentual'],
+                    chart_type='column',
+                    title='Alocação por Tipo de Ativo',
+                    y_axis_title='%'
+                )
+                hct.streamlit_highcharts(chart_alocacao_tipo_ativo)
+                
+                # Tabela de posições
+                st.write("Posições da Carteira")
+                posicoes_cliente = (
+                    df_cliente[[
+                        'ativo', 'descricao', 'tipo_ativo', 'instituicao_financeira', 'saldo_bruto'
+                    ]]
+                    .sort_values('saldo_bruto', ascending=False)
+                )
+                st.dataframe(
+                    style_table(posicoes_cliente, currency_cols=['saldo_bruto']),
+                    hide_index=True,
+                    use_container_width=True
+                )
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
