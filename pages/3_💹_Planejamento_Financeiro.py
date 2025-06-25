@@ -255,13 +255,13 @@ hct.streamlit_highcharts(evolucao_options)
 # Análise adicional
 st.markdown("#### Contribuições para o Patrimônio")
 
-categories_bar = ["Patrimônio Inicial", "Rendimentos", "Impostos", "Aportes", "Resgates", "Patrimônio Final"]
+categories_bar = ["Patrimônio Inicial", "Rendimentos", "Aportes", "Resgates", "Impostos", "Patrimônio Final"]
 values_bar = [
     patrimonio_inicial, 
     ultima_linha["Rendimento Acumulado"], 
-    ultima_linha["Imposto Pago Acumulado"],
     ultima_linha["Aporte Acumulado"], 
     -ultima_linha["Resgate Acumulado"],
+    -ultima_linha["Imposto Pago Acumulado"],
     patrimonio_final
 ]
 
