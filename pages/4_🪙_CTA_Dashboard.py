@@ -126,13 +126,7 @@ else:
         all_cta_data.drop('total', axis=1, inplace=True)
 
         st.write(f"Dado mais recente: {all_cta_most_recent_date}")
-        st.dataframe(
-            style_table(
-                all_cta_data.rename(columns={k: v for k, v in etf_options.items()}),
-                numeric_cols_format_as_float=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)']
-                )
-            )
-        st.dataframe(all_cta_data.rename(columns={k: v for k, v in etf_options.items()}))
+        st.dataframe(style_table(all_cta_data, numeric_cols_format_as_float=['weight_cta_invesco', 'weight_cta_kraneshares', 'weight_cta_simplify']))
         all_cta_chart_options = create_chart(
             data=all_cta_data.fillna(0),
             columns=['weight_cta_invesco', 'weight_cta_kraneshares', 'weight_cta_simplify'],
