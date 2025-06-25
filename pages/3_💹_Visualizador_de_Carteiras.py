@@ -45,9 +45,6 @@ if btn_run:
 df = st.session_state.df
 if df is not None:
     try:
-        with st.expander("Dados Brutos", expanded=False):
-            st.dataframe(style_table(df, currency_cols=['saldo_bruto']), hide_index=True)
-
         # Calculo das agregações
         saldo_carteiras = df.groupby('carteira').agg(
             **{
@@ -59,10 +56,13 @@ if df is not None:
         saldo_inst_financeiras = df.groupby('instituicao_financeira')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
         saldo_tipo_ativos = df.groupby('tipo_ativo')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
 
-        tabs = st.tabs(["Visão Geral", "Busca por Ativo", "Busca por Instituição Financeira", "Busca por Tipo de Ativo"])
+        tabs = st.tabs(["Visão Geral", "Busca por Ativo", "Busca por Cliente"])
 
         with tabs[0]:
-            st.subheader("Agregação das Carteiras")
+            st.subheader("Visão Geral")
+
+            with st.expander("Dados Brutos", expanded=False):
+                st.dataframe(style_table(df, currency_cols=['saldo_bruto']), hide_index=True)
 
             # Big numbers
             row_1 = st.columns(3)
