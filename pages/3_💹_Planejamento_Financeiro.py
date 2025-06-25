@@ -137,6 +137,7 @@ if modo_planejamento == "Meta":
     }
     
     variavel_map = {
+        "Patrimônio Inicial": {'name': 'patrimonio_inicial', 'bounds': [0, 10000000], 'format': "R$ {:,.2f}"},
         "Aporte Mensal": {'name': 'aporte_mensal', 'bounds': [0, 100000], 'format': "R$ {:,.2f}"},
         "Resgate Mensal": {'name': 'resgate_mensal', 'bounds': [0, 100000], 'format': "R$ {:,.2f}"},
         "Rentabilidade Nominal Esperada": {'name': 'rentabilidade_nominal_esperada', 'bounds': [0, 50], 'format': "{:.2f}%"}
@@ -164,6 +165,8 @@ if modo_planejamento == "Meta":
             resgate_mensal = res_solver
         elif var_name == 'rentabilidade_nominal_esperada':
             rentabilidade_nominal_esperada = res_solver
+        elif var_name == 'patrimonio_inicial':
+            patrimonio_inicial = res_solver
     else:
         st.error(f"Não foi possível atingir o patrimônio final de R$ {patrimonio_final_alvo:,.2f} ajustando a variável '{variavel_a_calcular}'. Tente ajustar outros parâmetros ou os limites da busca.")
 
