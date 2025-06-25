@@ -105,7 +105,7 @@ with st.sidebar:
         st.markdown("#### Configuração da Meta")
         patrimonio_final_alvo = st.number_input("Patrimônio Final Alvo (R$):", min_value=0.0, value=1000000.0, step=50000.0, format="%.0f")
         
-        opcoes_meta = ["Aporte Mensal", "Resgate Mensal", "Rentabilidade Nominal Esperada"]
+        opcoes_meta = ["Aporte Mensal", "Resgate Mensal", "Rentabilidade Nominal Esperada", "Patrimônio Inicial"]
         if periodo_acumulacao == 0:
             opcoes_meta.remove("Aporte Mensal")
 
