@@ -363,5 +363,3 @@ with tab_mensal:
             percent_cols=["Inflação Acumulada"]
         )
     )
-
-st.dataframe(df_simulacao)
