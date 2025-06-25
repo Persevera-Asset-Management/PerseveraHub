@@ -132,6 +132,7 @@ else:
                 numeric_cols_format_as_float=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)']
                 )
             )
+        st.dataframe(all_cta_data.rename(columns={k: v for k, v in etf_options.items()}))
         all_cta_chart_options = create_chart(
             data=all_cta_data.fillna(0),
             columns=['weight_cta_invesco', 'weight_cta_kraneshares', 'weight_cta_simplify'],
