@@ -343,12 +343,13 @@ with tab_mensal:
         "Idade Meses",
         "Patrimônio Inicial Mês",
         "Rendimento Mensal",
-        "Imposto Pago Mensal",
         "Aporte Mensal Ajustado",
         "Resgate Mensal Ajustado",
+        "Imposto Pago Mensal",
         "Patrimônio Final Mês",
         "Rendimento Acumulado",
         "Resgate Acumulado",
+        "Imposto Pago Acumulado",
         "Aporte Acumulado",
         "Inflação Acumulada"
     ]]
@@ -359,7 +360,7 @@ with tab_mensal:
     st.dataframe(
         style_table(
             df_memoria_mensal,
-            numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Imposto Pago Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
+            numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Imposto Pago Mensal", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado", "Imposto Pago Acumulado"],
             percent_cols=["Inflação Acumulada"]
         )
     )
