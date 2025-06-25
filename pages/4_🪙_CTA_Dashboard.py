@@ -124,14 +124,18 @@ else:
         all_cta_data.sort_values('total', ascending=False, inplace=True)
         all_cta_data.dropna(axis=0, subset='total', inplace=True)
         all_cta_data.drop('total', axis=1, inplace=True)
-        all_cta_data.rename(columns={k: v for k, v in etf_options.items()}, inplace=True)
 
         st.write(f"Dado mais recente: {all_cta_most_recent_date}")
-        st.dataframe(style_table(all_cta_data, numeric_cols_format_as_float=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)']))
+        st.dataframe(
+            style_table(
+                all_cta_data.rename(columns={k: v for k, v in etf_options.items()}),
+                numeric_cols_format_as_float=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)']
+                )
+            )
         all_cta_chart_options = create_chart(
             data=all_cta_data.fillna(0),
-            columns=list(all_cta_data.columns),
-            names=list(all_cta_data.columns),
+            columns=['weight_cta_invesco', 'weight_cta_kraneshares', 'weight_cta_simplify'],
+            names=['Invesco (IMF)', 'KraneShares (KMLM)', 'Simplify (CTA)'],
             chart_type='bar',
             stacking=None,
             title="Posições",
