@@ -199,7 +199,8 @@ if df is not None:
                     names=['Percentual'],
                     chart_type='column',
                     title='Alocação por Tipo de Ativo',
-                    y_axis_title='%'
+                    y_axis_title='%',
+                    x_axis_title='Tipo de Ativo'
                 )
                 hct.streamlit_highcharts(chart_alocacao_tipo_ativo)
                 
