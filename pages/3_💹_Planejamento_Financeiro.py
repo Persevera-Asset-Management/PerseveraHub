@@ -356,6 +356,8 @@ with tab_mensal:
         style_table(
             df_memoria_mensal,
             numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
-            percent_cols=["Inflação Acumulada"]
+            percent_cols=["Inflação Acumulada"],
+            highlight_row_by_column="Patrimônio Final Mês",
+            highlight_row_if_value_equals=0
         )
     )
