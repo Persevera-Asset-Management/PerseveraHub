@@ -255,10 +255,11 @@ hct.streamlit_highcharts(evolucao_options)
 # Análise adicional
 st.markdown("#### Contribuições para o Patrimônio")
 
-categories_bar = ["Patrimônio Inicial", "Rendimentos", "Aportes", "Resgates", "Patrimônio Final"]
+categories_bar = ["Patrimônio Inicial", "Rendimentos", "Impostos", "Aportes", "Resgates", "Patrimônio Final"]
 values_bar = [
     patrimonio_inicial, 
     ultima_linha["Rendimento Acumulado"], 
+    ultima_linha["Imposto Pago Acumulado"],
     ultima_linha["Aporte Acumulado"], 
     -ultima_linha["Resgate Acumulado"],
     patrimonio_final
@@ -292,6 +293,7 @@ with tab_anual:
         patrimonio_final_ano=('Patrimônio Final Mês', 'last'),
         rendimento_acumulado=('Rendimento Acumulado', 'last'),
         resgate_acumulado=('Resgate Acumulado', 'last'),
+        imposto_pago_acumulado=('Imposto Pago Acumulado', 'last'),
         aporte_acumulado=('Aporte Acumulado', 'last'),
         inflacao_acumulada=('Inflação Acumulada', 'last')
     ).reset_index()
@@ -305,6 +307,7 @@ with tab_anual:
             'patrimonio_final_ano': patrimonio_inicial,
             'rendimento_acumulado': 0,
             'resgate_acumulado': 0,
+            'imposto_pago_acumulado': 0,
             'aporte_acumulado': 0,
             'inflacao_acumulada': 0
         }
