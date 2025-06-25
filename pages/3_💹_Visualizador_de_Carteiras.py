@@ -173,8 +173,9 @@ if df is not None:
 
         with tabs[2]:
             st.subheader("Busca por Cliente")
-            
-            selected_carteira_cliente = st.selectbox("Selecione a Carteira", [""] + sorted(df['carteira'].unique()), key="selected_carteira_cliente")
+            row_6 = st.columns(2)
+            with row_6[0]:
+                selected_carteira_cliente = st.selectbox("Selecione a Carteira", [""] + sorted(df['carteira'].unique()), key="selected_carteira_cliente")
 
             if selected_carteira_cliente:
                 df_cliente = df[df['carteira'] == selected_carteira_cliente]
@@ -203,7 +204,7 @@ if df is not None:
                 hct.streamlit_highcharts(chart_alocacao_tipo_ativo)
                 
                 # Tabela de posições
-                st.write("Posições da Carteira")
+                st.markdown("## Posições da Carteira")
                 posicoes_cliente = (
                     df_cliente[[
                         'ativo', 'descricao', 'tipo_ativo', 'instituicao_financeira', 'saldo_bruto'
