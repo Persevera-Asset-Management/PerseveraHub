@@ -327,7 +327,7 @@ with tab_anual:
     st.dataframe(
         style_table(
             df_anual,
-            numeric_cols_format_as_float=["Patrimônio Inicial Ano", "Patrimônio Final Ano", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado"],
+            numeric_cols_format_as_float=["Patrimônio Inicial Ano", "Patrimônio Final Ano", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado", "Imposto Pago Acumulado"],
             percent_cols=["Inflação Acumulada"]
         )
     )
