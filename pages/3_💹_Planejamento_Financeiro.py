@@ -342,6 +342,7 @@ with tab_mensal:
     df_memoria_mensal = df_simulacao.copy()
 
     df_memoria_mensal = df_memoria_mensal[[
+        "Data",
         "Idade Anos",
         "Idade Meses",
         "Patrimônio Inicial Mês",
@@ -356,8 +357,9 @@ with tab_mensal:
         "Aporte Acumulado",
         "Inflação Acumulada"
     ]]
+    df_memoria_mensal["Data"] = df_memoria_mensal["Data"].dt.strftime("%Y-%m-%d")
     df_memoria_mensal["Idade"] = df_memoria_mensal.apply(lambda x: f"{int(x['Idade Anos'])} anos e {int(x['Idade Meses'])} meses", axis=1)
-    df_memoria_mensal.set_index(["Idade"], inplace=True)
+    df_memoria_mensal.set_index(["Data", "Idade"], inplace=True)
     df_memoria_mensal.drop(columns=["Idade Anos", "Idade Meses"], inplace=True)
 
     st.dataframe(
