@@ -514,7 +514,7 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
             print(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
             return data # Cannot proceed with logic
 
-        result = data.copy()
+        result = pd.DataFrame(data.copy())
         new_column_name = f"{column}_saar_{period_months}m"
         
         result[new_column_name] = np.nan # Ensure column exists
@@ -621,6 +621,7 @@ class RollingBetaTransformer(DataTransformer):
 
 # Register all transformers in a dictionary for easy lookup
 TRANSFORMERS = {
+    "default": DataTransformer,
     "yearly_variation": YearlyVariationTransformer,
     "monthly_variation": MonthlyVariationTransformer,
     "quarterly_variation": QuarterlyVariationTransformer,
@@ -634,7 +635,6 @@ TRANSFORMERS = {
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
-    "default": DataTransformer,
 }
 
 def apply_transformations(data: pd.DataFrame, transformations_config: List[Dict[str, Any]]) -> pd.DataFrame:
