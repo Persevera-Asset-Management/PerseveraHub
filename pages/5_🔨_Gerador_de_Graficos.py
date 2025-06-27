@@ -148,7 +148,6 @@ else: # Fallback, embora não deva acontecer com st.radio
 height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=default_height, step=50, key="height_num_input")
 width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=default_width, step=50, key="width_num_input")
 
-
 # Inputs Condicionais
 if data_source == "Buscar por Códigos":
     codes_input_series = st.sidebar.multiselect("Códigos das Séries", options=load_indicator_codes(), key="codes_series")
@@ -226,6 +225,8 @@ for i, trans in enumerate(st.session_state.transformations):
 if indices_to_remove:
     st.session_state.transformations = [trans for i, trans in enumerate(st.session_state.transformations) if i not in indices_to_remove]
     st.rerun()
+
+st.sidebar.markdown("---")
 
 # --- Lógica Principal da Página --- 
 if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
