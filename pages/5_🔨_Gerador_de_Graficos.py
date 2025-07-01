@@ -214,6 +214,8 @@ for i, trans in enumerate(st.session_state.transformations):
         if params['annualized']:
             params['periods_in_year'] = st.sidebar.number_input("Períodos no ano", min_value=1, value=trans.get('params',{}).get('periods_in_year', 252), key=f"param_vol_periods_{i}")
         params['calculate_on_returns'] = st.sidebar.checkbox("Calcular sobre retornos?", value=trans.get('params',{}).get('calculate_on_returns', True), key=f"param_vol_returns_{i}")
+    elif trans['type'] == "rolling_sum":
+        params['window'] = st.sidebar.number_input("Janela (períodos)", min_value=1, value=trans.get('params',{}).get('window', 12), key=f"param_rs_window_{i}")
     elif trans['type'] == "rolling_sum_plus_yearly_variation":
         params['window'] = st.sidebar.number_input("Janela da soma (períodos)", min_value=1, value=trans.get('params',{}).get('window', 12), key=f"param_rsyv_window_{i}")
         params['frequency'] = st.sidebar.text_input("Frequência (ex: 'M', 'Q')", value=trans.get('params',{}).get('frequency', 'M'), key=f"param_rsyv_freq_{i}")

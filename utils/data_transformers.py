@@ -303,6 +303,24 @@ class MovingAverageTransformer(DataTransformer):
         
         return result
 
+class RollingSumTransformer(DataTransformer):
+    """Calculates rolling sum for a given column"""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        window = config.get('window', 12)
+        
+        if not column or column not in data.columns:
+            print(f"Warning: Column '{column}' not found for rolling sum. Skipping.")
+            return data
+            
+        result = data.copy()
+        
+        # Calculate rolling sum
+        result[f"{column}_rolling_sum{window}"] = result[column].rolling(window=window).sum()
+        
+        return result
+
 class RollingSumPlusYearlyVariationTransformer(DataTransformer):
     """Calculates rolling sum and yearly variation for a given column"""
     @staticmethod
@@ -631,6 +649,7 @@ TRANSFORMERS = {
     "rolling_min": RollingMinTransformer,
     "rolling_volatility": RollingVolatilityTransformer,
     "rolling_beta": RollingBetaTransformer,
+    "rolling_sum": RollingSumTransformer,
     "rolling_sum_plus_yearly_variation": RollingSumPlusYearlyVariationTransformer,
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
