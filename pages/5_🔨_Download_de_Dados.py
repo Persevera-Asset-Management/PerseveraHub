@@ -86,6 +86,20 @@ with row_2[0]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Focus (BCB): {e}")
 
+# Sidra
+with row_2[1]:
+    if st.button('Sidra', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Sidra...'):
+                sidra_data = fds.get_data(
+                    source='sidra',
+                    save_to_db=True,
+                )
+            st.success('Dados do Sidra baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Sidra: {e}")
+
+
 st.write("#### Fundos Sistemáticos (CTA)")
 row_3 = st.columns(3)
 
