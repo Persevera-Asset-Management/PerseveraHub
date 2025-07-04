@@ -51,7 +51,7 @@ else:
     charts_by_context = organize_charts_by_context(chart_configs)
         
     # Create tabs for different regions
-    tabs = st.tabs(["Juros", "Cenários", "Commodities", "Moedas", "Equities", "Crédito Privado"])
+    tabs = st.tabs(["Juros", "Moedas", "Commodities", "Equities", "Crédito Privado"])
     
     # Tab 1: Juros
     with tabs[0]:
@@ -73,24 +73,8 @@ else:
             if "Taxas de Juros (BR)" in juros_context:
                 render_chart_group_with_context(data, chart_configs, "Juros", "Taxas de Juros (BR)", charts_by_context)
 
-    # Tab 2: Cenários
+    # Tab 2: Moedas
     with tabs[1]:
-        cenarios_context = charts_by_context.get("Cenários", {})
-        cenarios_tabs = st.tabs(["Cenários"])
-
-        # Cenários
-        with cenarios_tabs[0]:
-            if "Cenários" in cenarios_context:
-                render_chart_group_with_context(data, chart_configs, "Cenários", "Cenários", charts_by_context)
-    
-    # Tab 3: Commodities
-    with tabs[2]:
-        commodities_context = charts_by_context.get("Commodities", {})
-        if "Commodities" in commodities_context:
-            render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
-
-    # Tab 4: Moedas
-    with tabs[3]:
         moedas_context = charts_by_context.get("Moedas", {})
 
         if "Performance" in moedas_context:
@@ -99,8 +83,14 @@ else:
         if "Reservas Internacionais" in moedas_context:
             render_chart_group_with_context(data, chart_configs, "Moedas", "Reservas Internacionais", charts_by_context)
 
-    # Tab 5: Equities
-    with tabs[4]:
+    # Tab 3: Commodities
+    with tabs[2]:
+        commodities_context = charts_by_context.get("Commodities", {})
+        if "Commodities" in commodities_context:
+            render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
+
+    # Tab 4: Equities
+    with tabs[3]:
         equities_context = charts_by_context.get("Equities", {})
         equities_tabs = st.tabs(["Valuation"])
 
@@ -109,7 +99,7 @@ else:
             if "Valuation" in equities_context:
                 render_chart_group_with_context(data_valuation, chart_configs, "Equities", "Valuation", charts_by_context)
 
-    # Tab 6: Crédito Privado
-    with tabs[5]:
+    # Tab 5: Crédito Privado
+    with tabs[4]:
         credito_privado_context = charts_by_context.get("Crédito Privado", {})
         
