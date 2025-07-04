@@ -281,7 +281,7 @@ CHARTS_ESTRATEGIA = {
     },
     "valuation_em_equities": {
         "chart_config": {
-            "columns": ["br_ibovespa", "br_sml_index", "china_csi300", "south_africa_top40", "mexico_bmv", "chile_ipsa", "india_nifty50"],
+            "columns": ["br_ibovespa", "br_smll", "china_csi300", "south_africa_top40", "mexico_bmv", "chile_ipsa", "india_nifty50"],
             "names": ["Ibovespa", "SMLL", "CSI 300", "South Africa Top 40", "BMV", "IPSA", "Nifty 50"],
             "chart_type": "line",
             "title": "Emergentes",
