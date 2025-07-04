@@ -163,19 +163,77 @@ CHARTS_ESTRATEGIA = {
     },
 
     # === Moedas ===
-    # Modelo Cambial
+    # Reservas Internacionais
     "br_international_reserves": {
         "chart_config": {
             "columns": ["br_international_reserves_total"],
             "names": ["Reservas Internacionais"],
             "chart_type": "line",
             "title": "Reservas Internacionais",
-            "y_axis_title": "Valor",
+            "y_axis_title": "US$",
         },
         "width": 6,
         "context": "Moedas",
-        "group": "Modelo Cambial",
-        "block_title": "Modelo Cambial"
+        "group": "Reservas Internacionais",
+        "block_title": "Reservas Internacionais"
+    },
+
+    # === Commodities ===
+    # CRB
+    "crb_index": {
+        "chart_config": {
+            "columns": ["crb_index", "crb_fats_oils_index", "crb_food_index", "crb_livestock_index", "crb_metals_index", "crb_raw_industrials_index", "crb_textiles_index"],
+            "names": ["Índice CRB", "Fats & Oils", "Food", "Livestock", "Metals", "Raw Industrials", "Textiles"],
+            "chart_type": "line",
+            "title": "Commodities (CRB)",
+            "y_axis_title": "Índice",
+        },
+        "width": 6,
+        "context": "Commodities",
+        "group": "Commodities",
+        "block_title": "Commodities"
+    },
+    # Commodities (Agri - CEPEA)
+    "cepea_agri": {
+        "chart_config": {
+            "columns": ["br_cepea_arabica_coffee", "br_cepea_chilled_whole_broiler", "br_cepea_corn_wholesale", "br_cepea_cotton_feather", "br_cepea_ethanol_fuel", "br_cepea_fed_cattle", "br_cepea_paddy_rice", "br_cepea_pork", "br_cepea_soft_wheat", "br_cepea_soybean_wholesale", "br_cepea_sugar"],
+            "names": ["Café Arábica", "Frango", "Milho", "Algodão", "Etanol", "Gado", "Arroz", "Peixe", "Trigo", "Soja", "Açúcar"],
+            "chart_type": "line",
+            "title": "Commodities (Agri - CEPEA)",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Commodities",
+        "group": "Commodities",
+        "block_title": "Commodities"
+    },
+    # Commodities (Energia)
+    "energy_commodities": {
+        "chart_config": {
+            "columns": ["crude_oil_wti", "crude_oil_brent", "gasoline", "usda_diesel", "natural_gas", "thermal_coal"],
+            "names": ["WTI", "Brent", "Gasolina", "Diesel", "Gás Natural", "Carvão Térmico"],
+            "chart_type": "line",
+            "title": "Commodities (Energia)",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Commodities",
+        "group": "Commodities",
+        "block_title": "Commodities"
+    },
+    # Commodities (Metais)
+    "metals_commodities": {
+        "chart_config": {
+            "columns": ["gold_futures", "silver_futures", "lme_aluminum_futures", "lme_copper_futures", "sgx_iron_ore_62_futures", "platinum_futures", "palladium_futures"],
+            "names": ["Ouro", "Prata", "Alumínio", "Cobre", "Minério de Ferro", "Platina", "Paládio"],
+            "chart_type": "line",
+            "title": "Commodities (Metais)",
+            "y_axis_title": "Valor",
+        },
+        "width": 6,
+        "context": "Commodities",
+        "group": "Commodities",
+        "block_title": "Commodities"
     },
     
     # Performance

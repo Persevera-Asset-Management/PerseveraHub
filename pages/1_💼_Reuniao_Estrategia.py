@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from persevera_tools.data import get_series
 from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.reuniao_estrategia import CHARTS_ESTRATEGIA
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
+from persevera_tools.data import get_series
+from persevera_tools.db.operations import read_sql
 
 st.set_page_config(
     page_title="Reunião Estratégia | Persevera",
@@ -50,7 +51,7 @@ else:
     charts_by_context = organize_charts_by_context(chart_configs)
         
     # Create tabs for different regions
-    tabs = st.tabs(["Juros", "Cenários", "Commodities", "Moedas", "Equities"])
+    tabs = st.tabs(["Juros", "Cenários", "Commodities", "Moedas", "Equities", "Crédito Privado"])
     
     # Tab 1: Juros
     with tabs[0]:
@@ -96,11 +97,11 @@ else:
     with tabs[3]:
         moedas_context = charts_by_context.get("Moedas", {})
 
-        if "Modelo Cambial" in moedas_context:
-            render_chart_group_with_context(data, chart_configs, "Moedas", "Modelo Cambial", charts_by_context)
-
         if "Performance" in moedas_context:
             render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
+
+        if "Reservas Internacionais" in moedas_context:
+            render_chart_group_with_context(data, chart_configs, "Moedas", "Reservas Internacionais", charts_by_context)
 
     # Tab 5: Equities
     with tabs[4]:
@@ -111,3 +112,8 @@ else:
         with equities_tabs[0]:
             if "Valuation" in equities_context:
                 render_chart_group_with_context(data_valuation, chart_configs, "Equities", "Valuation", charts_by_context)
+
+    # Tab 6: Crédito Privado
+    with tabs[5]:
+        credito_privado_context = charts_by_context.get("Crédito Privado", {})
+        
