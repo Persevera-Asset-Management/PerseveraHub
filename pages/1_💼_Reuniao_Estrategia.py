@@ -86,12 +86,8 @@ else:
     # Tab 3: Commodities
     with tabs[2]:
         commodities_context = charts_by_context.get("Commodities", {})
-        commodities_tabs = st.tabs(["Commodities"])
-
-        # Commodities
-        with commodities_tabs[0]:
-            if "Commodities" in commodities_context:
-                render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
+        if "Commodities" in commodities_context:
+            render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
 
     # Tab 4: Moedas
     with tabs[3]:

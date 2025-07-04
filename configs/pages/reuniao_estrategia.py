@@ -210,7 +210,7 @@ CHARTS_ESTRATEGIA = {
     # Commodities (Energia)
     "energy_commodities": {
         "chart_config": {
-            "columns": ["crude_oil_wti", "crude_oil_brent", "gasoline", "usda_diesel", "natural_gas", "thermal_coal"],
+            "columns": ["crude_oil_wti_futures", "crude_oil_brent_futures", "gasoline_rbob_futures", "usda_diesel", "natural_gas_futures", "thermal_coal_futures"],
             "names": ["WTI", "Brent", "Gasolina", "Diesel", "Gás Natural", "Carvão Térmico"],
             "chart_type": "line",
             "title": "Commodities (Energia)",
