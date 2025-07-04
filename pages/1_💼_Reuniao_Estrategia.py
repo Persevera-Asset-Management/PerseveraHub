@@ -95,17 +95,12 @@ else:
     # Tab 4: Moedas
     with tabs[3]:
         moedas_context = charts_by_context.get("Moedas", {})
-        moedas_tabs = st.tabs(["Modelo Cambial", "Performance"])
 
-        # Modelo Cambial
-        with moedas_tabs[0]:
-            if "Modelo Cambial" in moedas_context:
-                render_chart_group_with_context(data, chart_configs, "Moedas", "Modelo Cambial", charts_by_context)
+        if "Modelo Cambial" in moedas_context:
+            render_chart_group_with_context(data, chart_configs, "Moedas", "Modelo Cambial", charts_by_context)
 
-        # Performance
-        with moedas_tabs[1]:
-            if "Performance" in moedas_context:
-                render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
+        if "Performance" in moedas_context:
+            render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
 
     # Tab 5: Equities
     with tabs[4]:
