@@ -56,10 +56,9 @@ else:
             columns=df_emissions.columns.tolist(),
             names=df_emissions.columns.tolist(),
             chart_type='column',
-            stacking='normal',
+            # stacking='normal',
             title="Emissões de Debentures",
-            y_axis_title="Quantidade Emitida",
-            x_axis_title="Data"
+            y_axis_title="Volume Emitido (R$)",
         )
 
         hct.streamlit_highcharts(chart_emissions_options)
