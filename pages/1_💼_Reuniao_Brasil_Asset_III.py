@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from persevera_tools.data import get_series
-from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
+from persevera_tools.data.private_credit import calculate_spread
+from utils.chart_helpers import create_chart, extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.reuniao_brasil_asset import CHARTS_BRASIL_ASSET
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
+import streamlit_highcharts as hct
 
 st.set_page_config(
     page_title="Brasil Asset III | Persevera",
@@ -66,3 +68,18 @@ else:
     with tabs[2]:
         st.header("Moedas")
         render_chart_group_with_context(data, chart_configs, "Moedas", "Índices e Taxas de Câmbio", charts_by_context)
+
+    # Tab 4: Crédito Privado
+    with tabs[3]:
+        st.header("Crédito Privado")
+        spread = calculate_spread("DI", start_date=start_date_str)
+
+        chart_options = create_chart(
+            data=spread,
+            chart_type='line',
+            title="Spread do Crédito Privado",
+            y_axis_title="Spread (%)",
+            x_axis_title="Data"
+        )
+
+        hct.streamlit_highcharts(chart_options)
