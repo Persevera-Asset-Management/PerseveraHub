@@ -47,8 +47,8 @@ else:
     # Tab 1: Emissões
     with tabs[0]:
         st.header("Emissões")
-        df_emissions = data.reset_index().groupby([pd.Grouper(key="data_emissao", freq="MS"), 'indice'])['quantidade_emitida'].sum().reset_index().pivot(
-            index='data_emissao', columns='indice', values='quantidade_emitida'
+        df_emissions = data.reset_index().groupby([pd.Grouper(key="data_emissao", freq="MS"), 'indice'])['volume_emissao'].sum().reset_index().pivot(
+            index='data_emissao', columns='indice', values='volume_emissao'
         )
 
         chart_emissions_options = create_chart(
