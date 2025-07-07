@@ -53,8 +53,8 @@ else:
 
         chart_emissions_options = create_chart(
             data=df_emissions,
-            columns=df_emissions.columns,
-            names=df_emissions.columns,
+            columns=df_emissions.columns.tolist(),
+            names=df_emissions.columns.tolist(),
             chart_type='column',
             stacking='normal',
             title="Emissões de Debentures",
