@@ -59,6 +59,7 @@ else:
             stacking='normal',
             title="Emissões de Debentures",
             y_axis_title="Volume Emitido (R$)",
+            decimal_precision=0
         )
 
         hct.streamlit_highcharts(chart_emissions_options)
