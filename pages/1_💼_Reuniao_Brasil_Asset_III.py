@@ -74,14 +74,16 @@ else:
         st.header("Crédito Privado")
         spread = calculate_spread("DI", start_date=start_date_str)
 
-        chart_options = create_chart(
-            data=spread,
-            columns=["median", "mean", "weighted_mean"],
-            names=["Mediana", "Média", "Média Ponderada"],
-            chart_type='line',
-            title="Evolução do Spread CDI+",
-            y_axis_title="Spread (%)",
-            decimal_precision=3
-        )
+        row_1 = st.columns(2)
+        with row_1[0]:
+            chart_options = create_chart(
+                data=spread,
+                columns=["median", "mean", "weighted_mean"],
+                names=["Mediana", "Média", "Média Ponderada"],
+                chart_type='line',
+                title="Evolução do Spread CDI+",
+                y_axis_title="Spread (%)",
+                decimal_precision=3
+            )
 
-        hct.streamlit_highcharts(chart_options)
+            hct.streamlit_highcharts(chart_options)
