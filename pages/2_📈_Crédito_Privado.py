@@ -55,7 +55,7 @@ else:
             data=df_emissions,
             columns=df_emissions.columns.tolist(),
             names=df_emissions.columns.tolist(),
-            chart_type='column',
+            chart_type='line',
             # stacking='normal',
             title="Emissões de Debentures",
             y_axis_title="Volume Emitido (R$)",
