@@ -80,7 +80,8 @@ else:
             names=["Mediana", "Média", "Média Ponderada"],
             chart_type='line',
             title="Evolução do Spread CDI+",
-            y_axis_title="Spread (%)"
+            y_axis_title="Spread (%)",
+            decimal_precision=3
         )
 
         hct.streamlit_highcharts(chart_options)
