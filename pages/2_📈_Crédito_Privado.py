@@ -56,7 +56,7 @@ else:
             columns=df_emissions.columns,
             names=df_emissions.columns,
             chart_type='column',
-            stacked='normal',
+            stacking='normal',
             title="Emissões de Debentures",
             y_axis_title="Quantidade Emitida",
             x_axis_title="Data"
