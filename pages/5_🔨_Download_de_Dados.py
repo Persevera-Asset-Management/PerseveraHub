@@ -162,7 +162,7 @@ with row_4[0]:
 st.write("#### Crédito Privado")
 row_5 = st.columns(3)
 
-# Simplify
+# Debentures.com.br
 with row_5[0]:
     if st.button('Debentures.com.br', use_container_width=True):
         try:
@@ -174,3 +174,14 @@ with row_5[0]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Debentures.com.br: {e}")
 
+# ANBIMA (Debentures)
+with row_5[1]:
+    if st.button('ANBIMA (Debentures)', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do ANBIMA (Debentures)...'):
+                anbima_debentures_data = fds.get_anbima_debentures_data(
+                    save_to_db=True,
+                )
+            st.success('Dados do ANBIMA (Debentures) baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do ANBIMA (Debentures): {e}")
