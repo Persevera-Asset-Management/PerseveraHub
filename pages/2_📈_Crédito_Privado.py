@@ -51,7 +51,7 @@ else:
             index='data_emissao', columns='indice', values='quantidade_emitida'
         )
 
-        chart_options = create_chart(
+        chart_emissions_options = create_chart(
             data=df_emissions,
             columns=df_emissions.columns,
             names=df_emissions.columns,
@@ -61,6 +61,8 @@ else:
             y_axis_title="Quantidade Emitida",
             x_axis_title="Data"
         )
+
+        hct.streamlit_highcharts(chart_emissions_options)
 
     # Tab 2: Spread
     with tabs[1]:
