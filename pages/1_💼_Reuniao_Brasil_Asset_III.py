@@ -76,10 +76,11 @@ else:
 
         chart_options = create_chart(
             data=spread,
+            columns=["median", "mean", "weighted_mean"],
+            names=["Mediana", "Média", "Média Ponderada"],
             chart_type='line',
-            title="Spread do Crédito Privado",
-            y_axis_title="Spread (%)",
-            x_axis_title="Data"
+            title="Evolução do Spread CDI+",
+            y_axis_title="Spread (%)"
         )
 
         hct.streamlit_highcharts(chart_options)
