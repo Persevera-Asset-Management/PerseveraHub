@@ -99,7 +99,6 @@ with row_2[1]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Sidra: {e}")
 
-
 st.write("#### Fundos Sistemáticos (CTA)")
 row_3 = st.columns(3)
 
@@ -159,3 +158,19 @@ with row_4[0]:
             st.success('Dados dos Fundos de Investimento baixados e salvos com sucesso!')
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados dos Fundos de Investimento: {e}")
+
+st.write("#### Crédito Privado")
+row_5 = st.columns(3)
+
+# Simplify
+with row_5[0]:
+    if st.button('Debentures.com.br', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do Debentures.com.br...'):
+                debentures_data = fds.get_debentures_com_data(
+                    save_to_db=True,
+                )
+            st.success('Dados do Debentures.com.br baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do Debentures.com.br: {e}")
+
