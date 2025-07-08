@@ -16,26 +16,18 @@ check_authentication()
 
 st.title('Calendário Econômico')
 
-with st.sidebar:
-    st.header("Parâmetros")
-    start_date = st.date_input("Data de Início", value=datetime.now() - timedelta(days=365), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY")
-    start_date_str = start_date.strftime('%Y-%m-%d')
-    btn_run = st.button("Run")
-
 try:
-    fds = FinancialDataService(start_date=start_date_str)
+    fds = FinancialDataService(start_date="2025-01-01")
 except Exception as e:
     st.error(f"Erro ao inicializar FinancialDataService: {e}")
     st.stop()
 
-if btn_run:
-    with st.spinner("Carregando dados..."):
-        try:
-            calendar_data = fds.get_investing_calendar_data(
-                save_to_db=False
-            )
-            st.success('Dados do Calendário Econômico baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
-
-    st.write(calendar_data)
+with st.spinner("Carregando dados..."):
+    try:
+        calendar_data = fds.get_investing_calendar_data(
+            save_to_db=False
+        )
+        st.success('Dados do Calendário Econômico baixados e salvos com sucesso!')
+        st.dataframe(calendar_data, hide_index=True)
+    except Exception as e:
+        st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
