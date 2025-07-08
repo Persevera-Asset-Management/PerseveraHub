@@ -102,7 +102,6 @@ else:
                     names=["Preço ($)", "Peso (%)"],
                     chart_type='dual_axis_line_area',
                     stacking=None,
-                    colors=["#19202a", "#cdb89b"],
                     title=f"Posição em {selected_asset.replace('_futures', '').replace('_', ' ').title()}",
                     y_axis_title=("Preço ($)", "Peso (%)"),
                 )
