@@ -145,7 +145,7 @@ else:
         weights_df = weights_df.ffill()
 
         with st.expander("Histórico de Alocações", expanded=False):
-            st.dataframe(style_table(weights_df.replace(0, np.nan), percent_cols=weights_df.columns.tolist()))
+            st.dataframe(style_table(weights_df.replace(0, np.nan).mul(100), percent_cols=weights_df.columns.tolist()))
 
         returns_equities_portfolio = weights_df.mul(data_equities_portfolio.pct_change(), axis=0).sum(axis=1)
         returns_df = pd.concat([returns_equities_portfolio, indicators.pct_change().fillna(0)], axis=1)
