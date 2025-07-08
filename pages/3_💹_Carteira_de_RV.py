@@ -152,26 +152,29 @@ else:
         returns_df.columns = ['Carteira de RV', 'Ibovespa']
         cumulative_returns_equities_portfolio = (1 + returns_df).cumprod() - 1
 
-        # Performance acumulado
-        chart_performance_options = create_chart(
-            data=cumulative_returns_equities_portfolio * 100,
-            columns=["Carteira de RV", "Ibovespa"],
-            names=["Carteira de RV", "Ibovespa"],
-            chart_type='line',
-            title="Evolução da Carteira de RV",
-            y_axis_title="Retorno (%)",
-            decimal_precision=2
-        )
-        hct.streamlit_highcharts(chart_performance_options)
-
-        # Performance diária
-        chart_daily_returns_options = create_chart(
-            data=returns_df * 10000,
-            columns=["Carteira de RV"],
-            names=["Carteira de RV"],
-            chart_type='column',
-            title="Retorno Diário da Carteira de RV",
-            y_axis_title="Retorno (bps)",
-            decimal_precision=0
-        )
-        hct.streamlit_highcharts(chart_daily_returns_options)
+        col_1 = st.columns(2)
+        with col_1[0]:
+            # Performance acumulado
+            chart_performance_options = create_chart(
+                data=cumulative_returns_equities_portfolio * 100,
+                columns=["Carteira de RV", "Ibovespa"],
+                names=["Carteira de RV", "Ibovespa"],
+                chart_type='line',
+                title="Evolução da Carteira de RV",
+                y_axis_title="Retorno (%)",
+                decimal_precision=2
+            )
+            hct.streamlit_highcharts(chart_performance_options)
+        
+        with col_1[1]:
+            # Performance diária
+            chart_daily_returns_options = create_chart(
+                data=returns_df * 10000,
+                columns=["Carteira de RV"],
+                names=["Carteira de RV"],
+                chart_type='column',
+                title="Retorno Diário da Carteira de RV",
+                y_axis_title="Retorno (bps)",
+                decimal_precision=0
+            )
+            hct.streamlit_highcharts(chart_daily_returns_options)
