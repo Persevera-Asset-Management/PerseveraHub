@@ -1396,8 +1396,8 @@ CHARTS_ECONOMIA = {
     },
     "br_exports_imports_t12": {
         "chart_config": {
-            "columns": [("br_trade_balance_fob_exports_usd", "br_trade_balance_fob_imports_usd"), ("br_trade_balance_fob_imports_usd")],
-            "names": ["Exportações", "Importações"],
+            "columns": (["br_trade_balance_fob_exports_usd", "br_trade_balance_fob_imports_usd"], ["br_trade_balance_fob_imports_usd"]),
+            "names": (["Exportações", "Importações"], ["Saldo"]),
             "chart_type": "dual_axis_line_area",
             "title": "Exportações e Importações (Acumulado 12 meses)",
             "y_axis_title": ("US$", "US$"),
