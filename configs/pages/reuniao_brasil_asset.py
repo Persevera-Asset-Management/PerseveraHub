@@ -129,7 +129,7 @@ CHARTS_BRASIL_ASSET = {
         },
         "transformations": [{"type": "rolling_sum", "column": "br_trade_balance_fob_exports_usd", "frequency": "MS", "window": 12}, {"type": "rolling_sum", "column": "br_trade_balance_fob_imports_usd", "frequency": "MS", "window": 12}],
         "width": 6,
-        "group": "Índices e Taxas de Câmbio",
-        "context": "Moedas"
+        "group": "Curvas de Juros",
+        "context": "Títulos Públicos"
     },
 }
