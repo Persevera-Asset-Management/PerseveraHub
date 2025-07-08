@@ -121,7 +121,7 @@ CHARTS_BRASIL_ASSET = {
     },
     "br_exports_imports_t12": {
         "chart_config": {
-            "columns": ["br_trade_balance_fob_exports_usd", "br_trade_balance_fob_imports_usd"],
+            "columns": ["br_trade_balance_fob_exports_usd_rolling_sum_12", "br_trade_balance_fob_imports_usd_rolling_sum_12"],
             "names": ["Exportações", "Importações"],
             "chart_type": "line",
             "title": "Exportações e Importações (Acumulado 12 meses)",
