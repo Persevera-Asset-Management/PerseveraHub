@@ -27,7 +27,7 @@ with st.spinner("Carregando dados..."):
         calendar_data = fds.get_investing_calendar_data(
             save_to_db=False
         )
-        st.success('Dados do Calendário Econômico baixados e salvos com sucesso!')
-        st.dataframe(calendar_data, hide_index=True)
+        calendar_data.set_index('date', inplace=True)
+        st.dataframe(calendar_data)
     except Exception as e:
         st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
