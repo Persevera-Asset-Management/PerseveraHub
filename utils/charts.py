@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 
 DEFAULT_CHART_COLORS = [
-    '#4682B4', '#3E5A6B', '#8B9DC3', '#A55A5A', '#C75B5B', '#5A7A5A'
+    '#19202A', '#B99B7B', '#B3BEBD', '#CDB89B', '#CAD7D8', '#4682B4', '#3E5A6B', '#8B9DC3', '#A55A5A'
 ]
 
 def create_highcharts_options(
