@@ -6,10 +6,11 @@ from datetime import datetime, timedelta
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
-from persevera_tools.data import get_descriptors, get_securities_by_exchange
-from persevera_tools.quant_research.matrix import corr_to_cov, find_nearest_corr
-from configs.pages.carteira_rv import ACOES_RV
 from utils.auth import check_authentication
+from configs.pages.carteira_rv import ACOES_RV
+from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_series
+from persevera_tools.quant_research.matrix import corr_to_cov, find_nearest_corr
+from persevera_tools.data.sma import get_equities_portfolio
 
 st.set_page_config(
     page_title="Carteira de RV | Persevera",
@@ -32,6 +33,25 @@ def load_active_securities():
         st.error(f"Error loading active securities: {str(e)}")
         return []
 
+@st.cache_data(ttl=3600)
+def load_data(codes, start_date, field):
+    try:
+        if isinstance(field, list):
+            return get_descriptors(codes, start_date=start_date, descriptors=field)
+        else:
+            return get_descriptors(codes, start_date=start_date, descriptors=[field])
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=3600)
+def load_indicators(codes, start_date):
+    try:
+        return get_series(codes, start_date=start_date)
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return pd.DataFrame()
+
 def create_allocation_table(data):
     table = data.swaplevel(axis=1)['beta'].iloc[-1].to_frame("Bloomberg Beta")
     table['1 / Beta'] = 1.0 / table['Bloomberg Beta']
@@ -46,14 +66,16 @@ def calculate_portfolio_volatility(weights, returns):
     return np.sqrt(portfolio_variance)
 
 active_securities = load_active_securities()
+equities_portfolio = get_equities_portfolio()
 
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
     selected_stocks = st.multiselect("Ações selecionadas", options=active_securities, default=ACOES_RV)
 
-data = get_descriptors(selected_stocks, start_date=datetime.now() - timedelta(days=365), descriptors=['price_close', 'beta'])
-data = data.swaplevel(axis=1)
+data = load_data(selected_stocks, start_date=datetime.now() - timedelta(days=365), field=['price_close', 'beta']).swaplevel(axis=1)
+data_equities_portfolio = load_data(list(equities_portfolio['code'].unique()), start_date=equities_portfolio['date'].min(), field='price_close')
+indicators = load_indicators('br_ibovespa', start_date=equities_portfolio['date'].min())
 
 if data.empty or len(selected_stocks) == 0:
     st.warning("Por favor, selecione ao menos uma ação para continuar.")
@@ -92,7 +114,7 @@ else:
         
         st.dataframe(style_table(allocation_table, numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'], percent_cols=['Equal Weight (%)', 'Final Weight (%)']))
         
-        st.subheader("Estatísticas")
+        st.markdown("#### Estatísticas")
         portfolio_volatility_inv_beta = calculate_portfolio_volatility(allocation_table['Final Weight (%)'], returns)
         portfolio_volatility_equal_weight = calculate_portfolio_volatility(allocation_table['Equal Weight (%)'], returns)
         
@@ -116,3 +138,28 @@ else:
     # Track Record
     with tabs[1]:
         st.subheader("Track Record")
+        
+        weights_df = equities_portfolio.pivot(index='date', columns='code', values='inv_beta')
+        weights_df = weights_df.div(weights_df.sum(axis=1), axis=0).fillna(0)
+        weights_df = weights_df.reindex(data_equities_portfolio.index)
+        weights_df = weights_df.ffill()
+
+        with st.expander("Histórico de Alocações", expanded=False):
+            st.dataframe(style_table(weights_df))
+
+        returns_equities_portfolio = weights_df.mul(data_equities_portfolio.pct_change(), axis=0).sum(axis=1)
+        returns_df = pd.concat([returns_equities_portfolio, indicators.pct_change().fillna(0)], axis=1)
+        cumulative_returns_equities_portfolio = (1 + returns_df).cumprod() - 1
+        cumulative_returns_equities_portfolio.columns = ['Carteira de RV', 'Ibovespa']
+
+        chart_performance_options = create_chart(
+            data=cumulative_returns_equities_portfolio,
+            columns=["Carteira de RV", "Ibovespa"],
+            names=["Carteira de RV", "Ibovespa"],
+            chart_type='line',
+            title="Evolução da Carteira de RV",
+            y_axis_title="Retorno (%)",
+            decimal_precision=2
+        )
+
+        hct.streamlit_highcharts(chart_performance_options)
