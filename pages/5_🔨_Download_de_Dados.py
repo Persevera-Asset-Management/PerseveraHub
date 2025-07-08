@@ -99,6 +99,20 @@ with row_2[1]:
         except Exception as e:
             st.error(f"Ocorreu um erro ao baixar os dados do Sidra: {e}")
 
+# MDIC
+with row_2[2]:
+    if st.button('MDIC', use_container_width=True):
+        try:
+            with st.spinner('Baixando dados do MDIC...'):
+                mdic_data = fds.get_data(
+                    source='mdic',
+                    save_to_db=True,
+                )
+
+            st.success('Dados do MDIC baixados e salvos com sucesso!')
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao baixar os dados do MDIC: {e}")
+
 st.write("#### Fundos Sistemáticos (CTA)")
 row_3 = st.columns(3)
 
