@@ -1387,7 +1387,7 @@ CHARTS_ECONOMIA = {
             "names": ["Exportações", "Importações"],
             "chart_type": "line",
             "title": "Exportações e Importações",
-            "y_axis_title": ("US$", "US$"),
+            "y_axis_title": "US$",
         },
         "width": 6,
         "context": "Brasil",
