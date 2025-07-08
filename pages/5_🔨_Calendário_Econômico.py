@@ -22,11 +22,8 @@ except Exception as e:
 
 with st.spinner("Carregando dados..."):
     try:
-        calendar_data = fds.get_investing_calendar_data(
-            save_to_db=False
-        )
-        calendar_data = calendar_data.groupby('date').apply(lambda x: x)
-        # calendar_data.set_index('date', inplace=True)
+        calendar_data = fds.get_investing_calendar_data(save_to_db=False)
+        calendar_data.set_index('date', inplace=True)
         st.dataframe(calendar_data)
     except Exception as e:
         st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
