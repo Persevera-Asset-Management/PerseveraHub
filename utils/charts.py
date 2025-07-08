@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 
+DEFAULT_CHART_COLORS = [
+    '#4682B4', '#3E5A6B', '#8B9DC3', '#A55A5A', '#C75B5B', '#5A7A5A'
+]
+
 def create_highcharts_options(
     data: pd.DataFrame,
     y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
@@ -459,6 +463,9 @@ def create_highcharts_options(
             }
         }
     }
+    
+    if color is None:
+        chart_options['colors'] = DEFAULT_CHART_COLORS
     
     # Add chart-type specific options
     if chart_type != 'pie':
