@@ -330,7 +330,7 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             x_axis_title="",
             stacking=selected_stacking,
             height=height_input,
-            colors=color_palette[:len(y_columns_for_chart)],
+            color=color_palette[:len(y_columns_for_chart)],
             exporting={"enabled": True}
         )
         st.session_state.chart_options_for_download = chart_options
