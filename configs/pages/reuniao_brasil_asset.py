@@ -127,7 +127,11 @@ CHARTS_BRASIL_ASSET = {
             "title": "Exportações e Importações (Acumulado 12 meses)",
             "y_axis_title": ("US$", "US$"),
         },
-        "transformations": [{"type": "rolling_sum", "column": "br_trade_balance_fob_exports_usd", "frequency": "MS", "window": 12}, {"type": "rolling_sum", "column": "br_trade_balance_fob_imports_usd", "frequency": "MS", "window": 12}],
+        "transformations": [
+            {"type": "rolling_sum", "column": "br_trade_balance_fob_exports_usd", "frequency": "MS", "window": 12},
+            {"type": "rolling_sum", "column": "br_trade_balance_fob_imports_usd", "frequency": "MS", "window": 12},
+            {"type": "rolling_sum", "column": "br_trade_balance_fob_net_usd", "frequency": "MS", "window": 12}
+        ],
         "width": 6,
         "group": "Curvas de Juros",
         "context": "Títulos Públicos"
