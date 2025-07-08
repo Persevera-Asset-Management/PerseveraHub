@@ -50,7 +50,7 @@ except Exception as e:
     st.stop()
 
 # --- Dados Macroeconômicos ---
-st.write("#### Dados Macroeconômicos")
+st.write("##### Dados Macroeconômicos")
 macro_sources = [
     ("FRED", "FRED", "fred"),
     ("ANBIMA", "ANBIMA", "anbima"),
@@ -65,7 +65,7 @@ for i, (label, name, source) in enumerate(macro_sources):
     create_download_button(rows_macro[i // 3][i % 3], label, name, download_func)
 
 # --- Fundos Sistemáticos (CTA) ---
-st.write("#### Fundos Sistemáticos (CTA)")
+st.write("##### Fundos Sistemáticos (CTA)")
 cta_sources = [
     ("Simplify", "Simplify", "simplify"),
     ("Invesco", "Invesco", "invesco"),
@@ -77,7 +77,7 @@ for i, (label, name, source) in enumerate(cta_sources):
     create_download_button(rows_cta[i // 3][i % 3], label, name, download_func)
 
 # --- Fundos de Investimento (CVM) --- 
-st.write("#### Fundos de Investimento (CVM)")
+st.write("##### Fundos de Investimento (CVM)")
 row_cvm = st.columns(3)
 try:
     cnpjs = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
@@ -88,7 +88,7 @@ except Exception as e:
 
 
 # --- Crédito Privado ---
-st.write("#### Crédito Privado")
+st.write("##### Crédito Privado")
 row_credito = st.columns(3)
 
 # Debentures.com.br
