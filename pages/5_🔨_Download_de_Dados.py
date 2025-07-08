@@ -4,6 +4,7 @@ from persevera_tools.data import FinancialDataService
 from persevera_tools.data.funds import get_persevera_peers
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
+import functools
 
 st.set_page_config(
     page_title="Download de Dados | Persevera",
@@ -18,6 +19,25 @@ st.title('Download de Dados')
 
 st.markdown("Abaixo estão os botões que executam os scripts de download de dados.")
 
+def create_download_button(column, label: str, data_source_name: str, download_function: callable):
+    """
+    Cria um botão de download em uma coluna específica do Streamlit.
+
+    Args:
+        column: A coluna do Streamlit onde o botão será posicionado.
+        label (str): O texto do botão.
+        data_source_name (str): O nome da fonte de dados para as mensagens.
+        download_function (callable): A função a ser executada ao clicar no botão.
+    """
+    with column:
+        if st.button(label, use_container_width=True):
+            try:
+                with st.spinner(f'Baixando dados de {data_source_name}...'):
+                    download_function()
+                st.success(f'Dados de {data_source_name} baixados e salvos com sucesso!')
+            except Exception as e:
+                st.error(f"Ocorreu um erro ao baixar os dados de {data_source_name}: {e}")
+
 with st.sidebar:
     st.header("Parâmetros")
     start_date = st.date_input("Data de Início", value=datetime.now() - timedelta(days=365), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY")
@@ -29,173 +49,52 @@ except Exception as e:
     st.error(f"Erro ao inicializar FinancialDataService: {e}")
     st.stop()
 
+# --- Dados Macroeconômicos ---
 st.write("#### Dados Macroeconômicos")
-row_1 = st.columns(3)
+macro_sources = [
+    ("FRED", "FRED", "fred"),
+    ("ANBIMA", "ANBIMA", "anbima"),
+    ("SGS", "SGS", "sgs"),
+    ("Focus (BCB)", "Focus (BCB)", "bcb_focus"),
+    ("Sidra", "Sidra", "sidra"),
+    ("MDIC", "MDIC", "mdic"),
+]
+rows_macro = [st.columns(3) for _ in range((len(macro_sources) + 2) // 3)]
+for i, (label, name, source) in enumerate(macro_sources):
+    download_func = functools.partial(fds.get_data, source=source, save_to_db=True)
+    create_download_button(rows_macro[i // 3][i % 3], label, name, download_func)
 
-# FRED
-with row_1[0]:
-    if st.button('FRED', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do FRED...'):
-                fred_data = fds.get_data(
-                    source='fred',
-                    save_to_db=True
-                )
-            st.success('Dados do FRED baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do FRED: {e}")
-
-# ANBIMA
-with row_1[1]:
-    if st.button('ANBIMA', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados da ANBIMA...'):
-                anbima_data = fds.get_data(
-                    source='anbima',
-                    save_to_db=True
-                )
-            st.success('Dados da ANBIMA baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados da ANBIMA: {e}")
-
-# SGS
-with row_1[2]:
-    if st.button('SGS', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do SGS...'):
-                sgs_data = fds.get_data(
-                    source='sgs',
-                    save_to_db=True,
-                )
-            st.success('Dados do SGS baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do SGS: {e}")
-
-row_2 = st.columns(3)
-
-# Focus (BCB)
-with row_2[0]:
-    if st.button('Focus (BCB)', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do Focus (BCB)...'):
-                focus_data = fds.get_data(
-                    source='bcb_focus',
-                    save_to_db=True,
-                )
-            st.success('Dados do Focus (BCB) baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Focus (BCB): {e}")
-
-# Sidra
-with row_2[1]:
-    if st.button('Sidra', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do Sidra...'):
-                sidra_data = fds.get_data(
-                    source='sidra',
-                    save_to_db=True,
-                )
-            st.success('Dados do Sidra baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Sidra: {e}")
-
-# MDIC
-with row_2[2]:
-    if st.button('MDIC', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do MDIC...'):
-                mdic_data = fds.get_data(
-                    source='mdic',
-                    save_to_db=True,
-                )
-
-            st.success('Dados do MDIC baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do MDIC: {e}")
-
+# --- Fundos Sistemáticos (CTA) ---
 st.write("#### Fundos Sistemáticos (CTA)")
-row_3 = st.columns(3)
+cta_sources = [
+    ("Simplify", "Simplify", "simplify"),
+    ("Invesco", "Invesco", "invesco"),
+    ("KraneShares", "KraneShares", "kraneshares"),
+]
+rows_cta = [st.columns(3) for _ in range((len(cta_sources) + 2) // 3)]
+for i, (label, name, source) in enumerate(cta_sources):
+    download_func = functools.partial(fds.get_data, source=source, save_to_db=True)
+    create_download_button(rows_cta[i // 3][i % 3], label, name, download_func)
 
-# Simplify
-with row_3[0]:
-    if st.button('Simplify', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do Simplify...'):
-                simplify_data = fds.get_data(
-                    source='simplify',
-                    save_to_db=True,
-                )
-            st.success('Dados do Simplify baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
-
-# Invesco
-with row_3[1]:
-    if st.button('Invesco', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do Invesco...'):
-                simplify_data = fds.get_data(
-                    source='invesco',
-                    save_to_db=True,
-                )
-            st.success('Dados do Invesco baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Simplify: {e}")
-
-# KraneShares
-with row_3[2]:
-    if st.button('KraneShares', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do KraneShares...'):
-                simplify_data = fds.get_data(
-                    source='kraneshares',
-                    save_to_db=True,
-                )
-            st.success('Dados do KraneShares baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do KraneShares: {e}")
-
-# --- CVM --- 
+# --- Fundos de Investimento (CVM) --- 
 st.write("#### Fundos de Investimento (CVM)")
-row_4 = st.columns(3)
+row_cvm = st.columns(3)
+try:
+    cnpjs = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
+    cvm_download_func = functools.partial(fds.get_cvm_data, cnpjs=cnpjs, save_to_db=True)
+    create_download_button(row_cvm[0], "Todos os Fundos", "Fundos de Investimento", cvm_download_func)
+except Exception as e:
+    st.error(f"Ocorreu um erro ao obter a lista de CNPJs para os fundos: {e}")
 
-# Fundos de Investimento
-with row_4[0]:
-    if st.button('Todos os Fundos', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados dos Fundos de Investimento...'):
-                cnpjs = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
-                cvm_data = fds.get_cvm_data(
-                    cnpjs=cnpjs,
-                    save_to_db=True
-                )
-            st.success('Dados dos Fundos de Investimento baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados dos Fundos de Investimento: {e}")
 
+# --- Crédito Privado ---
 st.write("#### Crédito Privado")
-row_5 = st.columns(3)
+row_credito = st.columns(3)
 
 # Debentures.com.br
-with row_5[0]:
-    if st.button('Debentures.com.br', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do Debentures.com.br...'):
-                debentures_data = fds.get_debentures_com_data(
-                    save_to_db=True,
-                )
-            st.success('Dados do Debentures.com.br baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do Debentures.com.br: {e}")
+debentures_com_func = functools.partial(fds.get_debentures_com_data, save_to_db=True)
+create_download_button(row_credito[0], "Debentures.com.br", "Debentures.com.br", debentures_com_func)
 
 # ANBIMA (Debentures)
-with row_5[1]:
-    if st.button('ANBIMA (Debentures)', use_container_width=True):
-        try:
-            with st.spinner('Baixando dados do ANBIMA (Debentures)...'):
-                anbima_debentures_data = fds.get_anbima_debentures_data(
-                    save_to_db=True,
-                )
-            st.success('Dados do ANBIMA (Debentures) baixados e salvos com sucesso!')
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao baixar os dados do ANBIMA (Debentures): {e}")
+anbima_debentures_func = functools.partial(fds.get_anbima_debentures_data, save_to_db=True)
+create_download_button(row_credito[1], "ANBIMA (Debentures)", "ANBIMA (Debentures)", anbima_debentures_func)
