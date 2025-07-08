@@ -1,7 +1,5 @@
 import streamlit as st
-from datetime import datetime, timedelta
 from persevera_tools.data import FinancialDataService
-from persevera_tools.data.funds import get_persevera_peers
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 
@@ -27,7 +25,8 @@ with st.spinner("Carregando dados..."):
         calendar_data = fds.get_investing_calendar_data(
             save_to_db=False
         )
-        calendar_data.set_index('date', inplace=True)
+        calendar_data = calendar_data.groupby('date').apply(lambda x: x)
+        # calendar_data.set_index('date', inplace=True)
         st.dataframe(calendar_data)
     except Exception as e:
         st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
