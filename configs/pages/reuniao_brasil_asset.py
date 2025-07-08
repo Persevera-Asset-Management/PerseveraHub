@@ -121,16 +121,15 @@ CHARTS_BRASIL_ASSET = {
     },
     "br_exports_imports_t12": {
         "chart_config": {
-            "columns": (["br_trade_balance_fob_exports_usd", "br_trade_balance_fob_imports_usd"], ["br_trade_balance_fob_net_usd"]),
-            "names": (["Exportações", "Importações"], ["Saldo"]),
-            "chart_type": "dual_axis_line_area",
+            "columns": ["br_trade_balance_fob_exports_usd", "br_trade_balance_fob_imports_usd"],
+            "names": ["Exportações", "Importações"],
+            "chart_type": "line",
             "title": "Exportações e Importações (Acumulado 12 meses)",
-            "y_axis_title": ("US$", "US$"),
+            "y_axis_title": "US$",
         },
         "transformations": [
             {"type": "rolling_sum", "column": "br_trade_balance_fob_exports_usd", "frequency": "MS", "window": 12},
             {"type": "rolling_sum", "column": "br_trade_balance_fob_imports_usd", "frequency": "MS", "window": 12},
-            {"type": "rolling_sum", "column": "br_trade_balance_fob_net_usd", "frequency": "MS", "window": 12}
         ],
         "width": 6,
         "group": "Curvas de Juros",
