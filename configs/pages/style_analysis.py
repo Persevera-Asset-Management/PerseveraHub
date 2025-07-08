@@ -7,6 +7,8 @@ FACTOR_OPTIONS = {
     'br_bmf_di_jan29_futures': 'DI Jan 29',
     'br_bmf_di_jan30_futures': 'DI Jan 30',
     'br_bmf_di_jan31_futures': 'DI Jan 31',
+    'br_bmf_di_jan32_futures': 'DI Jan 32',
+    'br_bmf_di_jan33_futures': 'DI Jan 33',
     'anbima_ima_b': 'IMA B',
     'anbima_ima_b5': 'IMA B5',
     'anbima_ima_b5+': 'IMA B5+',
@@ -20,6 +22,7 @@ FACTOR_OPTIONS = {
 }
 
 FACTOR_OPTIONS_SELECTED = {
+
     'br_cdi_index': 'CDI',
     'br_ibovespa': 'Ibovespa',
     'us_sp500': 'S&P 500',
