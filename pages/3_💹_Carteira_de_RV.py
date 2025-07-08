@@ -145,7 +145,7 @@ else:
         weights_df = weights_df.ffill()
 
         with st.expander("Histórico de Alocações", expanded=False):
-            st.dataframe(style_table(weights_df))
+            st.dataframe(style_table(weights_df, percent_cols=weights_df.columns.tolist()))
 
         returns_equities_portfolio = weights_df.mul(data_equities_portfolio.pct_change(), axis=0).sum(axis=1)
         returns_df = pd.concat([returns_equities_portfolio, indicators.pct_change().fillna(0)], axis=1)
@@ -153,7 +153,7 @@ else:
         cumulative_returns_equities_portfolio.columns = ['Carteira de RV', 'Ibovespa']
 
         chart_performance_options = create_chart(
-            data=cumulative_returns_equities_portfolio,
+            data=cumulative_returns_equities_portfolio * 100,
             columns=["Carteira de RV", "Ibovespa"],
             names=["Carteira de RV", "Ibovespa"],
             chart_type='line',
