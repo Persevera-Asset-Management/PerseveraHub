@@ -1394,21 +1394,6 @@ CHARTS_ECONOMIA = {
         "group": "Setor Externo",
         "block_title": "Balança Comercial"
     },
-    "br_exports_imports_t12": {
-        "chart_config": {
-            "columns": (["br_trade_balance_fob_exports_usd", "br_trade_balance_fob_imports_usd"], ["br_trade_balance_fob_imports_usd"]),
-            "names": (["Exportações", "Importações"], ["Saldo"]),
-            "chart_type": "dual_axis_line_area",
-            "title": "Exportações e Importações (Acumulado 12 meses)",
-            "y_axis_title": ("US$", "US$"),
-        },
-        "transformations": [{"type": "rolling_sum", "column": "br_trade_balance_fob_exports_usd", "frequency": "MS", "window": 12}, {"type": "rolling_sum", "column": "br_trade_balance_fob_imports_usd", "frequency": "MS", "window": 12}],
-        "width": 6,
-        "context": "Brasil",
-        "group": "Setor Externo",
-        "block_title": "Balança Comercial"
-    },
-
     "br_current_account": {
         "chart_config": {
             "columns": ["br_current_account_to_gdp", "br_current_account_t12"],
