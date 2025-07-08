@@ -19,10 +19,10 @@ FACTOR_OPTIONS = {
     'bitcoin_usd': 'Bitcoin',
     'china_kweb': 'China KWEB',
     'us_nasdaq100': 'Nasdaq 100',
+    'gold_100oz_futures': 'Gold',
 }
 
 FACTOR_OPTIONS_SELECTED = {
-
     'br_cdi_index': 'CDI',
     'br_ibovespa': 'Ibovespa',
     'us_sp500': 'S&P 500',
