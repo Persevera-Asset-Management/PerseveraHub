@@ -60,51 +60,59 @@ if data.empty or len(selected_stocks) == 0:
 else:
     returns = data['price_close'].pct_change().dropna()
 
-    st.subheader("Composição do Portfólio")
+    tabs = st.tabs(["Composição Atual", "Track Record"])
+    
+    # Composição Atual
+    with tabs[0]:
+        st.subheader("Composição Atual")
 
-    # Inicializa a tabela de alocação
-    betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
+        # Inicializa a tabela de alocação
+        betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
 
-    # Permite a edição dos Betas
-    with st.expander("Editar Betas", expanded=False):
-        st.caption("Você pode editar os valores de Beta na tabela abaixo. As outras colunas serão recalculadas automaticamente.")
-        edited_betas = st.data_editor(
-            betas_df,
-            column_config={
-                "Bloomberg Beta": st.column_config.NumberColumn(
-                    "Bloomberg Beta",
-                    help="O beta do ativo.",
-                    format="%.4f",
-                )
-            },
-            use_container_width=True
+        # Permite a edição dos Betas
+        with st.expander("Editar Betas", expanded=False):
+            st.caption("Você pode editar os valores de Beta na tabela abaixo. As outras colunas serão recalculadas automaticamente.")
+            edited_betas = st.data_editor(
+                betas_df,
+                column_config={
+                    "Bloomberg Beta": st.column_config.NumberColumn(
+                        "Bloomberg Beta",
+                        help="O beta do ativo.",
+                        format="%.4f",
+                    )
+                },
+                use_container_width=True
+            )
+
+        # Recalcula a tabela de alocação com base nos betas (editados ou não)
+        allocation_table = edited_betas.copy()
+        allocation_table['1 / Beta'] = 1.0 / allocation_table['Bloomberg Beta']
+        allocation_table['Equal Weight (%)'] = 1.0 / len(allocation_table) * 100.0
+        allocation_table['Final Weight (%)'] = allocation_table['1 / Beta'] / allocation_table['1 / Beta'].sum() * 100.0
+        
+        st.dataframe(style_table(allocation_table, numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'], percent_cols=['Equal Weight (%)', 'Final Weight (%)']))
+        
+        st.subheader("Estatísticas")
+        portfolio_volatility_inv_beta = calculate_portfolio_volatility(allocation_table['Final Weight (%)'], returns)
+        portfolio_volatility_equal_weight = calculate_portfolio_volatility(allocation_table['Equal Weight (%)'], returns)
+        
+        col_1 = st.columns(2)
+        with col_1[0]:
+            st.metric("Volatilidade Anualizada Estimada (1 / Beta)", f"{portfolio_volatility_inv_beta:.2%}")
+        with col_1[1]:
+            st.metric("Volatilidade Anualizada Estimada (Equal Weight)", f"{portfolio_volatility_equal_weight:.2%}")
+
+        correlation_matrix = returns.corr()
+        correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
+        correlation_matrix = correlation_matrix.sort_index(ascending=False)
+
+        heatmap = create_chart(
+            data=correlation_matrix,
+            chart_type='heatmap',
+            title='Correlação dos Ativos',
         )
+        hct.streamlit_highcharts(heatmap, height=500)
 
-    # Recalcula a tabela de alocação com base nos betas (editados ou não)
-    allocation_table = edited_betas.copy()
-    allocation_table['1 / Beta'] = 1.0 / allocation_table['Bloomberg Beta']
-    allocation_table['Equal Weight (%)'] = 1.0 / len(allocation_table) * 100.0
-    allocation_table['Final Weight (%)'] = allocation_table['1 / Beta'] / allocation_table['1 / Beta'].sum() * 100.0
-    
-    st.dataframe(style_table(allocation_table, numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'], percent_cols=['Equal Weight (%)', 'Final Weight (%)']))
-    
-    st.subheader("Estatísticas")
-    portfolio_volatility_inv_beta = calculate_portfolio_volatility(allocation_table['Final Weight (%)'], returns)
-    portfolio_volatility_equal_weight = calculate_portfolio_volatility(allocation_table['Equal Weight (%)'], returns)
-    
-    col_1 = st.columns(2)
-    with col_1[0]:
-        st.metric("Volatilidade Anualizada Estimada (1 / Beta)", f"{portfolio_volatility_inv_beta:.2%}")
-    with col_1[1]:
-        st.metric("Volatilidade Anualizada Estimada (Equal Weight)", f"{portfolio_volatility_equal_weight:.2%}")
-
-    correlation_matrix = returns.corr()
-    correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
-    correlation_matrix = correlation_matrix.sort_index(ascending=False)
-
-    heatmap = create_chart(
-        data=correlation_matrix,
-        chart_type='heatmap',
-        title='Correlação dos Ativos',
-    )
-    hct.streamlit_highcharts(heatmap, height=500)
+    # Track Record
+    with tabs[1]:
+        st.subheader("Track Record")
