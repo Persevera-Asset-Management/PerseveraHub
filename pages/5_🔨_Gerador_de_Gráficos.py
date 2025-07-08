@@ -245,7 +245,6 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
     y_columns_for_chart = []
     legend_names_for_chart = []
     final_title = title_name_input if title_name_input else "Gráfico"
-    color_palette = ["#19202a", "#b99b7b", "#b3bebd", "#cdb89b", "#cad7d8"]
 
     if data_source == "Buscar por Códigos":
         if codes_input_series:
@@ -330,7 +329,6 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             x_axis_title="",
             stacking=selected_stacking,
             height=height_input,
-            color=color_palette[:len(y_columns_for_chart)],
             exporting={"enabled": True}
         )
         st.session_state.chart_options_for_download = chart_options
