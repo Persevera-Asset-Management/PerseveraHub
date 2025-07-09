@@ -74,6 +74,8 @@ if table_data is not None:
             st.dataframe(rentabilidade_acumulada_consolidada)
 
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
+        contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)].sort_values(by='Contribuição', ascending=False)
+
         chart_contribuicao_classes = create_chart(
             data=contribuicao_classes,
             columns=['Contribuição'],
@@ -84,6 +86,17 @@ if table_data is not None:
             x_axis_title="Classe",
             )
         hct.streamlit_highcharts(chart_contribuicao_classes)
+
+        chart_contribuicao_ativos = create_chart(
+            data=contribuicao_ativos,
+            columns=['Contribuição'],
+            names=['Contribuição'],
+            chart_type='column',
+            title="Contribuição dos Ativos",
+            y_axis_title="%",
+            x_axis_title="Ativo",
+            )
+        hct.streamlit_highcharts(chart_contribuicao_ativos)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
