@@ -46,11 +46,12 @@ if btn_run:
 table_data = st.session_state.table_data
 if table_data is not None:
     try:
+        movimentacoes = table_data['Movimentações - no Mês'].apply(lambda x: pd.to_numeric(x, errors='coerce') if x.name in ['Quantidade', 'Valor Bruto'] else x)
         rentabilidade_acumulada = table_data['Rentabilidade Ativos por Classe'].drop_duplicates().set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce'))
         posicao_consolidada = table_data['Posição Consolidada - No Mês'].set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce')).groupby('Ativo').sum()
         rentabilidade_acumulada_consolidada = pd.merge(rentabilidade_acumulada, posicao_consolidada, on='Ativo', how='outer').fillna(0)
         rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['no Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
-
+        
         classes_ativos = [
             'Previdência',
             'Ações/ETFs',
@@ -76,6 +77,9 @@ if table_data is not None:
 
         with st.expander("Dados Brutos"):
             st.dataframe(rentabilidade_acumulada_consolidada)
+
+        with st.expander("Movimentações"):
+            st.dataframe(movimentacoes)
 
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
         contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)].sort_values(by='Contribuição', ascending=False)
