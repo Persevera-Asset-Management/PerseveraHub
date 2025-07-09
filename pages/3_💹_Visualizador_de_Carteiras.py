@@ -37,7 +37,7 @@ if btn_run:
         st.session_state.df = provider.get_data(
             category='portfolio_positions',
             portfolios=selected_carteiras,
-            date_str=selected_date.strftime('%d%m%Y')
+            date_report=selected_date.strftime('%d%m%Y')
         )
         if "selected_asset" in st.session_state:
             st.session_state.selected_asset = ""
