@@ -76,12 +76,14 @@ if table_data is not None:
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
         contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)].sort_values(by='Contribuição', ascending=False)
 
-        row_1 = st.columns(3)
+        row_1 = st.columns(4)
         with row_1[0]:
-            st.metric("Contribuição Calculada", f"{contribuicao_ativos['Contribuição'].sum():,.2f}%")
+            st.metric("Contribuição Calculada (Classes)", f"{contribuicao_classes.iloc[:-1]['Contribuição'].sum():,.2f}%")
         with row_1[1]:
-            st.metric("Contribuição Real (ComDinheiro)", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
+            st.metric("Contribuição Calculada (Ativos)", f"{contribuicao_ativos['Contribuição'].sum():,.2f}%")
         with row_1[2]:
+            st.metric("Contribuição Real (ComDinheiro)", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
+        with row_1[3]:
             st.metric("Diferença", f"{contribuicao_ativos['Contribuição'].sum() - contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
             
         chart_contribuicao_classes = create_chart(
