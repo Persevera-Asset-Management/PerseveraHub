@@ -72,6 +72,7 @@ if table_data is not None:
             'Mercado Futuro',
             'Opção',
             'Renda Fixa (CDB/LCI/LCA...)',
+            'Renda Fixa',
             'Total'
         ]
 
