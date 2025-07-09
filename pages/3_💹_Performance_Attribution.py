@@ -82,9 +82,9 @@ if table_data is not None:
 
         row_1 = st.columns(4)
         with row_1[0]:
-            st.metric("Contribuição Calculada (Classes)", f"{contribuicao_classes.iloc[:-1]['Contribuição'].sum():,.2f}%")
+            st.metric("Contribuição Calculada (Classes)", f"{contribuicao_classes.iloc[:-1]['Contribuição'].sum():,.2f}%", help="Soma das contribuições calculadas a partir das classes de ativos")
         with row_1[1]:
-            st.metric("Contribuição Calculada (Ativos)", f"{contribuicao_ativos['Contribuição'].sum():,.2f}%")
+            st.metric("Contribuição Calculada (Ativos)", f"{contribuicao_ativos['Contribuição'].sum():,.2f}%", help="Soma das contribuições calculadas a partir dos ativos")
         with row_1[2]:
             st.metric("Contribuição Real (ComDinheiro)", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
         with row_1[3]:
