@@ -42,8 +42,48 @@ if btn_run:
 
 if table_data is not None:
     try:
-        st.dataframe(table_data['Posição Consolidada - No Mês'])
-        st.dataframe(table_data['Rentabilidade Ativos por Classe'])
+        rentabilidade_acumulada = table_data['Rentabilidade Ativos por Classe'].drop_duplicates().set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce'))
+        posicao_consolidada = table_data['Posição Consolidada - No Mês'].set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce')).groupby('Ativo').sum()
+        rentabilidade_acumulada_consolidada = pd.merge(rentabilidade_acumulada, posicao_consolidada, on='Ativo', how='outer').fillna(0)
+        rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['no Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
+
+        classes_ativos = [
+            'Previdência',
+            'Ações/ETFs',
+            'Ação/ETF',
+            'Títulos Públicos',
+            'Título Público',
+            'Fundos',
+            'Genérico',
+            'Ativo Genérico',
+            'Debêntures',
+            'Debênture',
+            'CRI/CRA',
+            'Caixa',
+            'Caixa Bloqueado',
+            'Clube Invest.',
+            'Fundo Offshore',
+            'International Bond',
+            'Mercado Futuro',
+            'Opção',
+            'Renda Fixa (CDB/LCI/LCA...)',
+            'Total'
+        ]
+
+        with st.expander("Dados Brutos"):
+            st.dataframe(rentabilidade_acumulada_consolidada)
+
+        contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
+        chart_contribuicao_classes = create_chart(
+            data=contribuicao_classes,
+            columns=['Contribuição'],
+            names=['Contribuição'],
+            chart_type='column',
+            title="Contribuição das Classes",
+            y_axis_title="%",
+            x_axis_title="Classe",
+            )
+        hct.streamlit_highcharts(chart_contribuicao_classes)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
