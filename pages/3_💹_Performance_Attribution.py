@@ -85,7 +85,10 @@ if table_data is not None:
             st.metric("Contribuição Real (ComDinheiro)", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
         with row_1[3]:
             st.metric("Diferença", f"{contribuicao_ativos['Contribuição'].sum() - contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
-            
+
+        contribuicao_classes['Contribuição'] = contribuicao_classes['Contribuição'].mul(100)
+        contribuicao_ativos['Contribuição'] = contribuicao_ativos['Contribuição'].mul(100)
+
         chart_contribuicao_classes = create_chart(
             data=contribuicao_classes,
             columns=['Contribuição'],
