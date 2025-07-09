@@ -29,23 +29,21 @@ with st.sidebar:
     selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
     btn_run = st.button("Gerar Relatório")
 
-if 'table_data' not in st.session_state:
-    st.session_state.table_data = None
 
 if btn_run:
     with st.spinner("Carregando dados..."):
         provider = ComdinheiroProvider()
-        st.session_state.table_data = provider.get_data(
+        table_data = provider.get_data(
             category='portfolio_statement',
             portfolio=selected_carteira,
             date_inception=selected_inception_date.strftime('%Y-%m-%d'),
             date_report=selected_report_date.strftime('%Y-%m-%d'),
         )
 
-table_data = st.session_state.table_data
 if table_data is not None:
     try:
         st.dataframe(table_data['Posição Consolidada - No Mês'])
+        st.dataframe(table_data['Rentabilidade Ativos por Classe'])
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
