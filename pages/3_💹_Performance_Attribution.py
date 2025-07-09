@@ -24,10 +24,10 @@ st.title("Atribuição de Performance")
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteira = st.selectbox("Carteira selecionada", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
+    selected_carteira = st.selectbox("Carteira selecionada", options=CODIGOS_CARTEIRAS)
     selected_report_date = st.date_input("Data do Relatório", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
     selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
-    btn_run = st.button("Run")
+    btn_run = st.button("Gerar Relatório")
 
 if 'table_data' not in st.session_state:
     st.session_state.table_data = None
