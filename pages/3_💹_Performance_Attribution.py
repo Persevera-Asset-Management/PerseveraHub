@@ -80,9 +80,9 @@ if table_data is not None:
         with row_1[0]:
             st.metric("Contribuição Calculada", f"{contribuicao_ativos['Contribuição'].sum():,.2f}%")
         with row_1[1]:
-            st.metric("Contribuição Real", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
+            st.metric("Contribuição Real (ComDinheiro)", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
         with row_1[2]:
-            st.metric("Diferença", f"{rentabilidade_acumulada_consolidada['Contribuição'].sum() - contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
+            st.metric("Diferença", f"{contribuicao_ativos['Contribuição'].sum() - contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
             
         chart_contribuicao_classes = create_chart(
             data=contribuicao_classes,
