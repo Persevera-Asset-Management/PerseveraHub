@@ -79,7 +79,7 @@ if table_data is not None:
             st.dataframe(rentabilidade_acumulada_consolidada)
 
         with st.expander("Movimentações"):
-            st.dataframe(movimentacoes)
+            st.dataframe(movimentacoes, hide_index=True)
 
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
         contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)].sort_values(by='Contribuição', ascending=False)
