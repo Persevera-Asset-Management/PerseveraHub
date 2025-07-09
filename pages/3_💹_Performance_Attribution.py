@@ -29,6 +29,8 @@ with st.sidebar:
     selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
     btn_run = st.button("Gerar Relatório")
 
+if 'table_data' not in st.session_state:
+    st.session_state.table_data = None
 
 if btn_run:
     with st.spinner("Carregando dados..."):
@@ -39,7 +41,9 @@ if btn_run:
             date_inception=selected_inception_date.strftime('%Y-%m-%d'),
             date_report=selected_report_date.strftime('%Y-%m-%d'),
         )
+        st.session_state.table_data = table_data
 
+table_data = st.session_state.table_data
 if table_data is not None:
     try:
         rentabilidade_acumulada = table_data['Rentabilidade Ativos por Classe'].drop_duplicates().set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce'))
@@ -95,7 +99,7 @@ if table_data is not None:
             names=['Contribuição'],
             chart_type='column',
             title="Contribuição das Classes",
-            y_axis_title="%",
+            y_axis_title="bps",
             x_axis_title="Classe",
             )
         hct.streamlit_highcharts(chart_contribuicao_classes)
@@ -106,7 +110,7 @@ if table_data is not None:
             names=['Contribuição'],
             chart_type='column',
             title="Contribuição dos Ativos",
-            y_axis_title="%",
+            y_axis_title="bps",
             x_axis_title="Ativo",
             )
         hct.streamlit_highcharts(chart_contribuicao_ativos)
