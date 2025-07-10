@@ -1,6 +1,7 @@
 import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
@@ -46,12 +47,6 @@ if btn_run:
 table_data = st.session_state.table_data
 if table_data is not None:
     try:
-        movimentacoes = table_data['Movimentações - no Mês'].apply(lambda x: pd.to_numeric(x, errors='coerce') if x.name in ['Quantidade', 'Valor Bruto'] else x)
-        rentabilidade_acumulada = table_data['Rentabilidade Ativos por Classe'].drop_duplicates().set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce'))
-        posicao_consolidada = table_data['Posição Consolidada - No Mês'].set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce')).groupby('Ativo').sum()
-        rentabilidade_acumulada_consolidada = pd.merge(rentabilidade_acumulada, posicao_consolidada, on='Ativo', how='outer').fillna(0)
-        rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['no Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
-        
         classes_ativos = [
             'Previdência',
             'Ações/ETFs',
@@ -73,8 +68,16 @@ if table_data is not None:
             'Opção',
             'Renda Fixa (CDB/LCI/LCA...)',
             'Renda Fixa',
-            'Total'
+            'Total',
         ]
+
+        movimentacoes = table_data['Movimentações - no Mês'].apply(lambda x: pd.to_numeric(x, errors='coerce') if x.name in ['Quantidade', 'Valor Bruto'] else x)
+        rentabilidade_acumulada = table_data['Rentabilidade Ativos por Classe']
+        rentabilidade_acumulada['Classe'] = rentabilidade_acumulada['Ativo'].apply(lambda x: x if np.isin(x ,classes_ativos) else None).ffill()
+        rentabilidade_acumulada = rentabilidade_acumulada.drop_duplicates().set_index(['Ativo', 'Classe']).apply(lambda x: pd.to_numeric(x, errors='coerce'))
+        posicao_consolidada = table_data['Posição Consolidada - No Mês'].set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce')).groupby('Ativo').sum()
+        rentabilidade_acumulada_consolidada = pd.merge(rentabilidade_acumulada, posicao_consolidada, on='Ativo', how='outer').fillna(0)
+        rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['no Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
 
         with st.expander("Dados Brutos"):
             st.dataframe(rentabilidade_acumulada_consolidada)
@@ -84,6 +87,8 @@ if table_data is not None:
 
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
         contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)].sort_values(by='Contribuição', ascending=False)
+        contribuicao_classes.at['Taxa de Administração', 'Contribuição'] = 100 - rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]['%'].sum()
+        contribuicao_ativos.at['Taxa de Administração', 'Contribuição'] = 100 - rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]['%'].sum()
 
         row_1 = st.columns(4)
         with row_1[0]:
