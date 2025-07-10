@@ -86,9 +86,13 @@ if table_data is not None:
             st.dataframe(movimentacoes, hide_index=True)
 
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
-        contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)].sort_values(by='Contribuição', ascending=False)
+        contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]
+
         contribuicao_classes.at['Taxa de Administração', 'Contribuição'] = 100 - rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]['%'].sum()
+        contribuicao_classes = pd.concat([contribuicao_classes.iloc[:-2], contribuicao_classes.iloc[-1].to_frame().T, contribuicao_classes.iloc[-2].to_frame().T])
+
         contribuicao_ativos.at['Taxa de Administração', 'Contribuição'] = 100 - rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]['%'].sum()
+        contribuicao_ativos = contribuicao_ativos.sort_values(by='Contribuição', ascending=False)
 
         row_1 = st.columns(4)
         with row_1[0]:
