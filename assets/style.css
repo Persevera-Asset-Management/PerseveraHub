@@ -380,6 +380,24 @@ div[data-testid="stMetric"]::before {
     padding: var(--spacing-4) !important;
 }
 
+/* ===== DATAFRAME COMPONENTS ===== */
+/* Note: st.dataframe is rendered on a canvas, which limits cell-level CSS styling.
+   These styles apply a card-like container around the dataframe to match the app's theme. */
+[data-testid="stDataFrame"] {
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-4);
+    box-shadow: 0 2px 8px var(--color-shadow-light);
+    transition: all var(--transition-normal);
+}
+
+[data-testid="stDataFrame"]:hover {
+    box-shadow: 0 4px 12px var(--color-shadow-medium);
+    transform: translateY(-1px);
+    border-color: var(--color-border-medium);
+}
+
 /* ===== UTILITY CLASSES ===== */
 .card-container {
     background-color: var(--color-bg-card);
