@@ -218,9 +218,9 @@ for i, trans in enumerate(st.session_state.transformations):
         params['window'] = st.sidebar.number_input("Janela (períodos)", min_value=1, value=trans.get('params',{}).get('window', 12), key=f"param_rs_window_{i}")
     elif trans['type'] == "rolling_sum_plus_yearly_variation":
         params['window'] = st.sidebar.number_input("Janela da soma (períodos)", min_value=1, value=trans.get('params',{}).get('window', 12), key=f"param_rsyv_window_{i}")
-        params['frequency'] = st.sidebar.text_input("Frequência (ex: 'M', 'Q')", value=trans.get('params',{}).get('frequency', 'M'), key=f"param_rsyv_freq_{i}")
+        params['frequency'] = st.sidebar.text_input("Frequência (ex: 'MS', 'QS')", value=trans.get('params',{}).get('frequency', 'MS'), key=f"param_rsyv_freq_{i}")
     elif trans['type'] in ["yearly_variation", "monthly_variation", "quarterly_variation", "monthly_difference"]:
-        params['frequency'] = st.sidebar.text_input("Frequência (ex: 'M', 'Q', 'D')", value=trans.get('params',{}).get('frequency', 'M'), key=f"param_var_freq_{i}")
+        params['frequency'] = st.sidebar.text_input("Frequência (ex: 'MS', 'QS', 'D')", value=trans.get('params',{}).get('frequency', 'MS'), key=f"param_var_freq_{i}")
     elif trans['type'] == "multiply":
         params['scalar'] = st.sidebar.number_input("Multiplicar por", value=trans.get('params',{}).get('scalar', 1.0), format="%.4f", key=f"param_mul_scalar_{i}")
     elif trans['type'] == "divide":
