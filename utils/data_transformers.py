@@ -43,10 +43,11 @@ class YearlyVariationTransformer(DataTransformer):
         try:
             # Resample to the target frequency, taking the last available value in the period
             resampled_data = col_data.resample(freq).last()
+            print(resampled_data)
 
             # Calculate yearly variation on the resampled data
             # For monthly freq ('M'), periods=12; quarterly ('Q'), periods=4; annual ('A'), periods=1
-            periods_map = {'M': 12, 'Q': 4, 'A': 1}
+            periods_map = {'M': 12, 'Q': 4, 'A': 1, 'MS': 12, 'QS': 4, 'AS': 1}
             # Handle variations like 'MS' (Month Start), 'QS', 'AS'
             clean_freq = freq.upper().replace('S', '')
             periods = periods_map.get(clean_freq)
@@ -62,6 +63,7 @@ class YearlyVariationTransformer(DataTransformer):
             # This might require aligning indexes first if resampling created new dates not in original
             aligned_variation = variation.reindex(result.index)
             result[new_column_name] = aligned_variation
+            print(result[new_column_name])
 
         except Exception as e:
             print(f"Error during yearly variation transformation for {column} with freq {freq}: {e}")
