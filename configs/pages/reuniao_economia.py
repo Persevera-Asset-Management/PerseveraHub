@@ -892,7 +892,7 @@ CHARTS_ECONOMIA = {
         },
         "transformations": [
             {"type": "yearly_variation", "column": "br_ibcbr_index_nsa", "frequency": "MS"},
-            {"type": "yearly_variation", "column": "br_ibcbr_agriculture_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_agriculture_index_nsa", "frequency": "M"},
             {"type": "yearly_variation", "column": "br_ibcbr_ex_agriculture_index_nsa", "frequency": "MS"},
             {"type": "yearly_variation", "column": "br_ibcbr_industry_index_nsa", "frequency": "MS"},
             {"type": "yearly_variation", "column": "br_ibcbr_services_index_nsa", "frequency": "MS"},
