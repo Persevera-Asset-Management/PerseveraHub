@@ -38,7 +38,7 @@ with st.sidebar:
 # Load data with progress indicator
 with st.spinner("Carregando dados de mercado..."):
     data = load_data(start_date=start_date_str)
-    spread = calculate_spread("DI", start_date=start_date_str, calculate_distribution=True)
+    spread = calculate_spread("DI", calculate_distribution=True)
 
 if data.empty or spread.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
@@ -100,8 +100,8 @@ else:
                 names=["0-50bp", "50-75bp", "75-100bp", "100-150bp", "150-250bp", "Acima de 250bp"],
                 chart_type='area',
                 stacking='percent',
-                title="Distribuição do Spread CDI+",
-                y_axis_title="Percentual de Emissões",
+                title="Distribuição do Spread CDI+ por Intervalo",
+                y_axis_title="Percentual de Ativos",
                 decimal_precision=0
             )
             hct.streamlit_highcharts(chart_distribution)
@@ -114,8 +114,8 @@ else:
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',
                 stacking='percent',
-                title="Distribuição do Spread CDI+",
-                y_axis_title="Percentual de Emissões",
+                title="Distribuição dos Ativos",
+                y_axis_title="Percentual de Ativos",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_count)
@@ -128,7 +128,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Volume Emitido",
-                y_axis_title="Percentual de Emissões",
+                y_axis_title="Percentual de Ativos",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_volume)
