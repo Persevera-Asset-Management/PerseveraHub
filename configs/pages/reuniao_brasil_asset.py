@@ -123,8 +123,8 @@ CHARTS_BRASIL_ASSET = {
         "chart_config": {
             "columns": ["br_ibcbr_index_nsa", "br_ibcbr_agriculture_index_nsa", "br_ibcbr_ex_agriculture_index_nsa", "br_ibcbr_industry_index_nsa", "br_ibcbr_services_index_nsa", "br_ibcbr_taxes_index_nsa"],
             "names": ["Geral", "Agricultura", "Ex-agricultura", "Indústria", "Serviços", "Impostos"],
-            "chart_type": "line",
-            "title": "IBC-Br (Componentes)",
+            "chart_type": "column",
+            "title": "Curva de Juros (Componentes)",
             "y_axis_title": "var. Anual (%)",
         },
         "transformations": [
