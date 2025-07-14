@@ -32,13 +32,13 @@ def load_data(start_date):
 
 with st.sidebar:
     st.header("Parâmetros")
-    start_date = st.date_input("Data Inicial", datetime.now() - timedelta(days=5*365), format="DD/MM/YYYY")
+    start_date = st.date_input("Data Inicial", datetime.now() - timedelta(days=4*365), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
 with st.spinner("Carregando dados de mercado..."):
     data = load_data(start_date=start_date_str)
-    spread = calculate_spread("DI", calculate_distribution=True)
+    spread = calculate_spread("DI", start_date=start_date_str, calculate_distribution=True)
 
 if data.empty or spread.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
