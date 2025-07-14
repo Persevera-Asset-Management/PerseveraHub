@@ -114,7 +114,7 @@ else:
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',
                 stacking='percent',
-                title="Distribuição dos Ativos",
+                title="Distribuição do Spread CDI+ (Contagem de Ativos)",
                 y_axis_title="Percentual de Ativos",
                 decimal_precision=0,
             )
@@ -127,7 +127,7 @@ else:
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',
                 stacking='percent',
-                title="Distribuição do Volume Emitido",
+                title="Distribuição do Spread CDI+ (Volume Emitido)",
                 y_axis_title="Percentual de Ativos",
                 decimal_precision=0,
             )
