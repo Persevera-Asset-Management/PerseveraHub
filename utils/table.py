@@ -19,7 +19,8 @@ def style_table(
     quartile_exclude_row_if_value_is: Optional[List[Any]] = None,
     left_align_cols: Optional[List[str]] = None,
     center_align_cols: Optional[List[str]] = None,
-    right_align_cols: Optional[List[str]] = None
+    right_align_cols: Optional[List[str]] = None,
+    column_names: Optional[List[str]] = None
 ) -> Styler:
     """Applies generic styling to a DataFrame.
     Allows specifying columns for percentage formatting, 
@@ -172,5 +173,9 @@ def style_table(
             processed_for_alignment.add(col_name)
             
     styled_obj = styled_obj.set_table_styles(alignment_styles, overwrite=False)
+
+    if column_names:
+        if len(column_names) == len(df_styled.columns):
+            df_styled.columns = column_names
 
     return styled_obj
