@@ -865,13 +865,13 @@ CHARTS_ECONOMIA = {
         "group": "IBC-Br",
         "block_title": "IBC-Br"
     },
-    "br_ibcbr_yoy": {
+    "br_ibcbr_var": {
         "chart_config": {
             "columns": ["br_ibcbr_nsa_index", "br_ibcbr_index"],
-            "names": ["YoY", "MoM"],
+            "names": ["var. Anual", "var. Mensal"],
             "chart_type": "dual_axis_line_column",
-            "title": "IBC-Br (var. Anual %)",
-            "y_axis_title": ("%", "%"),
+            "title": "IBC-Br (var. Mensal e Anual)",
+            "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
         },
         "transformations": [
             {"type": "yearly_variation", "column": "br_ibcbr_nsa_index", "frequency": "MS"},
@@ -882,15 +882,22 @@ CHARTS_ECONOMIA = {
         "group": "IBC-Br",
         "block_title": "IBC-Br"
     },
-    "br_ibcbr_mom": {
+    "br_ibcbr_components": {
         "chart_config": {
-            "columns": "br_ibcbr_index",
-            "names": "Índice",
-            "chart_type": "column",
-            "title": "IBC-Br (var. Mensal %)",
-            "y_axis_title": "%",
+            "columns": ["br_ibcbr_index_nsa", "br_ibcbr_agriculture_index_nsa", "br_ibcbr_ex_agriculture_index_nsa", "br_ibcbr_industry_index_nsa", "br_ibcbr_services_index_nsa", "br_ibcbr_taxes_index_nsa"],
+            "names": ["Geral", "Agricultura", "Ex-agricultura", "Indústria", "Serviços", "Impostos"],
+            "chart_type": "line",
+            "title": "IBC-Br (Componentes)",
+            "y_axis_title": "var. Anual (%)",
         },
-        "transformations": [{"type": "monthly_variation", "column": "br_ibcbr_index", "frequency": "MS"}],
+        "transformations": [
+            {"type": "yearly_variation", "column": "br_ibcbr_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_agriculture_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_ex_agriculture_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_industry_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_services_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_taxes_index_nsa", "frequency": "MS"}
+            ],
         "width": 6,
         "context": "Brasil",
         "group": "IBC-Br",
