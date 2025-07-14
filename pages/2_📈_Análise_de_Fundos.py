@@ -230,7 +230,6 @@ for col in benchmark_df.columns:
     if col in combined_nav_data:
         combined_nav_data[col] = combined_nav_data[col].ffill()
 
-
 # Date Range Selection
 min_date_val = combined_nav_data.index.min().date()
 max_date_val = combined_nav_data.index.max().date()
@@ -443,11 +442,9 @@ if not stats_data_filtered.empty:
 
     with tabs[2]:
         st.subheader("Patrimônio Líquido")
-        # Display PL for the main Persevera fund of the selected group
         persevera_pl_col_names = [col for col in total_equity_data.columns if persevera_fund_col_name in col]
         
         if persevera_pl_col_names:
-            # Assuming persevera_fund_col_name is unique enough or we take the first match
             actual_persevera_pl_col = persevera_pl_col_names[0]
             pl_to_display = total_equity_data[[actual_persevera_pl_col]].copy()
             pl_to_display = pl_to_display.loc[st.session_state.start_date : st.session_state.end_date]

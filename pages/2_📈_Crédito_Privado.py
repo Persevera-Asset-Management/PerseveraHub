@@ -38,8 +38,9 @@ with st.sidebar:
 # Load data with progress indicator
 with st.spinner("Carregando dados de mercado..."):
     data = load_data(start_date=start_date_str)
+    spread = calculate_spread("DI", start_date=start_date_str, calculate_distribution=True)
 
-if data.empty:
+if data.empty or spread.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
     # Create tabs for different regions
@@ -76,11 +77,10 @@ else:
     # Tab 2: Spread
     with tabs[1]:
         st.header("Spread")
-        spread = calculate_spread("DI", start_date=start_date_str)
 
         row_1 = st.columns(2)
         with row_1[0]:
-            chart_options = create_chart(
+            chart_spread = create_chart(
                 data=spread,
                 columns=["median", "mean", "weighted_mean"],
                 names=["Mediana", "Média", "Média Ponderada"],
@@ -89,5 +89,18 @@ else:
                 y_axis_title="Spread (%)",
                 decimal_precision=3
             )
+            hct.streamlit_highcharts(chart_spread)
 
-            hct.streamlit_highcharts(chart_options)
+        with row_1[1]:
+            chart_distribution = create_chart(
+                data=spread,
+                columns=['count_yield_0_50bp', 'count_yield_50_75bp', 'count_yield_75_100bp',
+                         'count_yield_100_150bp', 'count_yield_150_250bp',
+                         'count_yield_above_250bp'],
+                names=["0-50bp", "50-75bp", "75-100bp", "100-150bp", "150-250bp", "Acima de 250bp"],
+                chart_type='area',
+                title="Distribuição do Spread CDI+",
+                y_axis_title="Quantidade de Emissões",
+                decimal_precision=0
+            )
+            hct.streamlit_highcharts(chart_distribution)
