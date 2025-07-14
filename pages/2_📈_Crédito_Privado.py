@@ -99,9 +99,9 @@ else:
                          'count_yield_above_250bp'],
                 names=["0-50bp", "50-75bp", "75-100bp", "100-150bp", "150-250bp", "Acima de 250bp"],
                 chart_type='area',
-                stacking='normal',
+                stacking='percent',
                 title="Distribuição do Spread CDI+",
-                y_axis_title="Quantidade de Emissões",
+                y_axis_title="Percentual de Emissões",
                 decimal_precision=0
             )
             hct.streamlit_highcharts(chart_distribution)
