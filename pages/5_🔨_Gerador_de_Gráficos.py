@@ -135,7 +135,7 @@ data_source = st.sidebar.radio("Fonte dos Dados", ("Buscar por Códigos", "Colar
 title_name_input = st.sidebar.text_input("Título do Gráfico")
 series_names_override_input = st.sidebar.text_input("Nomes das Séries (sobrescrever, separados por ;)", placeholder="EXEMPLO: Série A;Série B")
 y_axis_title_input = st.sidebar.text_input("Título do Eixo Y", placeholder="EXEMPLO: Valor (R$)")
-chart_type_options = ['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area']
+chart_type_options = ['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column']
 selected_chart_type = st.sidebar.selectbox("Tipo de Gráfico", chart_type_options)
 stacking_options = [None, 'normal', 'percent']
 selected_stacking = st.sidebar.selectbox("Tipo de Empilhamento", stacking_options)
@@ -308,7 +308,7 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
         elif override_names:
             st.warning("Número de nomes de séries para sobrescrita não corresponde ao número de séries. Usando nomes padrão/derivados.")
     
-    if selected_chart_type in ['dual_axis_line', 'dual_axis_line_area']:
+    if selected_chart_type in ['dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column']:
         y_axis_title_list = [name.strip() for name in y_axis_title_input.split(';') if name.strip()]
         if len(y_axis_title_list) == 1:
             y_axis_title_list = y_axis_title_list[0]

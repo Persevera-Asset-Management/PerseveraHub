@@ -11,7 +11,7 @@ def create_highcharts_options(
     y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
     instruments: Optional[List[Dict[str, str]]] = None,
     x_column: Optional[str] = None,
-    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'heatmap'] = 'line',
+    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column', 'heatmap'] = 'line',
     stacking: Optional[Literal['normal', 'percent']] = None,
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
@@ -153,7 +153,7 @@ def create_highcharts_options(
         return options
 
     if instruments:
-        if chart_type in ['dual_axis_line', 'dual_axis_line_area']:
+        if chart_type in ['dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column']:
             raise ValueError("The 'instruments' parameter is not supported for dual-axis chart types.")
         
         y_column = [inst['id'] for inst in instruments]
@@ -162,7 +162,7 @@ def create_highcharts_options(
     elif y_column is None:
         raise ValueError("Either 'y_column' or 'instruments' must be provided.")
 
-    is_dual_axis = chart_type in ['dual_axis_line', 'dual_axis_line_area']
+    is_dual_axis = chart_type in ['dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column']
 
     # Variables for processed parameters - will be populated based on chart type
     y_cols_for_single_axis: List[str]
@@ -200,14 +200,14 @@ def create_highcharts_options(
                 y_cols_list_ax2 = [temp_processed_y[1]] # Convert to list of one string
             else:
                 raise ValueError(
-                    f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area'), y_column must be a tuple/list of two non-empty lists of strings (e.g., (['col_L1'], ['col_R1', 'col_R2'])) "
+                    f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column'), y_column must be a tuple/list of two non-empty lists of strings (e.g., (['col_L1'], ['col_R1', 'col_R2'])) "
                     "or a tuple/list of two strings for single series per axis (e.g., ('col_L', 'col_R')). "
                     f"Received: {y_column}"
                 )
         
         # --- Parse y_axis_title for dual_axis_line ---
         if not (isinstance(y_axis_title, (list, tuple)) and len(y_axis_title) == 2 and all(isinstance(yt, str) for yt in y_axis_title)):
-            raise ValueError(f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area'), y_axis_title must be a tuple/list of two strings.")
+            raise ValueError(f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column'), y_axis_title must be a tuple/list of two strings.")
         y_title_ax1, y_title_ax2 = y_axis_title[0], y_axis_title[1]
         y_axis_title_processed = (y_title_ax1, y_title_ax2) # y_axis_title_processed is Tuple[str,str]
 
@@ -221,7 +221,7 @@ def create_highcharts_options(
         else:
             if not (isinstance(series_name, (list, tuple)) and len(series_name) == 2):
                 raise ValueError(
-                    f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area') with series_name, it must be a tuple/list of two elements (one for each axis). "
+                    f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column') with series_name, it must be a tuple/list of two elements (one for each axis). "
                     f"Received: {series_name}"
                 )
             
@@ -282,7 +282,7 @@ def create_highcharts_options(
         if color is not None:
             if not (isinstance(color, (list, tuple)) and len(color) == 2):
                 raise ValueError(
-                    f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area') with color, it must be a tuple/list of two elements (one for each axis). "
+                    f"For dual-axis charts (e.g., 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column') with color, it must be a tuple/list of two elements (one for each axis). "
                     f"Received: {color}"
                 )
             
@@ -566,7 +566,7 @@ def create_highcharts_options(
                 s_opts = {
                     "name": series_names_processed_ax2[i],
                     "data": data_s, 
-                    "type": "area" if chart_type == 'dual_axis_line_area' else "line", 
+                    "type": "column" if chart_type == 'dual_axis_line_column' else ("area" if chart_type == 'dual_axis_line_area' else "line"), 
                     "yAxis": 1,
                     "tooltip": {"valueDecimals": decimal_precision},
                     "lineWidth": line_width, 

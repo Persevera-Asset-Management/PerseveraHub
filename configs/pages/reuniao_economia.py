@@ -867,13 +867,13 @@ CHARTS_ECONOMIA = {
     },
     "br_ibcbr_yoy": {
         "chart_config": {
-            "columns": "br_ibcbr_index",
+            "columns": "br_ibcbr_nsa_index",
             "names": "Índice",
             "chart_type": "line",
             "title": "IBC-Br (var. Anual %)",
             "y_axis_title": "%",
         },
-        "transformations": [{"type": "yearly_variation", "column": "br_ibcbr_index", "frequency": "MS"}],
+        "transformations": [{"type": "yearly_variation", "column": "br_ibcbr_nsa_index", "frequency": "MS"}],
         "width": 6,
         "context": "Brasil",
         "group": "IBC-Br",
