@@ -105,3 +105,30 @@ else:
                 decimal_precision=0
             )
             hct.streamlit_highcharts(chart_distribution)
+    
+        row_2 = st.columns(2)
+        with row_2[0]:
+            chart_average_count = create_chart(
+                data=spread,
+                columns=['count_above_mean', 'count_under_mean'],
+                names=["Acima da Média", "Abaixo da Média"],
+                chart_type='area',
+                stacking='percent',
+                title="Distribuição do Spread CDI+",
+                y_axis_title="Percentual de Emissões",
+                decimal_precision=0,
+            )
+            hct.streamlit_highcharts(chart_average_count)
+
+        with row_2[1]:
+            chart_average_volume = create_chart(
+                data=spread,
+                columns=['volume_above_mean', 'volume_under_mean'],
+                names=["Acima da Média", "Abaixo da Média"],
+                chart_type='area',
+                stacking='percent',
+                title="Distribuição do Volume Emitido",
+                y_axis_title="Percentual de Emissões",
+                decimal_precision=0,
+            )
+            hct.streamlit_highcharts(chart_average_volume)
