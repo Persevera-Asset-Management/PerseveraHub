@@ -62,7 +62,11 @@ if df is not None:
             st.subheader("Visão Geral")
 
             with st.expander("Dados Brutos", expanded=False):
-                st.dataframe(style_table(df, currency_cols=['saldo_bruto']), hide_index=True)
+                st.dataframe(style_table(
+                    df, currency_cols=['saldo_bruto'],
+                    date_cols=['date'],
+                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição Financeira', 'Tipo de Ativo']),
+                    hide_index=True)
 
             # Big numbers
             row_1 = st.columns(3)
