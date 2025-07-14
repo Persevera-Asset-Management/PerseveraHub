@@ -119,4 +119,25 @@ CHARTS_BRASIL_ASSET = {
         "group": "Índices e Taxas de Câmbio",
         "context": "Moedas"
     },
+    "br_ibcbr_components": {
+        "chart_config": {
+            "columns": ["br_ibcbr_index_nsa", "br_ibcbr_agriculture_index_nsa", "br_ibcbr_ex_agriculture_index_nsa", "br_ibcbr_industry_index_nsa", "br_ibcbr_services_index_nsa", "br_ibcbr_taxes_index_nsa"],
+            "names": ["Geral", "Agricultura", "Ex-agricultura", "Indústria", "Serviços", "Impostos"],
+            "chart_type": "line",
+            "title": "IBC-Br (Componentes)",
+            "y_axis_title": "var. Anual (%)",
+        },
+        "transformations": [
+            {"type": "yearly_variation", "column": "br_ibcbr_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_agriculture_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_ex_agriculture_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_industry_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_services_index_nsa", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_taxes_index_nsa", "frequency": "MS"}
+            ],
+        "width": 6,
+        "group": "Curvas de Juros",
+        "context": "Títulos Públicos"
+    },
+
 }
