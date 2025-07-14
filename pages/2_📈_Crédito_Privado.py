@@ -67,6 +67,7 @@ else:
         st.subheader("Detalhamento das Emissões Registradas")
         st.dataframe(style_table(
             data.sort_index(ascending=False),
+            date_cols=['data_emissao', 'data_vencimento'],
             numeric_cols_format_as_float=['juros_criterio_novo_taxa'],
             currency_cols=['valor_nominal_na_emissao', 'quantidade_emitida', 'volume_emissao']))
 

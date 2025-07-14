@@ -5,6 +5,8 @@ from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 def style_table(
     df: pd.DataFrame,
     percent_cols: Optional[List[str]] = None,
+    date_cols: Optional[List[str]] = None,
+    date_format: str = '%Y-%m-%d',
     rank_cols_identifier: Optional[str] = None, # e.g., 'rank' to identify columns like 'rank_A', 'rank_B'
     numeric_cols_format_as_int: Optional[List[str]] = None, # Columns to be formatted as integers with thousands separator
     numeric_cols_format_as_float: Optional[List[str]] = None, # Columns to be formatted as floats with 2 decimal places
@@ -34,6 +36,13 @@ def style_table(
         for col in percent_cols:
             if col in df_styled.columns:
                 formatters[col] = "{:.2f}%"
+
+    # Date formatting
+    if date_cols:
+        for col in date_cols:
+            if col in df_styled.columns:
+                df_styled[col] = pd.to_datetime(df_styled[col], errors='coerce')
+                formatters[col] = lambda x: x.strftime(date_format) if pd.notna(x) else ''
 
     # Integer formatting for identified rank columns (no comma, typically for ranks)
     actual_rank_cols = []
@@ -135,6 +144,8 @@ def style_table(
     # - Rank columns (if identifier provided)
     # - Column used for highlighting (if active)
     cols_to_center = set(center_align_cols or [])
+    if date_cols:
+        cols_to_center.update(date_cols)
     if rank_cols_identifier:
         cols_to_center.update(actual_rank_cols)
     if highlight_row_by_column and highlight_row_if_value_equals is not None:
