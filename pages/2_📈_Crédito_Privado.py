@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from persevera_tools.data.private_credit import get_emissions, calculate_spread
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
+from utils.table import style_table
 from utils.auth import check_authentication
 import streamlit_highcharts as hct
 import numpy as np
@@ -61,8 +62,13 @@ else:
             y_axis_title="Volume Emitido (R$)",
             decimal_precision=0
         )
-
         hct.streamlit_highcharts(chart_emissions_options)
+
+        st.subheader("Detalhamento das Emissões Registradas")
+        st.dataframe(style_table(
+            data.sort_index(ascending=False),
+            numeric_cols_format_as_float=['juros_criterio_novo_taxa'],
+            currency_cols=['valor_nominal_na_emissao', 'quantidade_emitida', 'volume_emissao']))
 
     # Tab 2: Spread
     with tabs[1]:
