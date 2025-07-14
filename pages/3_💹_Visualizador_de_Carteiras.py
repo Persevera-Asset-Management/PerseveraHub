@@ -65,7 +65,7 @@ if df is not None:
                 st.dataframe(style_table(
                     df, currency_cols=['saldo_bruto'],
                     date_cols=['date'],
-                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição Financeira', 'Tipo de Ativo']),
+                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição', 'Tipo de Ativo']),
                     hide_index=True)
 
             # Big numbers
@@ -160,9 +160,9 @@ if df is not None:
                         style_table(
                             saldo_ativo_selecionado,
                             currency_cols=['saldo_bruto'],
-                            percent_cols=['pct_carteira']
+                            percent_cols=['pct_carteira'],
+                            column_names=['Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', '% na Carteira']),
                         )
-                    )
             with row_5[1]:
                 if selected_asset != "":
                     chart_saldo_ativos_carteiras = create_chart(
@@ -217,7 +217,10 @@ if df is not None:
                     .sort_values('saldo_bruto', ascending=False)
                 )
                 st.dataframe(
-                    style_table(posicoes_cliente, currency_cols=['saldo_bruto']),
+                    style_table(
+                        posicoes_cliente,
+                        currency_cols=['saldo_bruto'],
+                        column_names=['Ativo', 'Descrição', 'Tipo de Ativo', 'Instituição', 'Saldo Bruto']),
                     hide_index=True,
                     use_container_width=True
                 )
