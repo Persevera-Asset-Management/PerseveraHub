@@ -28,7 +28,7 @@ with st.spinner("Carregando dados..."):
         st.dataframe(style_table(
             calendar_data,
             highlight_row_by_column='country',
-            highlight_row_by_value='Brazil',
+            highlight_row_if_value_equals='Brazil',
             column_names=['Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL']
         ))
     except Exception as e:
