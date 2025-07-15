@@ -63,10 +63,11 @@ if df is not None:
 
             with st.expander("Dados Brutos", expanded=False):
                 st.dataframe(style_table(
-                    df, currency_cols=['saldo_bruto'],
-                    date_cols=['date'],
-                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição', 'Tipo de Ativo']),
-                    hide_index=True)
+                    df,
+                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição', 'Tipo de Ativo'],
+                    date_cols=['Data'],
+                    currency_cols=['Saldo Bruto']),
+                hide_index=True)
 
             # Big numbers
             row_1 = st.columns(3)
@@ -159,10 +160,11 @@ if df is not None:
                     st.dataframe(
                         style_table(
                             saldo_ativo_selecionado,
-                            currency_cols=['saldo_bruto'],
-                            percent_cols=['pct_carteira'],
-                            column_names=['Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', '% na Carteira']),
-                        )
+                            column_names=['Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', '% na Carteira'],
+                            currency_cols=['Saldo Bruto'],
+                            percent_cols=['% na Carteira'],
+                        ),
+                        hide_index=True)
             with row_5[1]:
                 if selected_asset != "":
                     chart_saldo_ativos_carteiras = create_chart(
@@ -219,11 +221,10 @@ if df is not None:
                 st.dataframe(
                     style_table(
                         posicoes_cliente,
-                        currency_cols=['saldo_bruto'],
-                        column_names=['Ativo', 'Descrição', 'Tipo de Ativo', 'Instituição', 'Saldo Bruto']),
-                    hide_index=True,
-                    use_container_width=True
-                )
+                        column_names=['Ativo', 'Descrição', 'Tipo de Ativo', 'Instituição', 'Saldo Bruto'],
+                        currency_cols=['Saldo Bruto'],
+                    ),
+                    hide_index=True)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")

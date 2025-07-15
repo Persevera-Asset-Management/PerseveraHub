@@ -68,10 +68,10 @@ else:
         st.subheader("Detalhamento das Emissões Registradas")
         st.dataframe(style_table(
             data.sort_index(ascending=False).reset_index(),
-            date_cols=['data_emissao', 'data_vencimento'],
-            percent_cols=['juros_criterio_novo_taxa'],
-            currency_cols=['valor_nominal_na_emissao', 'quantidade_emitida', 'volume_emissao'],
             column_names=['Data de Emissão', 'Ticker', 'Nome', 'Data de Vencimento', 'Índice', 'Juros (%)', 'Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido']),
+            date_cols=['Data de Emissão', 'Data de Vencimento'],
+            percent_cols=['Juros (%)'],
+            currency_cols=['Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido'],
             hide_index=True)
 
     # Tab 2: Spread

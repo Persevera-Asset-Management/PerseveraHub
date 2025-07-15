@@ -112,7 +112,13 @@ else:
         allocation_table['Equal Weight (%)'] = 1.0 / len(allocation_table) * 100.0
         allocation_table['Final Weight (%)'] = allocation_table['1 / Beta'] / allocation_table['1 / Beta'].sum() * 100.0
         
-        st.dataframe(style_table(allocation_table, numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'], percent_cols=['Equal Weight (%)', 'Final Weight (%)']))
+        st.dataframe(
+            style_table(
+                allocation_table,
+                numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'],
+                percent_cols=['Equal Weight (%)', 'Final Weight (%)'],
+            ),
+            hide_index=True)
         
         st.markdown("#### Estatísticas")
         portfolio_volatility_inv_beta = calculate_portfolio_volatility(allocation_table['Final Weight (%)'], returns)
@@ -145,7 +151,13 @@ else:
         weights_df = weights_df.ffill()
 
         with st.expander("Histórico de Alocações", expanded=False):
-            st.dataframe(style_table(weights_df.replace(0, np.nan).mul(100), percent_cols=weights_df.columns.tolist()))
+            st.dataframe(
+                style_table(
+                    weights_df.replace(0, np.nan).mul(100),
+                    percent_cols=weights_df.columns.tolist()
+                ),
+                hide_index=True
+            )
 
         returns_equities_portfolio = weights_df.mul(data_equities_portfolio.pct_change(), axis=0).sum(axis=1)
         returns_df = pd.concat([returns_equities_portfolio, indicators.pct_change().fillna(0)], axis=1)
