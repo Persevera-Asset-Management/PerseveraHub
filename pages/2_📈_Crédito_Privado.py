@@ -79,7 +79,7 @@ else:
 
     # Tab 2: Spread
     with tabs[1]:
-        st.header("Spread")
+        st.header("CDI+")
 
         row_1 = st.columns(2)
         with row_1[0]:

@@ -1,7 +1,7 @@
 FACTOR_OPTIONS = {
     'br_cdi_index': 'CDI',
-    'br_ibovespa': 'Ibovespa',
-    'us_sp500': 'S&P 500',
+    'br_bmf_ibovespa_futures': 'Ibovespa',
+    'br_bmf_sp500_futures': 'S&P 500',
     'br_bmf_di_jan27_futures': 'DI Jan 27',
     'br_bmf_di_jan28_futures': 'DI Jan 28',
     'br_bmf_di_jan29_futures': 'DI Jan 29',
@@ -14,7 +14,6 @@ FACTOR_OPTIONS = {
     'anbima_ima_b5+': 'IMA B5+',
     'br_bmf_us_treasury_10y_futures': '10y US',
     'br_bmf_usd_futures': 'BRL/USD',
-    'br_bmf_usd_futures': 'BRL/USD',
     'crude_oil_wti_futures': 'Crude Oil WTI',
     'bitcoin_usd': 'Bitcoin',
     'china_kweb': 'China KWEB',
@@ -24,8 +23,8 @@ FACTOR_OPTIONS = {
 
 FACTOR_OPTIONS_SELECTED = {
     'br_cdi_index': 'CDI',
-    'br_ibovespa': 'Ibovespa',
-    'us_sp500': 'S&P 500',
+    'br_bmf_ibovespa_futures': 'Ibovespa',
+    'br_bmf_sp500_futures': 'S&P 500',
     'br_bmf_di_jan29_futures': 'DI Jan 29',
     'br_bmf_di_jan33_futures': 'DI Jan 33',
     'br_bmf_us_treasury_10y_futures': '10y US',
