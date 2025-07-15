@@ -29,7 +29,7 @@ with st.spinner("Carregando dados..."):
             calendar_data,
             highlight_row_by_column='country',
             highlight_row_if_value_equals='Brazil',
-            column_names=['Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL']
+            # column_names=['Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL']
         ))
     except Exception as e:
         st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
