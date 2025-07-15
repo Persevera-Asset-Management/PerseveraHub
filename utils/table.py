@@ -23,13 +23,18 @@ def style_table(
     column_names: Optional[List[str]] = None
 ) -> Styler:
     """Applies generic styling to a DataFrame.
-    Allows specifying columns for percentage formatting, 
+    Allows specifying columns for percentage formatting,
     integer formatting (with thousands separators), 
     float formatting (to 2 decimal places), 
     and currency-style formatting (integers with thousands separators).
     Allows conditional row highlighting, color-coding of columns by quartile, and custom alignment for specified columns. Quartile calculations can exclude specified rows.
     """
     df_styled = df.copy()
+
+    if column_names:
+        if len(column_names) == len(df_styled.columns):
+            df_styled.columns = column_names
+            
     formatters = {}
 
     # Percentage formatting
@@ -173,9 +178,5 @@ def style_table(
             processed_for_alignment.add(col_name)
             
     styled_obj = styled_obj.set_table_styles(alignment_styles, overwrite=False)
-
-    if column_names:
-        if len(column_names) == len(df_styled.columns):
-            df_styled.columns = column_names
 
     return styled_obj
