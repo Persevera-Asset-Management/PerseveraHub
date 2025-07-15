@@ -66,13 +66,16 @@ else:
         hct.streamlit_highcharts(chart_emissions_options)
 
         st.subheader("Detalhamento das Emissões Registradas")
-        st.dataframe(style_table(
-            data.sort_index(ascending=False).reset_index(),
-            column_names=['Data de Emissão', 'Ticker', 'Nome', 'Data de Vencimento', 'Índice', 'Juros (%)', 'Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido']),
-            date_cols=['Data de Emissão', 'Data de Vencimento'],
-            percent_cols=['Juros (%)'],
-            currency_cols=['Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido'],
-            hide_index=True)
+        st.dataframe(
+            style_table(
+                data.sort_index(ascending=False).reset_index(),
+                column_names=['Data de Emissão', 'Ticker', 'Nome', 'Data de Vencimento', 'Índice', 'Juros (%)', 'Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido'],
+                date_cols=['Data de Emissão', 'Data de Vencimento'],
+                percent_cols=['Juros (%)'],
+                currency_cols=['Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido'],
+            ),
+            hide_index=True
+        )
 
     # Tab 2: Spread
     with tabs[1]:

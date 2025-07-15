@@ -118,7 +118,8 @@ else:
                 numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'],
                 percent_cols=['Equal Weight (%)', 'Final Weight (%)'],
             ),
-            hide_index=True)
+            hide_index=False
+        )
         
         st.markdown("#### Estatísticas")
         portfolio_volatility_inv_beta = calculate_portfolio_volatility(allocation_table['Final Weight (%)'], returns)
@@ -156,7 +157,7 @@ else:
                     weights_df.replace(0, np.nan).mul(100),
                     percent_cols=weights_df.columns.tolist()
                 ),
-                hide_index=True
+                hide_index=False
             )
 
         returns_equities_portfolio = weights_df.mul(data_equities_portfolio.pct_change(), axis=0).sum(axis=1)
