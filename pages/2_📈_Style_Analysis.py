@@ -27,6 +27,9 @@ check_authentication()
 
 st.title("Style Analysis")
 
+import persevera_style_analysis
+st.write(f"Current version: persevera_style_analysis v{persevera_style_analysis.__version__}")
+
 @st.cache_data(ttl=3600)
 def load_peers():
     try:
