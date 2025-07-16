@@ -9,7 +9,7 @@ load_dotenv()
 
 # Configure the page
 st.set_page_config(
-    page_title="Persevera Hub",
+    page_title="Persevera Dashboard",
     page_icon="assets/logo_page.png",
     layout="wide"
 )

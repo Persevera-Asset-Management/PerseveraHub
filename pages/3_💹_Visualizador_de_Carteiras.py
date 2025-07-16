@@ -160,11 +160,12 @@ if df is not None:
                     st.dataframe(
                         style_table(
                             saldo_ativo_selecionado,
-                            column_names=['Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', '% na Carteira'],
+                            column_names=['Ativo', 'Descrição', 'Saldo Bruto', '% na Carteira'],
                             currency_cols=['Saldo Bruto'],
                             percent_cols=['% na Carteira'],
                         ),
-                        hide_index=True)
+                        hide_index=True
+                    )
             with row_5[1]:
                 if selected_asset != "":
                     chart_saldo_ativos_carteiras = create_chart(
