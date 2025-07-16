@@ -57,7 +57,7 @@ building_blocks_dict = {
     'IFIX': 'br_ifix',
 }
 
-start_date = datetime.now() - timedelta(days=2*365)
+start_date = datetime.now() - timedelta(days=5*365)
 start_date_str = start_date.strftime('%Y-%m-%d')
 
 building_blocks_df = get_building_blocks()
@@ -78,7 +78,7 @@ for block in building_blocks_dict:
 
         st.dataframe(
             style_table(
-                temp.sort_values(by='tracking_error', ascending=False),
+                temp.sort_values(by='tracking_error', ascending=True),
                 column_names=['Instrumento', 'Nome', 'Hedge Cambial?', 'Tracking Error'],
             ),
         )
