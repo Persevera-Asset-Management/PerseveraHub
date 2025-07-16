@@ -28,7 +28,7 @@ check_authentication()
 st.title("Style Analysis")
 
 import persevera_style_analysis
-st.write(f"Current version: persevera_style_analysis v{persevera_style_analysis.__version__}")
+st.write(f"Versão atual: persevera_style_analysis v{persevera_style_analysis.__version__}")
 
 @st.cache_data(ttl=3600)
 def load_peers():
@@ -130,7 +130,7 @@ if btn_run:
     execution_time = end_time - start_time
 
     # Display the collected data
-    st.header("Resultados")
+    st.subheader("Resultados")
     st.code(f"""
             - Período: {returns.index.max().strftime('%Y-%m-%d')}
             - Janela de análise: {min_window} a {max_window}
@@ -146,6 +146,13 @@ if btn_run:
     # Iterate over each factor (column in all_betas) to create a chart
     cols = st.columns(2)
     all_betas.dropna(how='all', inplace=True)
+    st.dataframe(
+        style_table(
+            all_betas.T.replace(0, np.nan).infer_objects(copy=False).rename(columns=FACTOR_OPTIONS),
+            numeric_cols_format_as_float=list(all_betas.T.rename(columns=FACTOR_OPTIONS).columns)
+        )
+    )
+
     for i, factor_name in enumerate(all_betas.index): # all_betas rows are factors, columns are funds
         if factor_name in FACTOR_OPTIONS:
             factor_display_name = FACTOR_OPTIONS[factor_name]
