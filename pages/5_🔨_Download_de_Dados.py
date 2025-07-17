@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime, timedelta
 from persevera_tools.data import FinancialDataService
-from persevera_tools.data.funds import get_persevera_peers
+from persevera_tools.data.funds import get_persevera_peers, get_building_blocks
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 import functools
@@ -80,7 +80,9 @@ for i, (label, name, source) in enumerate(cta_sources):
 st.write("##### Fundos de Investimento (CVM)")
 row_cvm = st.columns(3)
 try:
-    cnpjs = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
+    cnpjs_peers = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
+    cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
+    cnpjs = cnpjs_peers + cnpjs_building_blocks
     cvm_download_func = functools.partial(fds.get_cvm_data, cnpjs=cnpjs, save_to_db=True)
     create_download_button(row_cvm[0], "Todos os Fundos", "Fundos de Investimento", cvm_download_func)
 except Exception as e:

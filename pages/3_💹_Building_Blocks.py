@@ -9,7 +9,7 @@ from utils.table import style_table
 from utils.auth import check_authentication
 from persevera_tools.quant_research.metrics import calculate_tracking_error
 from persevera_tools.data.sma import get_building_blocks
-from persevera_tools.data import get_series
+from persevera_tools.data import get_series, get_funds_data
 
 st.set_page_config(
     page_title="Building Blocks | Persevera",
