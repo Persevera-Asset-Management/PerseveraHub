@@ -1,7 +1,8 @@
 import streamlit as st
 from datetime import datetime, timedelta
 from persevera_tools.data import FinancialDataService
-from persevera_tools.data.funds import get_persevera_peers, get_building_blocks
+from persevera_tools.data.funds import get_persevera_peers
+from persevera_tools.data.sma import get_building_blocks
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 import functools
