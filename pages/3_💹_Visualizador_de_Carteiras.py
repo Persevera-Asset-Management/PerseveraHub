@@ -35,7 +35,7 @@ if btn_run:
     with st.spinner("Carregando dados..."):
         provider = ComdinheiroProvider()
         st.session_state.df = provider.get_data(
-            category='portfolio_positions',
+            data_type='portfolio_positions',
             portfolios=selected_carteiras,
             date_report=selected_date.strftime('%Y-%m-%d')
         )
@@ -58,6 +58,7 @@ if df is not None:
 
         tabs = st.tabs(["Visão Geral", "Busca por Ativos", "Busca por Cliente"])
 
+        # Visão Geral
         with tabs[0]:
             st.subheader("Visão Geral")
 
@@ -130,8 +131,8 @@ if df is not None:
                 )
                 hct.streamlit_highcharts(chart_saldo_tipo_ativos)
 
+        # Busca por Ativos
         with tabs[1]:
-            # Busca por Ativos
             st.subheader("Busca por Ativos")
             row_5 = st.columns(2)
             with row_5[0]:
@@ -163,8 +164,7 @@ if df is not None:
                             column_names=['Ativo', 'Descrição', 'Saldo Bruto', '% na Carteira'],
                             currency_cols=['Saldo Bruto'],
                             percent_cols=['% na Carteira'],
-                        ),
-                        hide_index=True
+                        )
                     )
             with row_5[1]:
                 if selected_asset != "":
@@ -178,6 +178,7 @@ if df is not None:
                     )
                     hct.streamlit_highcharts(chart_saldo_ativos_carteiras)
 
+        # Busca por Cliente
         with tabs[2]:
             st.subheader("Busca por Cliente")
             row_6 = st.columns(2)
@@ -212,7 +213,7 @@ if df is not None:
                 hct.streamlit_highcharts(chart_alocacao_tipo_ativo)
                 
                 # Tabela de posições
-                st.markdown("## Posições da Carteira")
+                st.subheader("Posições da Carteira")
                 posicoes_cliente = (
                     df_cliente[[
                         'ativo', 'descricao', 'tipo_ativo', 'instituicao_financeira', 'saldo_bruto'

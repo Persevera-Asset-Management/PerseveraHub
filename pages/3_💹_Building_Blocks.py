@@ -65,7 +65,6 @@ building_blocks_df = get_building_blocks()
 indicadores_list = list(building_blocks_dict.values()) + building_blocks_df['code'].tolist()
 data = load_data(indicadores_list, start_date_str)
 
-
 for block in building_blocks_dict:
     with st.expander(block):
         temp = building_blocks_df[building_blocks_df['reference'] == block].drop(columns=['reference'])
