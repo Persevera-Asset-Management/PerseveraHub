@@ -84,7 +84,7 @@ try:
     cnpjs_peers = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
     cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
     cnpjs = cnpjs_peers + cnpjs_building_blocks
-    cvm_download_func = functools.partial(fds.get_cvm_data, category='cvm', cnpjs=cnpjs, save_to_db=True)
+    cvm_download_func = functools.partial(fds.get_cvm_data, source='cvm', cnpjs=cnpjs, save_to_db=True)
     create_download_button(row_cvm[0], "Todos os Fundos", "Fundos de Investimento", cvm_download_func)
 except Exception as e:
     st.error(f"Ocorreu um erro ao obter a lista de CNPJs para os fundos: {e}")
