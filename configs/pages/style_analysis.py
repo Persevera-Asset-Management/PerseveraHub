@@ -13,7 +13,8 @@ FACTOR_OPTIONS = {
     'anbima_ima_b5': 'IMA B5',
     'anbima_ima_b5+': 'IMA B5+',
     'br_bmf_us_treasury_10y_futures': '10y US',
-    'br_bmf_usd_futures': 'BRL/USD',
+    'br_bmf_usd_futures': 'BRL/USD (Fut)',
+    'brl_usd': 'BRL/USD',
     'crude_oil_wti_futures': 'Crude Oil WTI',
     'bitcoin_usd': 'Bitcoin',
     'china_kweb': 'China KWEB',
@@ -28,7 +29,7 @@ FACTOR_OPTIONS_SELECTED = {
     'br_bmf_di_jan29_futures': 'DI Jan 29',
     'br_bmf_di_jan33_futures': 'DI Jan 33',
     'br_bmf_us_treasury_10y_futures': '10y US',
-    'br_bmf_usd_futures': 'BRL/USD',
+    'br_bmf_usd_futures': 'BRL/USD (Fut)',
     'gold_100oz_futures': 'Gold',
     'crude_oil_wti_futures': 'Crude Oil WTI',
 }
