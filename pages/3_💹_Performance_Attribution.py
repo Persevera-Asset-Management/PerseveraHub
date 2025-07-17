@@ -81,11 +81,22 @@ if table_data is not None:
         rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['no Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
 
         with st.expander("Dados Brutos"):
-            st.dataframe(rentabilidade_acumulada_consolidada)
+            st.dataframe(
+                style_table(
+                    rentabilidade_acumulada_consolidada,
+                    percent_cols=['No Mês', 'No Ano', '%']
+                )
+            )
 
         with st.expander("Movimentações"):
-            st.dataframe(movimentacoes, hide_index=True)
-
+            st.dataframe(
+                style_table(
+                    movimentacoes,
+                    date_cols=['Data Liquidação'],
+                    numeric_cols_format_as_float=['Quantidade', 'Valor Bruto']
+                ),
+                hide_index=True
+            )
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
         contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]
 
