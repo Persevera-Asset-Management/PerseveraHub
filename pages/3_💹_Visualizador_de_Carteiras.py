@@ -35,6 +35,7 @@ if btn_run:
     with st.spinner("Carregando dados..."):
         provider = ComdinheiroProvider()
         st.session_state.df = provider.get_data(
+            category='comdinheiro',
             data_type='portfolio_positions',
             portfolios=selected_carteiras,
             date_report=selected_date.strftime('%Y-%m-%d')

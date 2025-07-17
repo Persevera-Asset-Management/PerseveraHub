@@ -37,7 +37,8 @@ if btn_run:
     with st.spinner("Carregando dados..."):
         provider = ComdinheiroProvider()
         table_data = provider.get_data(
-            category='portfolio_statement',
+            category='comdinheiro',
+            data_type='portfolio_statement',
             portfolio=selected_carteira,
             date_inception=selected_inception_date.strftime('%Y-%m-%d'),
             date_report=selected_report_date.strftime('%Y-%m-%d'),
