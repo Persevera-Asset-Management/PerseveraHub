@@ -9,7 +9,7 @@ load_dotenv()
 
 # Configure the page
 st.set_page_config(
-    page_title="Ficha Cadastral | Persevera",
+    page_title="Dashboard | Persevera",
     page_icon="assets/logo_page.png",
     layout="wide"
 )
