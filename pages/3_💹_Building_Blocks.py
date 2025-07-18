@@ -26,7 +26,14 @@ st.title("Building Blocks")
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date):
     try:
-        return get_series(codes, start_date=start_date, field='close')
+        df = pd.merge(
+            get_series(codes, start_date=start_date, field='close').dropna(how='all', axis='columns'),
+            get_funds_data(cnpjs=codes, start_date=start_date, fields=['fund_nav']).dropna(how='all', axis='columns'),
+            left_index=True,
+            right_index=True,
+            how='outer'
+        )
+        return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
