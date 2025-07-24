@@ -1,40 +1,15 @@
-CODIGOS_CARTEIRAS = [
-    "ABBR",
-    "ALSA",
-    "ARBB",
-    "BRST",
-    "CISI",
-    "DISI",
-    "EMAF",
-    "FEAL",
-    "FEFO",
-    "FIBA",
-    "FRYG",
-    "GGAB",
-    "GINI",
-    "GITO",
-    "GLZA",
-    "GUSG",
-    "IOSA",
-    "JENS", 
-    "LEMO",
-    "LUKA",
-    "LUPO",
-    "MAAL",
-    "MACR",
-    "MAKN",
-    "MAMC",
-    "MASG",
-    "MASP",
-    "MTSM",
-    "NICJ",
-    "NSSA",
-    "RAMA",
-    "REME",
-    "RORA",
-    "ROSI",
-    "ROVO",
-    "TABA",
-    "VAMA",
-    "WIKO",
-]
+from persevera_tools.db.fibery import read_fibery
+
+def get_carteiras():
+    df = read_fibery(
+        table_name="Ops-Cadastro/Parte Legal",
+        include_fibery_fields=False
+    )
+    df = df[
+        (df["Ops-Cadastro/Is CPF?"] == True) &
+        (df["Ops-Cadastro/Código (Acrônimo)"].notna()) &
+        (df["Ops-Cadastro/Código (Acrônimo)"].str.len() == 4)
+    ]
+    return sorted(df["Ops-Cadastro/Código (Acrônimo)"].tolist())
+
+CODIGOS_CARTEIRAS = get_carteiras()
