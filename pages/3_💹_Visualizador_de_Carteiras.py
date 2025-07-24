@@ -66,7 +66,7 @@ if df is not None:
             with st.expander("Dados Brutos", expanded=False):
                 st.dataframe(style_table(
                     df,
-                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição', 'Tipo de Ativo'],
+                    column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto', 'Instituição', 'Tipo de Ativo', 'Estratégia'],
                     date_cols=['Data'],
                     currency_cols=['Saldo Bruto']),
                 hide_index=True)
@@ -195,7 +195,7 @@ if df is not None:
                 # Gráfico de alocação por tipo de ativo
                 alocacao_tipo_ativo = (
                     df_cliente
-                    .groupby('tipo_ativo')['saldo_bruto']
+                    .groupby('estrategia')['saldo_bruto']
                     .sum()
                     .reset_index()
                     .sort_values('saldo_bruto', ascending=False)
@@ -203,13 +203,13 @@ if df is not None:
                 alocacao_tipo_ativo['Percentual'] = (alocacao_tipo_ativo['saldo_bruto'] / pl_total_cliente) * 100
                 
                 chart_alocacao_tipo_ativo = create_chart(
-                    data=alocacao_tipo_ativo.set_index('tipo_ativo'),
+                    data=alocacao_tipo_ativo.set_index('estrategia'),
                     columns=['Percentual'],
                     names=['Percentual'],
                     chart_type='column',
-                    title='Alocação por Tipo de Ativo',
+                    title='Alocação por Estratégia',
                     y_axis_title='%',
-                    x_axis_title='Tipo de Ativo'
+                    x_axis_title='Estratégia'
                 )
                 hct.streamlit_highcharts(chart_alocacao_tipo_ativo)
                 
@@ -217,14 +217,14 @@ if df is not None:
                 st.subheader("Posições da Carteira")
                 posicoes_cliente = (
                     df_cliente[[
-                        'ativo', 'descricao', 'tipo_ativo', 'instituicao_financeira', 'saldo_bruto'
+                        'ativo', 'descricao', 'estrategia', 'tipo_ativo', 'instituicao_financeira', 'saldo_bruto'
                     ]]
                     .sort_values('saldo_bruto', ascending=False)
                 )
                 st.dataframe(
                     style_table(
                         posicoes_cliente,
-                        column_names=['Ativo', 'Descrição', 'Tipo de Ativo', 'Instituição', 'Saldo Bruto'],
+                        column_names=['Ativo', 'Descrição', 'Estratégia', 'Tipo de Ativo', 'Instituição', 'Saldo Bruto'],
                         currency_cols=['Saldo Bruto'],
                     ),
                     hide_index=True)
