@@ -227,6 +227,8 @@ for i, trans in enumerate(st.session_state.transformations):
         params['scalar'] = st.sidebar.number_input("Dividir por", value=trans.get('params',{}).get('scalar', 1.0), format="%.4f", key=f"param_div_scalar_{i}")
     elif trans['type'] == "saar":
         params['period_months'] = st.sidebar.number_input("Meses no período", min_value=1, value=trans.get('params',{}).get('period_months', 1), key=f"param_saar_months_{i}")
+    elif trans['type'] == "saar_ma":
+        params['period_months'] = st.sidebar.number_input("Meses no período", min_value=1, value=trans.get('params',{}).get('period_months', 1), key=f"param_saar_ma_months_{i}")
 
     params['keep_original_data'] = st.sidebar.checkbox("Manter dados originais?", value=trans.get('params',{}).get('keep_original_data', False), key=f"param_keep_original_data_{i}")
 

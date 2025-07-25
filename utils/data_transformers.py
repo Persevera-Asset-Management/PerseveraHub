@@ -349,7 +349,6 @@ class RollingSumTransformer(DataTransformer):
 
         return result
 
-
 class RollingSumPlusYearlyVariationTransformer(DataTransformer):
     """Calculates rolling sum and yearly variation for a given column"""
     @staticmethod
@@ -622,6 +621,88 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
         
         return result
 
+class SeasonallyAdjustedAnnualRateMovingAverageTransformer(DataTransformer):
+    """
+    Calculates the Seasonally Adjusted Annual Rate (SAAR) for a given column.
+    The calculation is based on ((current_period_value / past_period_value_N_months_ago) ** (12 / N) - 1) * 100.
+    Input data is resampled to month-start frequency before calculation.
+    """
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        period_months = config.get('period_months')
+        calculate_pct_change = config.get('calculate_pct_change', False)
+
+        # Validate essential config for forming the new column name and core logic
+        if not isinstance(column, str) or not column:
+            print(f"Warning: SAAR transformer requires a valid 'column' name string in config. Skipping.")
+            return data # Cannot form new_column_name or proceed
+
+        if not isinstance(period_months, int) or period_months <= 0:
+            print(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
+            return data # Cannot proceed with logic
+
+        result = pd.DataFrame(data.copy())
+        new_column_name = f"{column}_saar_ma_{period_months}m"
+        
+        result[new_column_name] = np.nan # Ensure column exists
+
+        if column not in result.columns:
+            print(f"Warning: Column '{column}' not found in DataFrame for SAAR. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        if not isinstance(result.index, pd.DatetimeIndex):
+            print(f"Error: DataFrame index is not a DatetimeIndex for SAAR on column '{column}'. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        col_data_series = result[column].dropna()
+        
+        if col_data_series.empty:
+            print(f"Warning: Column '{column}' has no non-NaN data for SAAR. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        try:
+            # Resample to month-start frequency, taking the last observation of the month.
+            monthly_series = col_data_series.resample('MS').last()
+        except Exception as e:
+            print(f"Error during resampling for SAAR on column '{column}': {e}. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+        
+        if monthly_series.empty or monthly_series.isnull().all():
+            print(f"Warning: Column '{column}' is empty or all NaN after resampling to 'MS' for SAAR. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+
+        if len(monthly_series) < period_months + 1:
+            print(f"Warning: Not enough data points in monthly series for column '{column}' ({len(monthly_series)} points) to calculate SAAR with period {period_months} months. At least {period_months + 1} points needed. Adding NaN column '{new_column_name}'.")
+            result[new_column_name] = np.nan
+            return result
+            
+        try:
+            # Reconstruct SA index from monthly series
+            if calculate_pct_change:
+                periodic_growth_rate = monthly_series.pct_change()
+            else:
+                # Assumes monthly_series contains MoM % changes.
+                sa_series = np.cumprod(1 + monthly_series/100.0)
+                periodic_growth_rate = sa_series.pct_change()
+            
+            # Annualize: ( (1 + periodic_growth_rate) ^ (12 / period_months) ) - 1, then * 100
+            saar_ma_pct_values = ((1 + periodic_growth_rate.rolling(window=period_months).mean()).pow(12.0) - 1) * 100.0
+ 
+            aligned_saar_ma = saar_ma_pct_values.reindex(result.index)
+            result[new_column_name] = aligned_saar_ma
+
+        except Exception as e:
+            print(f"Error during SAAR calculation for column '{column}': {e}. Output column '{new_column_name}' will remain NaN.")
+            # new_column_name is already NaN if error occurs here
+        
+        return result
+
 class RollingBetaTransformer(DataTransformer):
     """Calculates rolling beta of a dependent series returns against an independent series returns."""
     @staticmethod
@@ -683,6 +764,7 @@ TRANSFORMERS = {
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
+    "saar_ma": SeasonallyAdjustedAnnualRateMovingAverageTransformer,
 }
 
 def apply_transformations(data: pd.DataFrame, transformations_config: List[Dict[str, Any]]) -> pd.DataFrame:
