@@ -59,6 +59,7 @@ macro_sources = [
     ("Focus (BCB)", "Focus (BCB)", "bcb_focus"),
     ("Sidra", "Sidra", "sidra"),
     ("MDIC", "MDIC", "mdic"),
+    ("B3 (Flows)", "B3 (Flows)", "b3"),
 ]
 rows_macro = [st.columns(3) for _ in range((len(macro_sources) + 2) // 3)]
 for i, (label, name, source) in enumerate(macro_sources):

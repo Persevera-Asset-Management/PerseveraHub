@@ -82,7 +82,7 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
                 generated_name_this_iteration = f"{original_col_name}_min{window}"
             elif transform_type == "rolling_sum":
                 window = t_conf.get("window", 12)
-                generated_name_this_iteration = f"{original_col_name}_rolling_sum{window}"
+                generated_name_this_iteration = f"{original_col_name}_rolling_sum_{window}"
             elif transform_type == "rolling_sum_plus_yearly_variation":
                 window = t_conf.get("window", 12)
                 generated_name_this_iteration = f"{original_col_name}_rolling_sum_yoy"
@@ -95,6 +95,9 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
             elif transform_type == "saar":
                 period_months = t_conf.get("period_months", 12)
                 generated_name_this_iteration = f"{original_col_name}_saar_{period_months}m"
+            elif transform_type == "saar_ma":
+                period_months = t_conf.get("period_months", 12)
+                generated_name_this_iteration = f"{original_col_name}_saar_ma_{period_months}m"
             elif transform_type == "rolling_volatility":
                 window = t_conf.get("window", 252)
                 annualized = t_conf.get("annualized", False)
