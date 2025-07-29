@@ -37,23 +37,37 @@ def load_data(start_date, descriptors_list):
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
 
+@st.cache_data
+def process_data(df, min_liquidity, lookback_days):
+    """
+    Filters the most liquid assets and calculates the SQN.
+    """
+    df_swapped = df.swaplevel(0, axis=1)
+    most_liquid = df_swapped["median_dollar_volume_traded_21d"].dropna(how='all', axis='rows').iloc[-1]
+    most_liquid = most_liquid[most_liquid > min_liquidity]
+
+    price_close = df_swapped["price_close"][most_liquid.index]
+    df_sqn_history = price_close.apply(calculate_sqn, period=lookback_days, axis=0)
+    
+    df_sqn = df_sqn_history.tail(10).T
+    df_sqn = df_sqn[sorted(df_sqn.columns, reverse=True)]
+    df_sqn = df_sqn.sort_values(by=df_sqn.columns[0], ascending=False)
+    df_sqn = df_sqn.dropna(how='all', axis='rows')
+    
+    return df_sqn, df_sqn_history, price_close
+
+
 if 'df' not in st.session_state:
     st.session_state.df = None
 
 start_date = datetime.today() - timedelta(days=365*5)
-st.session_state.df = load_data(start_date=start_date, descriptors_list=["price_close", "median_dollar_volume_traded_21d"])
-df = st.session_state.df
+df = load_data(start_date=start_date, descriptors_list=["price_close", "median_dollar_volume_traded_21d"])
 
-df = df.swaplevel(0, axis=1)
-most_liquid = df["median_dollar_volume_traded_21d"].dropna(how='all', axis='rows').iloc[-1]
-most_liquid = most_liquid[most_liquid > min_liquidity]
+if df.empty:
+    st.warning("Não foi possível carregar os dados.")
+    st.stop()
 
-price_close = df["price_close"][most_liquid.index]
-df_sqn_history = price_close.apply(calculate_sqn, period=lookback_days, axis=0)
-df_sqn = df_sqn_history.tail(10).T
-df_sqn = df_sqn[sorted(df_sqn.columns, reverse=True)]
-df_sqn = df_sqn.sort_values(by=df_sqn.columns[0], ascending=False)
-df_sqn = df_sqn.dropna(how='all', axis='rows')
+df_sqn, df_sqn_history, price_close = process_data(df, min_liquidity, lookback_days)
 
 st.dataframe(
     style_table(
@@ -100,7 +114,7 @@ if selected_stock:
         median_returns = median_returns.drop(columns='SQN')
         
         # Also calculate the number of occurrences in each bin
-        count_returns = combined_df.groupby('SQN Range', observed=True).count()['SQN'].rename('Observations')
+        count_returns = combined_df.groupby('SQN Range', observed=True).count()['SQN'].rename('Observações')
         
         # Combine median returns and counts for display
         display_df = pd.concat([median_returns, count_returns], axis=1)
@@ -120,12 +134,13 @@ if selected_stock:
         with row_2[1]:
             chart_sqn_returns_count = create_chart(
                 data=display_df,
-                columns=['Observations'],
-                names=['Observations'],
+                columns=['Observações'],
+                names=['Observações'],
                 chart_type='column',
                 title=f"Número de Observações por Faixa de SQN - {selected_stock}",
                 y_axis_title="Número de Observações",
                 x_axis_title="Faixa de SQN",
+                decimal_precision=0
             )
             hct.streamlit_highcharts(chart_sqn_returns_count)
     else:
