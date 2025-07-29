@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from persevera_tools.data.private_credit import get_emissions, calculate_spread
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
@@ -32,7 +32,7 @@ def load_data(start_date):
 
 with st.sidebar:
     st.header("Parâmetros")
-    start_date = st.date_input("Data Inicial", datetime.now() - timedelta(days=4*365), format="DD/MM/YYYY")
+    start_date = st.date_input("Data Inicial", pd.to_datetime(date.today() - timedelta(days=4*365)), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator

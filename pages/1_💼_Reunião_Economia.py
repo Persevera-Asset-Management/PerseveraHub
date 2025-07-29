@@ -38,9 +38,7 @@ with st.sidebar:
     start_date = st.date_input("Data Inicial", min_value=datetime(1990, 1, 1), value=datetime(2010, 1, 1), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
-# Load data with progress indicator
-with st.spinner("Carregando dados econômicos..."):
-    data = load_data(CODES, start_date=start_date_str)
+data = load_data(CODES, start_date=start_date_str)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")

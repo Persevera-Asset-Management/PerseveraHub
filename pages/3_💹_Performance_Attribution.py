@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
@@ -26,8 +26,8 @@ st.title("Atribuição de Performance")
 with st.sidebar:
     st.header("Parâmetros")
     selected_carteira = st.selectbox("Carteira selecionada", options=CODIGOS_CARTEIRAS)
-    selected_report_date = st.date_input("Data do Relatório", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
-    selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
+    selected_report_date = st.date_input("Data do Relatório", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
+    selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
     btn_run = st.button("Gerar Relatório")
 
 if 'table_data' not in st.session_state:

@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import streamlit_highcharts as hct
 import requests
 import json
@@ -160,8 +160,8 @@ width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_
 # Inputs Condicionais
 if data_source == "Buscar por Códigos":
     codes_input_series = st.sidebar.multiselect("Códigos das Séries", options=indicators_codes, key="codes_series")
-    start_date_input = st.sidebar.date_input("Data de Início", value=datetime.now() - timedelta(days=365*5), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY", key="start_date_series")
-    end_date_input = st.sidebar.date_input("Data de Fim", value=datetime.now(), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY", key="end_date_series")
+    start_date_input = st.sidebar.date_input("Data de Início", value=pd.to_datetime(date.today() - timedelta(days=365*5)), min_value=datetime(1900, 1, 1), max_value=pd.to_datetime(date.today()), format="DD/MM/YYYY", key="start_date_series")
+    end_date_input = st.sidebar.date_input("Data de Fim", value=pd.to_datetime(date.today()), min_value=datetime(1900, 1, 1), max_value=pd.to_datetime(date.today()), format="DD/MM/YYYY", key="end_date_series")
 else: # Colar Dados Personalizados
     pasted_data_area = st.sidebar.text_area("Cole seus dados aqui (Ex: do Excel, CSV)", height=200, key="pasted_data")
     has_header_check = st.sidebar.checkbox("Primeira linha é cabeçalho?", value=True, key="has_header")

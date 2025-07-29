@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
@@ -25,7 +25,7 @@ st.title("Visualizador de Carteiras")
 with st.sidebar:
     st.header("Parâmetros")
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
-    selected_date = st.date_input("Data", format="DD/MM/YYYY", value=datetime.now(), min_value=datetime(2024, 1, 1), max_value=datetime.now())
+    selected_date = st.date_input("Data", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
     btn_run = st.button("Run")
 
 if 'df' not in st.session_state:

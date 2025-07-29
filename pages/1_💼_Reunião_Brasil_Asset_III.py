@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from persevera_tools.data import get_series
 from persevera_tools.data.private_credit import calculate_spread
 from utils.chart_helpers import create_chart, extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
@@ -38,12 +38,10 @@ CODES = extract_codes_from_config(chart_configs)
 
 with st.sidebar:
     st.header("Parâmetros")
-    start_date = st.date_input("Data Inicial", datetime.now() - timedelta(days=365), format="DD/MM/YYYY")
+    start_date = st.date_input("Data Inicial", pd.to_datetime(date.today() - timedelta(days=365)), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
-# Load data with progress indicator
-with st.spinner("Carregando dados de mercado..."):
-    data = load_data(CODES, start_date=start_date_str)
+data = load_data(CODES, start_date=start_date_str)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")

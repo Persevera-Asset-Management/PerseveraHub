@@ -53,7 +53,7 @@ def load_funds_data(fund_cnpjs, start_date):
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
     
-start_date = datetime.now() - timedelta(days=180)
+start_date = pd.to_datetime(date.today() - timedelta(days=180))
 start_date_str = start_date.strftime('%Y-%m-%d')
 
 peers = load_peers()

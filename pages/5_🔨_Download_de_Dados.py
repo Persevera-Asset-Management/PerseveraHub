@@ -1,5 +1,6 @@
 import streamlit as st
-from datetime import datetime, timedelta
+import pandas as pd
+from datetime import datetime, timedelta, date
 from persevera_tools.data import FinancialDataService
 from persevera_tools.data.funds import get_persevera_peers
 from persevera_tools.data.sma import get_building_blocks
@@ -41,7 +42,7 @@ def create_download_button(column, label: str, data_source_name: str, download_f
 
 with st.sidebar:
     st.header("Parâmetros")
-    start_date = st.date_input("Data de Início", value=datetime.now() - timedelta(days=365), min_value=datetime(1900, 1, 1), max_value=datetime.now(), format="DD/MM/YYYY")
+    start_date = st.date_input("Data de Início", value=pd.to_datetime(date.today() - timedelta(days=365)), min_value=datetime(1900, 1, 1), max_value=pd.to_datetime(date.today()), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
 try:

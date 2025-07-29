@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from configs.pages.screener import FACTOR_OPTIONS_SCREENER, FACTOR_MOMENTUM_COMPONENTS, FACTOR_VALUE_COMPONENTS, FACTOR_LIQUIDITY_COMPONENTS, FACTOR_RISK_COMPONENTS, FACTOR_QUALITY_COMPONENTS
 from utils.table import style_table
 from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
@@ -131,7 +131,7 @@ all_cols = selected_descriptors_list + selected_descriptors_list_momentum + sele
 all_cols = list(dict.fromkeys(all_cols))
 
 # Load data
-data_load_date = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
+data_load_date = (pd.to_datetime(date.today()) - timedelta(days=180)).strftime('%Y-%m-%d')
 raw_data = load_data(start_date=data_load_date, descriptors_list=all_cols)
 
 if not raw_data.empty:
