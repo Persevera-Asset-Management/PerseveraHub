@@ -60,7 +60,7 @@ def process_data(df, min_liquidity, lookback_days):
 if 'df' not in st.session_state:
     st.session_state.df = None
 
-start_date = datetime.today() - timedelta(days=365*5)
+start_date = pd.to_datetime(date.today() - timedelta(days=365*5))
 df = load_data(start_date=start_date, descriptors_list=["price_close", "median_dollar_volume_traded_21d"])
 
 if df.empty:
