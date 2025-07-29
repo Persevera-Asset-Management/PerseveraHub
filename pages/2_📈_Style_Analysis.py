@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from persevera_style_analysis.core.best_subset_style_analysis import BestSubsetStyleAnalysis
 from persevera_style_analysis.utils import helpers
 from persevera_tools.data import get_series, get_funds_data, get_persevera_peers
