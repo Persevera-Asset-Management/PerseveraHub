@@ -66,82 +66,82 @@ df = load_data(start_date=start_date, descriptors_list=["price_close", "median_d
 if df.empty:
     st.warning("Não foi possível carregar os dados.")
     st.stop()
+else:
+    df_sqn, df_sqn_history, price_close = process_data(df, min_liquidity, lookback_days)
 
-df_sqn, df_sqn_history, price_close = process_data(df, min_liquidity, lookback_days)
-
-st.dataframe(
-    style_table(
-        df=df_sqn,
-        column_names=[col.strftime('%Y-%m-%d') for col in df_sqn.columns],
-        numeric_cols_format_as_float=[col.strftime('%Y-%m-%d') for col in df_sqn.columns]
-    )
-)
-
-st.subheader("Análise de Retornos Futuros por SQN")
-
-# Add a selectbox to choose the stock
-row_1 = st.columns(2)
-with row_1[0]:
-    selected_stock = st.selectbox(
-        "Selecione um ativo para análise de retorno futuro",
-        options=df_sqn.index
+    st.dataframe(
+        style_table(
+            df=df_sqn,
+            column_names=[col.strftime('%Y-%m-%d') for col in df_sqn.columns],
+            numeric_cols_format_as_float=[col.strftime('%Y-%m-%d') for col in df_sqn.columns]
+        )
     )
 
-if selected_stock:
-    # Calculate forward returns for the selected stock
-    price_stock = price_close[selected_stock].dropna()
-    forward_periods = [5, 10, 20, 30, 60]
-    forward_returns = pd.DataFrame({
-        f'{p}d Fwd': price_stock.pct_change(p).shift(-p) * 100 for p in forward_periods
-    })
+    st.subheader("Análise de Retornos Futuros por SQN")
 
-    # Get SQN for the selected stock
-    sqn_stock = df_sqn_history[selected_stock]
+    # Add a selectbox to choose the stock
+    row_1 = st.columns(2)
+    with row_1[0]:
+        selected_stock = st.selectbox(
+            "Selecione um ativo para análise de retorno futuro",
+            options=df_sqn.index
+        )
 
-    # Combine SQN and forward returns
-    combined_df = pd.concat([sqn_stock.rename('SQN'), forward_returns], axis=1).dropna()
+    if selected_stock:
+        # Calculate forward returns for the selected stock
+        price_stock = price_close[selected_stock].dropna()
+        forward_periods = [5, 10, 20, 30, 60]
+        forward_returns = pd.DataFrame({
+            f'{p}d Fwd': price_stock.pct_change(p).shift(-p) * 100 for p in forward_periods
+        })
 
-    # Define SQN bins
-    bins = [-np.inf, -2.0, -1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2.0, np.inf]
-    labels = ["SQN < -2.0", "-2.0 <= SQN < -1.5", "-1.5 <= SQN < -1.0", "-1.0 <= SQN < -0.5", "-0.5 <= SQN < 0.5", "0.5 <= SQN < 1.0", "1.0 <= SQN < 1.5", "1.5 <= SQN < 2.0", "SQN >= 2.0"]
-    combined_df['SQN Range'] = pd.cut(combined_df['SQN'], bins=bins, labels=labels)
+        # Get SQN for the selected stock
+        sqn_stock = df_sqn_history[selected_stock]
 
-    if not combined_df.empty:
-        # Calculate median forward returns per SQN bin
-        median_returns = combined_df.groupby('SQN Range', observed=True).median()
+        # Combine SQN and forward returns
+        combined_df = pd.concat([sqn_stock.rename('SQN'), forward_returns], axis=1).dropna()
 
-        # We are interested in forward returns, so drop the SQN column from the result
-        median_returns = median_returns.drop(columns='SQN')
-        
-        # Also calculate the number of occurrences in each bin
-        count_returns = combined_df.groupby('SQN Range', observed=True).count()['SQN'].rename('Observações')
-        
-        # Combine median returns and counts for display
-        display_df = pd.concat([median_returns, count_returns], axis=1)
-        
-        row_2 = st.columns(2)
-        with row_2[0]:
-            chart_sqn_returns = create_chart(
-                data=median_returns,
-                columns=[*median_returns.columns],
-                names=[*median_returns.columns],
-                chart_type='column',
-                title=f"Retorno Mediano Futuro por Faixa de SQN - {selected_stock}",
-                y_axis_title="Retorno Mediano (%)",
-                x_axis_title="Faixa de SQN",
-            )
-            hct.streamlit_highcharts(chart_sqn_returns)
-        with row_2[1]:
-            chart_sqn_returns_count = create_chart(
-                data=display_df,
-                columns=['Observações'],
-                names=['Observações'],
-                chart_type='column',
-                title=f"Número de Observações por Faixa de SQN - {selected_stock}",
-                y_axis_title="Número de Observações",
-                x_axis_title="Faixa de SQN",
-                decimal_precision=0
-            )
-            hct.streamlit_highcharts(chart_sqn_returns_count)
-    else:
-        st.warning(f"Não há dados suficientes para a análise de {selected_stock}.")
+        # Define SQN bins
+        bins = [-np.inf, -2.0, -1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2.0, np.inf]
+        labels = ["SQN < -2.0", "-2.0 <= SQN < -1.5", "-1.5 <= SQN < -1.0", "-1.0 <= SQN < -0.5", "-0.5 <= SQN < 0.5", "0.5 <= SQN < 1.0", "1.0 <= SQN < 1.5", "1.5 <= SQN < 2.0", "SQN >= 2.0"]
+        combined_df['SQN Range'] = pd.cut(combined_df['SQN'], bins=bins, labels=labels)
+
+        if not combined_df.empty:
+            # Calculate median forward returns per SQN bin
+            median_returns = combined_df.groupby('SQN Range', observed=True).median()
+
+            # We are interested in forward returns, so drop the SQN column from the result
+            median_returns = median_returns.drop(columns='SQN')
+            
+            # Also calculate the number of occurrences in each bin
+            count_returns = combined_df.groupby('SQN Range', observed=True).count()['SQN'].rename('Observações')
+            
+            # Combine median returns and counts for display
+            display_df = pd.concat([median_returns, count_returns], axis=1)
+            
+            row_2 = st.columns(2)
+            with row_2[0]:
+                chart_sqn_returns = create_chart(
+                    data=median_returns,
+                    columns=[*median_returns.columns],
+                    names=[*median_returns.columns],
+                    chart_type='column',
+                    title=f"Retorno Mediano Futuro por Faixa de SQN - {selected_stock}",
+                    y_axis_title="Retorno Mediano (%)",
+                    x_axis_title="Faixa de SQN",
+                )
+                hct.streamlit_highcharts(chart_sqn_returns)
+            with row_2[1]:
+                chart_sqn_returns_count = create_chart(
+                    data=display_df,
+                    columns=['Observações'],
+                    names=['Observações'],
+                    chart_type='column',
+                    title=f"Número de Observações por Faixa de SQN - {selected_stock}",
+                    y_axis_title="Número de Observações",
+                    x_axis_title="Faixa de SQN",
+                    decimal_precision=0
+                )
+                hct.streamlit_highcharts(chart_sqn_returns_count)
+        else:
+            st.warning(f"Não há dados suficientes para a análise de {selected_stock}.")
