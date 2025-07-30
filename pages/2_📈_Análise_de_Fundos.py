@@ -388,6 +388,7 @@ st.subheader("Estatísticas Adicionais")
 
 # Filter combined_nav_data for the selected funds for these stats
 stats_data_selection = initial_selection_cols
+stats_data_selection.remove('CDI')
 
 stats_data_options = st.multiselect(
     "Selecione fundos/benchmarks para Estatísticas Adicionais:",
@@ -406,10 +407,9 @@ stats_data_filtered = combined_nav_data.loc[
 
 
 if not stats_data_filtered.empty:
-    tabs = st.tabs(["Drawdown", "Volatilidade (21d)", "Patrimônio Líquido"])
+    tabs = st.tabs(["Drawdown", "Volatilidade (21d)", "Patrimônio Líquido", "Correlação (21d)"])
 
-    with tabs[0]:
-        st.subheader("Drawdown")
+    with tabs[0]:   # Drawdown
         drawdown_data = (stats_data_filtered / stats_data_filtered.cummax() - 1) * 100
         if not drawdown_data.empty:
             drawdown_chart_options = create_chart(
@@ -424,8 +424,7 @@ if not stats_data_filtered.empty:
         else:
             st.info("Não há dados de drawdown para exibir com os filtros selecionados.")
 
-    with tabs[1]:
-        st.subheader("Volatilidade Anualizada (Janela de 21 dias úteis)")
+    with tabs[1]:   # Volatilidade Anualizada (Janela de 21 dias úteis)
         volatility_data = stats_data_filtered.pct_change().rolling(window=21).std() * np.sqrt(252) * 100
         if not volatility_data.empty:
             vol_chart_options = create_chart(
@@ -440,8 +439,7 @@ if not stats_data_filtered.empty:
         else:
             st.info("Não há dados de volatilidade para exibir com os filtros selecionados.")
 
-    with tabs[2]:
-        st.subheader("Patrimônio Líquido")
+    with tabs[2]:   # Patrimônio Líquido
         persevera_pl_col_names = [col for col in total_equity_data.columns if persevera_fund_col_name in col]
         
         if persevera_pl_col_names:
@@ -462,5 +460,22 @@ if not stats_data_filtered.empty:
                 st.info(f"Dados de Patrimônio Líquido não disponíveis para {actual_persevera_pl_col} no período selecionado.")
         else:
             st.info(f"Coluna de Patrimônio Líquido para {persevera_fund_col_name} não encontrada nos dados de PL total.")
+
+    with tabs[3]:   # Correlação (Janela de 21 dias úteis)
+        if selected_fund_name in ["Nemesis", "Proteus"]:
+            correlation_data = stats_data_filtered.iloc[:,0].pct_change().rolling(window=21).corr(stats_data_filtered.iloc[:,1:].pct_change())
+            if not correlation_data.empty:
+                correlation_chart_options = create_chart(
+                    data=correlation_data,
+                    columns=list(correlation_data.columns),
+                    names=list(correlation_data.columns),
+                    chart_type='line',
+                    title="",
+                    y_axis_title="Correlação",
+                    x_axis_title="Data"
+                )
+                hct.streamlit_highcharts(correlation_chart_options, key=f"correlation_{selected_fund_name}")
+            else:
+                st.info("Não há dados de correlação para exibir com os filtros selecionados.")
 else:
     st.warning("Nenhum dado para calcular estatísticas adicionais com os filtros atuais.")
