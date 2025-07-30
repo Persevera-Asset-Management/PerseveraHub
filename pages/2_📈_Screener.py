@@ -167,7 +167,7 @@ if not raw_data.empty:
     factor_exposure_momentum = calculate_factor_exposure(raw_data[selected_descriptors_list_momentum], 'Momentum Score')
     factor_exposure_value = calculate_factor_exposure(raw_data[selected_descriptors_list_value], 'Value Score')
     factor_exposure_liquidity = calculate_factor_exposure(raw_data[selected_descriptors_list_liquidity], 'Liquidity Score')
-    factor_exposure_risk = calculate_factor_exposure(raw_data[selected_descriptors_list_risk], 'Risk Score')
+    factor_exposure_risk = -calculate_factor_exposure(raw_data[selected_descriptors_list_risk], 'Risk Score')
     factor_exposure_quality = calculate_factor_exposure(raw_data[selected_descriptors_list_quality], 'Quality Score')
 
     data = pd.concat([data, factor_exposure_momentum, factor_exposure_value, factor_exposure_liquidity, factor_exposure_risk, factor_exposure_quality], axis=1)

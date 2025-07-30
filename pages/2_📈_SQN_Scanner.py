@@ -99,7 +99,7 @@ else:
         sqn_stock = df_sqn_history[selected_stock]
 
         # Combine SQN and forward returns
-        combined_df = pd.concat([sqn_stock.rename('SQN'), forward_returns], axis=1).dropna()
+        combined_df = pd.concat([sqn_stock.rename('SQN'), forward_returns], axis=1)
 
         # Define SQN bins
         bins = [-np.inf, -2.0, -1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2.0, np.inf]
