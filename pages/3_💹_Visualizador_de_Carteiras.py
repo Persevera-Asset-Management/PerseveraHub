@@ -56,11 +56,11 @@ if df is not None:
 
         saldo_inst_financeiras = df.groupby('instituicao_financeira')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
         saldo_tipo_ativos = df.groupby('tipo_ativo')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
+        saldo_estrategias = df.groupby('estrategia')['saldo_bruto'].sum().to_frame('Total').sort_values('Total', ascending=False)
 
         tabs = st.tabs(["Visão Geral", "Busca por Ativos", "Busca por Cliente"])
 
-        # Visão Geral
-        with tabs[0]:
+        with tabs[0]:   # Visão Geral
             st.subheader("Visão Geral")
 
             with st.expander("Dados Brutos", expanded=False):
@@ -131,12 +131,22 @@ if df is not None:
                     title="Saldo por Tipo de Ativo",
                 )
                 hct.streamlit_highcharts(chart_saldo_tipo_ativos)
-
-        # Busca por Ativos
-        with tabs[1]:
-            st.subheader("Busca por Ativos")
+            
             row_5 = st.columns(2)
             with row_5[0]:
+                chart_saldo_estrategias = create_chart(
+                    data=saldo_estrategias,
+                    columns=['Total'],
+                    names=['Total'],
+                    chart_type='pie',
+                    title="Saldo por Estratégia",
+                )
+                hct.streamlit_highcharts(chart_saldo_estrategias)
+
+        with tabs[1]:   # Busca por Ativos
+            st.subheader("Busca por Ativos")
+            row_6 = st.columns(2)
+            with row_6[0]:
                 selected_asset = st.selectbox("Selecione o Ativo", [""] + sorted(df['ativo'].unique()), key="selected_asset")
                 if selected_asset != "":
                     total_saldo_carteira = df.groupby('carteira')['saldo_bruto'].sum()
@@ -167,7 +177,7 @@ if df is not None:
                             percent_cols=['% na Carteira'],
                         )
                     )
-            with row_5[1]:
+            with row_6[1]:
                 if selected_asset != "":
                     chart_saldo_ativos_carteiras = create_chart(
                         data=saldo_ativo_selecionado,
@@ -179,11 +189,10 @@ if df is not None:
                     )
                     hct.streamlit_highcharts(chart_saldo_ativos_carteiras)
 
-        # Busca por Cliente
-        with tabs[2]:
+        with tabs[2]:   # Busca por Cliente
             st.subheader("Busca por Cliente")
-            row_6 = st.columns(2)
-            with row_6[0]:
+            row_7 = st.columns(2)
+            with row_7[0]:
                 selected_carteira_cliente = st.selectbox("Selecione a Carteira", [""] + sorted(df['carteira'].unique()), key="selected_carteira_cliente")
 
             if selected_carteira_cliente:

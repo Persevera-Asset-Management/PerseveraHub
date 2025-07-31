@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
@@ -73,7 +73,7 @@ with st.sidebar:
     st.header("Parâmetros")
     selected_stocks = st.multiselect("Ações selecionadas", options=active_securities, default=ACOES_RV)
 
-data = load_data(selected_stocks, start_date=datetime.now() - timedelta(days=365), field=['price_close', 'beta']).swaplevel(axis=1)
+data = load_data(selected_stocks, start_date=pd.to_datetime(date.today() - timedelta(days=365)), field=['price_close', 'beta']).swaplevel(axis=1)
 data_equities_portfolio = load_data(list(equities_portfolio['code'].unique()), start_date=equities_portfolio['date'].min(), field='price_close')
 indicators = load_indicators('br_ibovespa', start_date=equities_portfolio['date'].min())
 

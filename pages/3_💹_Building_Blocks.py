@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
@@ -64,7 +64,7 @@ building_blocks_dict = {
     'IFIX': 'br_ifix',
 }
 
-start_date = datetime.now() - timedelta(days=5*365)
+start_date = pd.to_datetime(date.today() - timedelta(days=5*365))
 start_date_str = start_date.strftime('%Y-%m-%d')
 
 building_blocks_df = get_building_blocks()
