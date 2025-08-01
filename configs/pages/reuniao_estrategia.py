@@ -258,6 +258,9 @@ CHARTS_ESTRATEGIA = {
             "title": "DXY vs EM",
             "y_axis_title": ["Valor", "Valor"],
         },
+        "transformations": [
+            {"type": "multiply", "column": "jpm_em_currency_index", "scalar": -1},
+        ],
         "width": 6,
         "context": "Moedas",
         "group": "Performance",
