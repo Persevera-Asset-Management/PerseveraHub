@@ -139,6 +139,7 @@ chart_type_options = ['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline
 selected_chart_type = st.sidebar.selectbox("Tipo de Gráfico", chart_type_options)
 stacking_options = [None, 'normal', 'percent']
 selected_stacking = st.sidebar.selectbox("Tipo de Empilhamento", stacking_options)
+decimal_precision_input = st.sidebar.number_input("Precisão Decimal", min_value=0, max_value=10, value=2, step=1, key="decimal_precision_input")
 
 # Pré-seleção de altura e largura do gráfico
 chart_size_selection = st.sidebar.radio("Disposição do Gráfico", ["Linha Completa", "Lado a Lado"], horizontal=True, index=0, key="chart_size_radio")
@@ -329,6 +330,7 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             title=final_title,
             y_axis_title=y_axis_title_list,
             x_axis_title="",
+            decimal_precision=decimal_precision_input,
             stacking=selected_stacking,
             height=height_input,
             exporting={"enabled": True}

@@ -179,7 +179,6 @@ CHARTS_ESTRATEGIA = {
     },
 
     # === Commodities ===
-    # CRB
     "crb_index": {
         "chart_config": {
             "columns": ["crb_index", "crb_fats_oils_index", "crb_food_index", "crb_livestock_index", "crb_metals_index", "crb_raw_industrials_index", "crb_textiles_index"],
@@ -193,7 +192,6 @@ CHARTS_ESTRATEGIA = {
         "group": "Commodities",
         "block_title": "Commodities"
     },
-    # Commodities (Agri - CEPEA)
     "cepea_agri": {
         "chart_config": {
             "columns": ["br_cepea_arabica_coffee", "br_cepea_chilled_whole_broiler", "br_cepea_corn_wholesale", "br_cepea_cotton_feather", "br_cepea_ethanol_fuel", "br_cepea_fed_cattle", "br_cepea_paddy_rice", "br_cepea_pork", "br_cepea_soft_wheat", "br_cepea_soybean_wholesale", "br_cepea_sugar"],
@@ -207,7 +205,6 @@ CHARTS_ESTRATEGIA = {
         "group": "Commodities",
         "block_title": "Commodities"
     },
-    # Commodities (Energia)
     "energy_commodities": {
         "chart_config": {
             "columns": ["crude_oil_wti_futures", "crude_oil_brent_futures", "gasoline_rbob_futures", "usda_diesel", "natural_gas_futures", "thermal_coal_futures"],
@@ -221,10 +218,9 @@ CHARTS_ESTRATEGIA = {
         "group": "Commodities",
         "block_title": "Commodities"
     },
-    # Commodities (Metais)
     "metals_commodities": {
         "chart_config": {
-            "columns": ["gold_futures", "silver_futures", "lme_aluminum_futures", "lme_copper_futures", "sgx_iron_ore_62_futures", "platinum_futures", "palladium_futures"],
+            "columns": ["gold_100oz_futures", "silver_futures", "lme_aluminum_futures", "lme_copper_futures", "sgx_iron_ore_62_futures", "platinum_futures", "palladium_futures"],
             "names": ["Ouro", "Prata", "Alumínio", "Cobre", "Minério de Ferro", "Platina", "Paládio"],
             "chart_type": "line",
             "title": "Commodities (Metais)",
@@ -275,7 +271,7 @@ CHARTS_ESTRATEGIA = {
             "names": ["S&P 500", "Mag 7", "Russell 2000", "DAX 40", "Nikkei 225", "UKX"],
             "chart_type": "line",
             "title": "Desenvolvidos",
-            "y_axis_title": "Valor (P/E)",
+            "y_axis_title": "P/E",
         },
         "width": 6,
         "context": "Equities",
