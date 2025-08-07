@@ -38,7 +38,7 @@ if btn_run:
         df = provider.get_data(
             category='comdinheiro',
             data_type='portfolio_historical_positions',
-            portfolio=[selected_carteira],
+            portfolios=[selected_carteira],
             start_date=start_date.strftime('%Y-%m-%d'),
             end_date=end_date.strftime('%Y-%m-%d'),
         )
