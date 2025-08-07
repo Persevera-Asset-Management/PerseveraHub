@@ -7,7 +7,6 @@ from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from utils.auth import check_authentication
-from configs.pages.carteira_rv import ACOES_RV
 from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_series
 from persevera_tools.quant_research.matrix import corr_to_cov, find_nearest_corr
 from persevera_tools.data.sma import get_equities_portfolio
@@ -67,11 +66,12 @@ def calculate_portfolio_volatility(weights, returns):
 
 active_securities = load_active_securities()
 equities_portfolio = get_equities_portfolio()
+current_stocks = equities_portfolio[equities_portfolio['date'] == equities_portfolio['date'].max()].sort_values(by='code')
 
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_stocks = st.multiselect("Ações selecionadas", options=active_securities, default=ACOES_RV)
+    selected_stocks = st.multiselect("Ações selecionadas", options=active_securities, default=current_stocks['code'].tolist())
 
 data = load_data(selected_stocks, start_date=pd.to_datetime(date.today() - timedelta(days=365)), field=['price_close', 'beta']).swaplevel(axis=1)
 data_equities_portfolio = load_data(list(equities_portfolio['code'].unique()), start_date=equities_portfolio['date'].min(), field='price_close')
@@ -89,16 +89,17 @@ else:
         st.subheader("Composição Atual")
 
         # Inicializa a tabela de alocação
-        betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
+        # betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
+        betas_df = current_stocks[['code', 'inv_beta']].eval('PerseveraBeta = 1 / inv_beta')
 
         # Permite a edição dos Betas
         with st.expander("Editar Betas", expanded=False):
             st.caption("Você pode editar os valores de Beta na tabela abaixo. As outras colunas serão recalculadas automaticamente.")
             edited_betas = st.data_editor(
-                betas_df,
+                betas_df[['code', 'PerseveraBeta']].set_index('code'),
                 column_config={
-                    "Bloomberg Beta": st.column_config.NumberColumn(
-                        "Bloomberg Beta",
+                    "PerseveraBeta": st.column_config.NumberColumn(
+                        "PerseveraBeta",
                         help="O beta do ativo.",
                         format="%.4f",
                     )
@@ -108,14 +109,14 @@ else:
 
         # Recalcula a tabela de alocação com base nos betas (editados ou não)
         allocation_table = edited_betas.copy()
-        allocation_table['1 / Beta'] = 1.0 / allocation_table['Bloomberg Beta']
+        allocation_table['1 / Beta'] = 1.0 / allocation_table['PerseveraBeta']
         allocation_table['Equal Weight (%)'] = 1.0 / len(allocation_table) * 100.0
         allocation_table['Final Weight (%)'] = allocation_table['1 / Beta'] / allocation_table['1 / Beta'].sum() * 100.0
         
         st.dataframe(
             style_table(
                 allocation_table,
-                numeric_cols_format_as_float=['Bloomberg Beta', '1 / Beta'],
+                numeric_cols_format_as_float=['PerseveraBeta', '1 / Beta'],
                 percent_cols=['Equal Weight (%)', 'Final Weight (%)'],
             ),
             hide_index=False
