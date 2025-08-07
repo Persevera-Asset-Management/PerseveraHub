@@ -50,7 +50,7 @@ if df is not None:
         table_data = df[df['ativo'] == 'Taxa de Administração']
         st.dataframe(style_table(
             table_data,
-            column_names=['Data', 'Ativo', 'Descrição', 'Saldo Bruto'],
+            column_names=['Data', 'Carteira', 'Ativo', 'Descrição', 'Saldo Bruto'],
             date_cols=['Data'],
             currency_cols=['Saldo Bruto']),
         hide_index=True)
