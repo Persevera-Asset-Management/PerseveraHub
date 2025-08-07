@@ -38,7 +38,7 @@ if btn_run:
         df = provider.get_data(
             category='comdinheiro',
             data_type='portfolio_historical_positions',
-            portfolio=selected_carteira,
+            portfolio=[selected_carteira],
             start_date=start_date.strftime('%Y-%m-%d'),
             end_date=end_date.strftime('%Y-%m-%d'),
         )
@@ -54,6 +54,6 @@ if df is not None:
             date_cols=['Data'],
             currency_cols=['Saldo Bruto']),
         hide_index=True)
-        
+
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
