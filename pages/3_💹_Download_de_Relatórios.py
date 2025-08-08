@@ -4,10 +4,7 @@ import pandas as pd
 import requests
 import gspread
 from datetime import datetime, date
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from persevera_tools.config.settings import Settings
 from utils.ui import display_logo, load_css
@@ -46,13 +43,12 @@ btn_run = st.button("Baixar Relatórios")
 
 if btn_run:
     with st.spinner("Configurando o navegador..."):
-        options = Options()
-        # options.add_argument("--headless")
+        options = uc.ChromeOptions()
+        options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        driver = webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install()), options=options
-        )
+        
+        driver = uc.Chrome(options=options)
 
     with st.spinner("Acessando o ComDinheiro..."):
         url = "https://www.comdinheiro.com.br/login"
