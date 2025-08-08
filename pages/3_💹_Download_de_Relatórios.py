@@ -48,7 +48,11 @@ if btn_run:
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(
+            browser_executable_path="/usr/bin/google-chrome",
+            use_subprocess=True,
+            options=options
+        )
 
     with st.spinner("Acessando o ComDinheiro..."):
         url = "https://www.comdinheiro.com.br/login"
