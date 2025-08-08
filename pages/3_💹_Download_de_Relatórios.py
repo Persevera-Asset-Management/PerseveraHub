@@ -4,8 +4,12 @@ import pandas as pd
 import requests
 import gspread
 from datetime import datetime, date
-import undetected_chromedriver as uc
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
 from persevera_tools.config.settings import Settings
 from utils.ui import display_logo, load_css
 from utils.table import style_table
@@ -43,15 +47,18 @@ btn_run = st.button("Baixar Relatórios")
 
 if btn_run:
     with st.spinner("Configurando o navegador..."):
-        options = uc.ChromeOptions()
+        options = Options()
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        
-        driver = uc.Chrome(
-            browser_executable_path="/usr/bin/google-chrome",
-            use_subprocess=True,
-            options=options
+        options.add_argument("--disable-gpu")
+        # driver = webdriver.Chrome(
+        #     service=ChromeService(ChromeDriverManager().install()), options=options
+        # )
+        driver = webdriver.Chrome(
+            service=Service(
+                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()),
+                options=options
         )
 
     with st.spinner("Acessando o ComDinheiro..."):
