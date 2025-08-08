@@ -89,7 +89,7 @@ if btn_run:
             
             driver.switch_to.window(driver.window_handles[1])
             report_url = driver.current_url
-
+            print(report_url)
             response = requests.get(report_url)
             with open(f"Persevera_{index}.pdf", "wb") as f:
                 f.write(response.content)
