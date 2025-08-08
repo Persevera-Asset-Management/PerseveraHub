@@ -49,11 +49,12 @@ if btn_run:
     with st.spinner("Configurando o navegador..."):
         options = Options()
         options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
+        # options.add_argument("--no-sandbox")
+        # options.add_argument("--disable-gpu")
+        options.add_argument("--disable-popup-blocking")
+
         # driver = webdriver.Chrome(
-        #     service=ChromeService(ChromeDriverManager().install()), options=options
+        #     service=Service(ChromeDriverManager().install()), options=options
         # )
         driver = webdriver.Chrome(
             service=Service(
@@ -82,7 +83,23 @@ if btn_run:
                 pass
 
         with st.spinner(f"Baixando o relatório {index}..."):
-            driver.find_element(By.XPATH, '//*[@id="div_pdfV"]/a/button/span').click()
+            # driver.find_element(By.XPATH, '//*[@id="div_pdfV"]/a/button/span').click()
+            script = """
+                if (window.json_pdf && document.getElementById('combo_estilo_pdf') && document.getElementById('combo_num_pdf')) {
+                    CallAjaxLinkText(
+                        'CREATE_LAMINA_PDF', 
+                        JSON.stringify(window.json_pdf),
+                        'MeuExtrato001',
+                        document.getElementById('combo_estilo_pdf').value,
+                        document.getElementById('combo_num_pdf').value,
+                        'Meu Extrato',
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+                    );
+                }
+            """
+
+            driver.execute_script(script)
+
             print(driver.current_url)
             print(driver.window_handles)
 
