@@ -83,9 +83,13 @@ if btn_run:
 
         with st.spinner(f"Baixando o relatório {index}..."):
             driver.find_element(By.XPATH, '//*[@id="div_pdfV"]/a/button/span').click()
+            print(driver.current_url)
+            print(driver.window_handles)
 
             while len(driver.window_handles) == 1:
                 sleep(1)
+                print(driver.current_url)
+                print(driver.window_handles)
             
             driver.switch_to.window(driver.window_handles[1])
             report_url = driver.current_url
