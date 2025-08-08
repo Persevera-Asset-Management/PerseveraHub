@@ -48,7 +48,7 @@ btn_run = st.button("Baixar Relatórios")
 if btn_run:
     with st.spinner("Configurando o navegador..."):
         options = Options()
-        # options.add_argument("--headless")
+        options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
@@ -74,6 +74,7 @@ if btn_run:
             url = row['report_url']
             driver.get(url)
             sleep(5)
+            driver.save_screenshot(f"screenshot_{index}.png")
         
             try:
                 driver.find_element(By.ID, "fa fa-times").click()
