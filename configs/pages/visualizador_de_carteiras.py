@@ -13,3 +13,8 @@ def get_carteiras():
     return sorted(df["Ops-Cadastro/Código (Acrônimo)"].tolist())
 
 CODIGOS_CARTEIRAS = get_carteiras()
+
+# df = read_fibery(
+#     table_name="Ops-Portfolios/Portfolio",
+#     include_fibery_fields=False
+# )

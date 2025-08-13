@@ -15,12 +15,13 @@ def style_table(
     highlight_row_if_value_equals: Optional[Any] = None,
     highlight_color: str = 'lightblue',
     highlight_quartile: Optional[List[str]] = None,
+    highlight_min_max_cols: Optional[List[str]] = None,
     quartile_exclude_row_by_column: Optional[str] = None,
     quartile_exclude_row_if_value_is: Optional[List[Any]] = None,
     left_align_cols: Optional[List[str]] = None,
     center_align_cols: Optional[List[str]] = None,
     right_align_cols: Optional[List[str]] = None,
-    column_names: Optional[List[str]] = None
+    column_names: Optional[List[str]] = None,
 ) -> Styler:
     """Applies generic styling to a DataFrame.
     Allows specifying columns for percentage formatting,
@@ -28,6 +29,7 @@ def style_table(
     float formatting (to 2 decimal places), 
     and currency-style formatting (integers with thousands separators).
     Allows conditional row highlighting, color-coding of columns by quartile, and custom alignment for specified columns. Quartile calculations can exclude specified rows.
+    Optionally highlights lowest and highest values in specified columns.
     """
     df_styled = df.copy()
 
@@ -130,6 +132,30 @@ def style_table(
             if col in df_styled.columns:
                 # The 'axis=0' is crucial for applying the function column-wise
                 styled_obj = styled_obj.apply(color_by_quartile, subset=[col], axis=0)
+
+    # Highlight min and max values in specified columns
+    if highlight_min_max_cols:
+        def highlight_extrema(column: pd.Series):
+            numeric_column = pd.to_numeric(column, errors='coerce')
+            if numeric_column.notna().sum() == 0:
+                return [''] * len(column)
+            min_value = numeric_column.min()
+            max_value = numeric_column.max()
+            styles: List[str] = []
+            for value in numeric_column:
+                if pd.isna(value):
+                    styles.append('')
+                elif value == min_value:
+                    styles.append('background-color: #ffc7ce')  # light red
+                elif value == max_value:
+                    styles.append('background-color: #c6efce')  # light green
+                else:
+                    styles.append('')
+            return styles
+
+        for col in highlight_min_max_cols:
+            if col in df_styled.columns:
+                styled_obj = styled_obj.apply(highlight_extrema, subset=[col], axis=0)
 
     alignment_styles = []
     

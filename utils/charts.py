@@ -26,7 +26,8 @@ def create_highcharts_options(
     decimal_precision: int = 2,
     point_name_column: Optional[str] = None,
     tooltip_point_format: Optional[str] = None,
-    exporting: Optional[Dict[str, Any]] = None
+    exporting: Optional[Dict[str, Any]] = None,
+    legend_layout: Optional[Literal['horizontal', 'vertical']] = None
 ) -> Dict[str, Any]:
     """
     Generate Highcharts options for various chart types.
@@ -88,6 +89,8 @@ def create_highcharts_options(
         Custom HTML string format for the tooltip's point display.
     exporting : Dict[str, Any], optional
         Configuration for the exporting module (e.g., {"enabled": True}).
+    legend_layout : {'horizontal', 'vertical'}, optional
+        Layout of the legend. If None, uses Highcharts default for the selected chart type.
         
     Returns:
     --------
@@ -452,7 +455,7 @@ def create_highcharts_options(
             "text": title
         },
         "legend": {
-            "enabled": True
+            "enabled": True,
         },
         "credits": {
             "enabled": False
@@ -463,6 +466,14 @@ def create_highcharts_options(
             }
         }
     }
+    if legend_layout == 'vertical':
+        chart_options["legend"]["layout"] = 'vertical'
+        chart_options["legend"]["align"] = 'right'
+        chart_options["legend"]["verticalAlign"] = 'middle'
+    else:
+        chart_options["legend"]["layout"] = 'horizontal'
+        chart_options["legend"]["align"] = 'center'
+        chart_options["legend"]["verticalAlign"] = 'bottom'
     
     if color is None:
         chart_options['colors'] = DEFAULT_CHART_COLORS
