@@ -776,25 +776,6 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Produtor"
     },
-    "us_ppi_var": {
-        "chart_config": {
-            "columns": ["us_ppi_index", "us_ppi_index"],
-            "names": ["var. Anual", "var. Mensal"],
-            "chart_type": "dual_axis_line_column",
-            "title": "PPI (var. Mensal e Anual)",
-            "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
-        },
-        "transformations": [
-            {"type": "yearly_variation", "column": "us_ppi_index", "frequency": "MS"},
-            {"type": "monthly_variation", "column": "us_ppi_index", "frequency": "MS"}
-        ],
-        "width": 6,
-        "context": "Estados Unidos",
-        "group": "Inflação",
-        "block_title": "Inflação ao Produtor"
-    },
-
-
     "us_import_price_yoy": {
         "chart_config": {
             "columns": ["us_import_price_index", "us_import_price_capital_goods_index", "us_import_price_non_auto_consumer_goods_index"],
@@ -1020,7 +1001,7 @@ CHARTS_ECONOMIA = {
             "names": "Índice",
             "chart_type": "line",
             "title": "Produção Industrial (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "yearly_variation", "column": "br_industrial_production", "frequency": "MS"}],
         "width": 6,
@@ -1034,7 +1015,7 @@ CHARTS_ECONOMIA = {
             "names": "Índice",
             "chart_type": "column",
             "title": "Produção Industrial (var. Mensal %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "monthly_variation", "column": "br_industrial_production", "frequency": "MS"}],
         "width": 6,
@@ -1063,7 +1044,7 @@ CHARTS_ECONOMIA = {
             "names": ["Índice", "Índice Ampliado"],
             "chart_type": "line",
             "title": "Volume de Vendas (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "yearly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pmc_retail_sales_volume_total_amplified_index", "frequency": "MS"}],
         "width": 6,
@@ -1077,7 +1058,7 @@ CHARTS_ECONOMIA = {
             "names": ["Índice", "Índice Ampliado"],
             "chart_type": "column",
             "title": "Volume de Vendas (var. Mensal %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "monthly_variation", "column": "br_pmc_retail_sales_volume_total_index", "frequency": "MS"}, {"type": "monthly_variation", "column": "br_pmc_retail_sales_volume_total_amplified_index", "frequency": "MS"}],
         "width": 6,

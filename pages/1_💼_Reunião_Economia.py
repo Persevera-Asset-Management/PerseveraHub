@@ -47,7 +47,7 @@ else:
     charts_by_context = organize_charts_by_context(chart_configs)
         
     # Create tabs for different regions
-    tabs = st.tabs(["Estados Unidos", "Brasil", "Global"])
+    tabs = st.tabs(["Estados Unidos", "Brasil"])
     
     # Tab 1: Estados Unidos
     with tabs[0]:
@@ -126,6 +126,7 @@ else:
         with br_tabs[6]:
             if "Commodities" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Commodities", charts_by_context)
+                # charts_by_context['Brasil']['Commodities']
 
         with br_tabs[7]:
             if "Fiscal" in br_context:
@@ -148,5 +149,5 @@ else:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Setor Externo", charts_by_context)
 
     # Tab 3: Global
-    with tabs[2]:
-        st.header("Global")
+    # with tabs[2]:
+    #     st.header("Global")
