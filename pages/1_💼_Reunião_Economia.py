@@ -55,7 +55,7 @@ else:
         us_context = charts_by_context.get("Estados Unidos", {})
         
         us_tabs = st.tabs(["PIB", "Inflação", "Indústria", "Varejo", "Crédito", "Imobiliário", "Sentimento", "Emprego", "Fiscal"])
-        
+    
         with us_tabs[0]:
             if "PIB" in us_context:
                 render_chart_group_with_context(data, chart_configs, "Estados Unidos", "PIB", charts_by_context)

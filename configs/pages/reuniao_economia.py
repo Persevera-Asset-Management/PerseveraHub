@@ -776,6 +776,25 @@ CHARTS_ECONOMIA = {
         "group": "Inflação",
         "block_title": "Inflação ao Produtor"
     },
+    "us_ppi_var": {
+        "chart_config": {
+            "columns": ["us_ppi_index", "us_ppi_index"],
+            "names": ["var. Anual", "var. Mensal"],
+            "chart_type": "dual_axis_line_column",
+            "title": "PPI (var. Mensal e Anual)",
+            "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
+        },
+        "transformations": [
+            {"type": "yearly_variation", "column": "us_ppi_index", "frequency": "MS"},
+            {"type": "monthly_variation", "column": "us_ppi_index", "frequency": "MS"}
+        ],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Inflação",
+        "block_title": "Inflação ao Produtor"
+    },
+
+
     "us_import_price_yoy": {
         "chart_config": {
             "columns": ["us_import_price_index", "us_import_price_capital_goods_index", "us_import_price_non_auto_consumer_goods_index"],
@@ -784,7 +803,11 @@ CHARTS_ECONOMIA = {
             "title": "Import Price",
             "y_axis_title": "Taxa (%)", 
         },
-        "transformations": [{"type": "yearly_variation", "column": "us_import_price_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_import_price_capital_goods_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_import_price_non_auto_consumer_goods_index", "frequency": "MS"}],
+        "transformations": [
+            {"type": "yearly_variation", "column": "us_import_price_index", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "us_import_price_capital_goods_index", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "us_import_price_non_auto_consumer_goods_index", "frequency": "MS"}
+        ],
         "width": 6,
         "context": "Estados Unidos",
         "group": "Inflação",
@@ -886,7 +909,7 @@ CHARTS_ECONOMIA = {
         "chart_config": {
             "columns": ["br_ibcbr_index_nsa", "br_ibcbr_agriculture_index_nsa", "br_ibcbr_ex_agriculture_index_nsa", "br_ibcbr_industry_index_nsa", "br_ibcbr_services_index_nsa", "br_ibcbr_taxes_index_nsa"],
             "names": ["Geral", "Agricultura", "Ex-agricultura", "Indústria", "Serviços", "Impostos"],
-            "chart_type": "line",
+            "chart_type": "spline",
             "title": "IBC-Br (Componentes)",
             "y_axis_title": "var. Anual (%)",
         },
@@ -911,7 +934,7 @@ CHARTS_ECONOMIA = {
             "names": "PIB",
             "chart_type": "column",
             "title": "PIB (var. Trimestral %)",
-            "y_axis_title": "Taxa (%)",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "quarterly_variation", "column": "br_gdp_index", "frequency": "QS"}],
         "width": 6,
@@ -925,7 +948,7 @@ CHARTS_ECONOMIA = {
             "names": "PIB (var. Anual %)",
             "chart_type": "column",
             "title": "PIB (var. Anual %)",
-            "y_axis_title": "Taxa (%)",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "yearly_variation", "column": "br_gdp_index_nsa", "frequency": "QS", "periods": 4}],
         "width": 6,
@@ -954,7 +977,7 @@ CHARTS_ECONOMIA = {
             "names": "Índice",
             "chart_type": "line",
             "title": "Volume de Serviços (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "yearly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}],
         "width": 6,
@@ -968,7 +991,7 @@ CHARTS_ECONOMIA = {
             "names": "Índice",
             "chart_type": "column",
             "title": "Volume de Serviços (var. Mensal %)",
-            "y_axis_title": "%",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "monthly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}],
         "width": 6,
@@ -1163,8 +1186,8 @@ CHARTS_ECONOMIA = {
             "columns": ["br_pnad_personal_real_income_formal_work_contract", "br_pnad_personal_real_income_non_formal_work_contract", "br_pnad_personal_real_income_private_sector", "br_pnad_personal_real_income_total"],
             "names": ["Formal", "Não Formal", "Setor Privado", "Total"],
             "chart_type": "line",
-            "title": "Renda Real Mensal",
-            "y_axis_title": "%",
+            "title": "Renda Real Mensal (var. Anual %)",
+            "y_axis_title": "Var. (%)",
         },
         "transformations": [{"type": "yearly_variation", "column": "br_pnad_personal_real_income_formal_work_contract", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pnad_personal_real_income_non_formal_work_contract", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pnad_personal_real_income_private_sector", "frequency": "MS"}, {"type": "yearly_variation", "column": "br_pnad_personal_real_income_total", "frequency": "MS"}],
         "width": 6,

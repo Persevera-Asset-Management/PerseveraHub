@@ -14,7 +14,7 @@ def get_carteiras():
 
 CODIGOS_CARTEIRAS = get_carteiras()
 
-# df = read_fibery(
-#     table_name="Ops-Portfolios/Portfolio",
-#     include_fibery_fields=False
-# )
+df = read_fibery(
+    table_name="Ops-InstFin-XP/Snapshot Posição na XP",
+    include_fibery_fields=False
+)
