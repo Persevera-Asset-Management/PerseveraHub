@@ -339,8 +339,8 @@ class RollingSumTransformer(DataTransformer):
             # Calculate rolling sum on the resampled data
             rolling_sum_series = resampled_data[column].rolling(window=window).sum()
 
-            # Reindex back to the original DataFrame's index, forward filling the calculated values
-            aligned_rolling_sum = rolling_sum_series.reindex(result.index, method='ffill')
+            # Reindex back to the original DataFrame's index
+            aligned_rolling_sum = rolling_sum_series.reindex(result.index)
             result[new_column_name] = aligned_rolling_sum
 
         except Exception as e:
