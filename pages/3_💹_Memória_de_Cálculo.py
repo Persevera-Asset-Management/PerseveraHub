@@ -8,7 +8,7 @@ from utils.ui import display_logo, load_css
 from utils.table import style_table
 from utils.auth import check_authentication
 from persevera_tools.data.providers import ComdinheiroProvider
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS
+from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 
 st.set_page_config(
     page_title="Memória de Cálculo | Persevera",
@@ -24,7 +24,7 @@ st.title("Memória de Cálculo")
 
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteira = st.selectbox("Carteira selecionada", options=CODIGOS_CARTEIRAS)
+    selected_carteira = st.selectbox("Carteira selecionada", options=CODIGOS_CARTEIRAS_ADM.keys())
     start_date = st.date_input("Data Inicial", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
     end_date = st.date_input("Data Final", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
     btn_run = st.button("Executar")

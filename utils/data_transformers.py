@@ -194,8 +194,7 @@ class QuarterlyVariationTransformer(DataTransformer):
             variation = resampled_data[column].pct_change(periods=periods) * 100
 
             # Reindex back to the original DataFrame's index
-            # Using ffill to propagate last known good variation if original index is more granular
-            aligned_variation = variation.reindex(result.index, method='ffill')
+            aligned_variation = variation.reindex(result.index)
             result[new_column_name] = aligned_variation
 
             if periods is None:
@@ -612,7 +611,7 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
             # Annualize: ( (1 + periodic_growth_rate) ^ (12 / period_months) ) - 1, then * 100
             saar_pct_values = ((1 + periodic_growth_rate).pow(12.0/period_months) - 1) * 100.0
  
-            aligned_saar = saar_pct_values.reindex(result.index) # User removed ffill, kept here
+            aligned_saar = saar_pct_values.reindex(result.index)
             result[new_column_name] = aligned_saar
 
         except Exception as e:

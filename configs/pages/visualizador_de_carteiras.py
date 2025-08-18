@@ -12,9 +12,16 @@ def get_carteiras():
     ]
     return sorted(df["Ops-Cadastro/Código (Acrônimo)"].tolist())
 
-CODIGOS_CARTEIRAS = get_carteiras()
+def get_carteiras_adm():
+    df = read_fibery(
+        table_name="Ops-CartAdm/Carteira Administrada",
+        include_fibery_fields=False
+    )
+    df = df[["Ops-CartAdm/Name", "Ops-CartAdm/Data Início Gestão"]]
+    df = df.dropna()
+    df = df.rename(columns={"Ops-CartAdm/Name": "Código", "Ops-CartAdm/Data Início Gestão": "Data Início Gestão"})
+    df["Código"] = df["Código"].str.split("-").str[0]
+    df.set_index("Código", inplace=True)
+    return df.to_dict('index')
 
-df = read_fibery(
-    table_name="Ops-InstFin-XP/Snapshot Posição na XP",
-    include_fibery_fields=False
-)
+CODIGOS_CARTEIRAS_ADM = get_carteiras_adm()

@@ -1138,10 +1138,10 @@ CHARTS_ECONOMIA = {
     "br_caged_mom": {
         "chart_config": {
             "columns": "br_caged_registered_employess_total",
-            "names": "Criação de Empregos Formais (var. Mensal)",
+            "names": "Estoques de Empregos Formais",
             "chart_type": "column",
-            "title": "Criação de Empregos Formais (var. Mensal)",
-            "y_axis_title": "Valor",
+            "title": "Estoques de Empregos Formais (var. Mensal)",
+            "y_axis_title": "Var.",
         },
         "transformations": [{"type": "monthly_difference", "column": "br_caged_registered_employess_total", "frequency": "MS"}],
         "width": 6,

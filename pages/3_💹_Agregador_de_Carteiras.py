@@ -6,7 +6,7 @@ from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from persevera_tools.data.providers import ComdinheiroProvider
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS
+from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
 
 st.set_page_config(
@@ -24,7 +24,7 @@ st.title("Visualizador de Carteiras")
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS, default=CODIGOS_CARTEIRAS)
+    selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
     selected_date = st.date_input("Data", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
     btn_run = st.button("Run")
 

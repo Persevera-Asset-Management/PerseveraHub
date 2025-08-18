@@ -7,7 +7,7 @@ from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from persevera_tools.data.providers import ComdinheiroProvider
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS
+from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
 
 st.set_page_config(
@@ -25,9 +25,15 @@ st.title("Atribuição de Performance")
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteira = st.selectbox("Carteira selecionada", options=CODIGOS_CARTEIRAS)
+    selected_carteira = st.selectbox("Carteira selecionada", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
     selected_report_date = st.date_input("Data do Relatório", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
-    selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
+    
+    if selected_carteira in CODIGOS_CARTEIRAS_ADM:
+        date_inception = pd.to_datetime(CODIGOS_CARTEIRAS_ADM[selected_carteira]["Data Início Gestão"])
+        selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=date_inception, min_value=date_inception, max_value=pd.to_datetime(date.today()), disabled=True)
+    else:
+        selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
+
     btn_run = st.button("Gerar Relatório")
 
 if 'table_data' not in st.session_state:
