@@ -22,9 +22,9 @@ def login_form():
     authenticator.login()
 
     if st.session_state["authentication_status"] is False:
-        st.error('Username/password is incorrect')
+        st.error('Nome de usuário/senha está incorreto')
     elif st.session_state["authentication_status"] is None:
-        st.warning('Please enter your username and password')
+        st.warning('Por favor, insira seu nome de usuário e senha')
 
 def check_authentication():
     if 'authentication_status' not in st.session_state or st.session_state.authentication_status is not True:

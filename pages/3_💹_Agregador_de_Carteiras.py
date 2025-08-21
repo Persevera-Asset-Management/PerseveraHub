@@ -24,9 +24,9 @@ st.title("Visualizador de Carteiras")
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
     selected_date = st.date_input("Data", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
-    btn_run = st.button("Run")
+    selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
+    btn_run = st.button("Executar")
 
 if 'df' not in st.session_state:
     st.session_state.df = None
