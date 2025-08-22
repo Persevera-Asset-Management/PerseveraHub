@@ -24,11 +24,22 @@ except Exception as e:
 with st.spinner("Carregando dados..."):
     try:
         calendar_data = fds.get_investing_calendar_data(save_to_db=False)
+        
+        # Estados Unidos
         st.dataframe(style_table(
-            calendar_data,
-            highlight_row_by_column='País',
-            highlight_row_if_value_equals='Brazil',
+            calendar_data[calendar_data['country'] == 'United States'],
+            highlight_row_by_column='Importância',
+            highlight_row_if_value_equals='High',
             column_names=['Data','Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL'],
         ), hide_index=True)
+
+        # Brasil
+        st.dataframe(style_table(
+            calendar_data[calendar_data['country'] == 'Brazil'],
+            highlight_row_by_column='Importância',
+            highlight_row_if_value_equals='High',
+            column_names=['Data','Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL'],
+        ), hide_index=True)
+
     except Exception as e:
         st.error(f"Ocorreu um erro ao baixar os dados do Calendário Econômico: {e}")
