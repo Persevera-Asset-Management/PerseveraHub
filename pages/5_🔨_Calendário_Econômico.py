@@ -26,6 +26,7 @@ with st.spinner("Carregando dados..."):
         calendar_data = fds.get_investing_calendar_data(save_to_db=False)
         
         # Estados Unidos
+        st.subheader('Estados Unidos')
         st.dataframe(style_table(
             calendar_data[calendar_data['country'] == 'United States'],
             highlight_row_by_column='Importância',
@@ -34,6 +35,7 @@ with st.spinner("Carregando dados..."):
         ), hide_index=True)
 
         # Brasil
+        st.subheader('Brasil')
         st.dataframe(style_table(
             calendar_data[calendar_data['country'] == 'Brazil'],
             highlight_row_by_column='Importância',
