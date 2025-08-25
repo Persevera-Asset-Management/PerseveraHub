@@ -198,7 +198,7 @@ def load_benchmark_data(fund_name, _nav_index):
     return df_benchmark
 
 with st.sidebar:
-    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Compass', 'Nemesis', 'Proteus']
+    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus']
     selected_fund_name = st.selectbox("Selecione o fundo:", fund_names_list, index=4)
 
 st.header(selected_fund_name)
