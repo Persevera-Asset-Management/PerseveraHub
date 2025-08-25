@@ -183,6 +183,7 @@ def load_benchmark_data(fund_name, _nav_index):
     benchmark_map = {'Trinity': ('br_cdi_index',),
                      'Yield': ('br_cdi_index',),
                      'Phoenix': ('br_cdi_index',),
+                     'Prospera': ('br_cdi_index',),
                      'Compass': ('br_cdi_index',),
                      'Nemesis': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
                      'Proteus': ('br_cdi_index', 'br_ibovespa', 'br_smll')}
@@ -199,7 +200,7 @@ def load_benchmark_data(fund_name, _nav_index):
 
 with st.sidebar:
     fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus']
-    selected_fund_name = st.selectbox("Selecione o fundo:", fund_names_list, index=4)
+    selected_fund_name = st.selectbox("Selecione o fundo:", fund_names_list, index=5)
 
 st.header(selected_fund_name)
 
