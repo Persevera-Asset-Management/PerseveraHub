@@ -10,7 +10,7 @@ from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
 
 st.set_page_config(
-    page_title="Visualizador de Carteiras | Persevera",
+    page_title="Agregador de Carteiras | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -19,7 +19,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Visualizador de Carteiras")
+st.title("Agregador de Carteiras")
 
 # Definição dos parâmetros
 with st.sidebar:

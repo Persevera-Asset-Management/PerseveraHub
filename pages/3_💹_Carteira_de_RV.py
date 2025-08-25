@@ -126,11 +126,13 @@ else:
         portfolio_volatility_inv_beta = calculate_portfolio_volatility(allocation_table['Final Weight (%)'], returns)
         portfolio_volatility_equal_weight = calculate_portfolio_volatility(allocation_table['Equal Weight (%)'], returns)
         
-        col_1 = st.columns(2)
+        col_1 = st.columns(3)
         with col_1[0]:
             st.metric("Volatilidade Anualizada Estimada (1 / Beta)", f"{portfolio_volatility_inv_beta:.2%}")
         with col_1[1]:
             st.metric("Volatilidade Anualizada Estimada (Equal Weight)", f"{portfolio_volatility_equal_weight:.2%}")
+        with col_1[2]:
+            st.metric("Volatilidade Anualizada do Ibovespa", f"{(indicators.pct_change().std() * np.sqrt(252) * 100):.2f}%")
 
         correlation_matrix = returns.corr()
         correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
