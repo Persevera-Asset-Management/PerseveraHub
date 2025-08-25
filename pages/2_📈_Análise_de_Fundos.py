@@ -370,7 +370,8 @@ period_options = ['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'
 period_selected = st.radio("Selecione o período:", period_options, index=0, horizontal=True)
 
 short_term_chart_options = create_chart(
-    data=performance_table_data.dropna(),
+    # data=performance_table_data.dropna(),
+    data=performance_table_data.dropna(subset=['PL', period_selected]).filter(items=['fund_name', 'PL', period_selected]),
     columns=period_selected,
     names="Fundos",
     chart_type='scatter',
