@@ -90,7 +90,7 @@ else:
 
         # Inicializa a tabela de alocação
         # betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
-        betas_df = current_stocks[['code', 'inv_beta']].eval('PerseveraBeta = 1 / inv_beta')
+        betas_df = current_stocks.query('code in @selected_stocks')[['code', 'inv_beta']].eval('PerseveraBeta = 1 / inv_beta')
 
         # Permite a edição dos Betas
         with st.expander("Editar Betas", expanded=False):
