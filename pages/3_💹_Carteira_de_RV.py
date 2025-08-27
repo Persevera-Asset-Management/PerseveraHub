@@ -81,16 +81,21 @@ if data.empty or len(selected_stocks) == 0:
     st.warning("Por favor, selecione ao menos uma ação para continuar.")
 else:
     returns = data['price_close'].pct_change().dropna()
+    betas = data['beta'].iloc[-1].to_frame("BloombergBeta")
 
     tabs = st.tabs(["Composição Atual", "Track Record"])
     
     # Composição Atual
     with tabs[0]:
         st.subheader("Composição Atual")
+        st.write(f"Total de Ativos: **{len(selected_stocks)}**")
 
         # Inicializa a tabela de alocação
-        # betas_df = data['beta'].iloc[-1].to_frame("Bloomberg Beta")
         betas_df = current_stocks.query('code in @selected_stocks')[['code', 'inv_beta']].eval('PerseveraBeta = 1 / inv_beta')
+        betas_df = betas_df.merge(betas, left_on='code', right_index=True, how='outer').reset_index(drop=True)
+        betas_df['PerseveraBeta'] = betas_df['PerseveraBeta'].fillna(betas_df['BloombergBeta'])
+        betas_df = betas_df.eval('inv_beta = 1 / PerseveraBeta')
+        betas_df = betas_df.drop(columns=['BloombergBeta'])
 
         # Permite a edição dos Betas
         with st.expander("Editar Betas", expanded=False):
@@ -112,7 +117,8 @@ else:
         allocation_table['1 / Beta'] = 1.0 / allocation_table['PerseveraBeta']
         allocation_table['Equal Weight (%)'] = 1.0 / len(allocation_table) * 100.0
         allocation_table['Final Weight (%)'] = allocation_table['1 / Beta'] / allocation_table['1 / Beta'].sum() * 100.0
-        
+        # allocation_table = allocation_table.sort_values(by='Final Weight (%)', ascending=False)
+
         st.dataframe(
             style_table(
                 allocation_table,
