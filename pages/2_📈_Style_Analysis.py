@@ -199,6 +199,7 @@ if btn_run:
         title="",
         y_axis_title="R-Squared",
         x_axis_title="",
+        y_axis_max=1.0
     )
     hct.streamlit_highcharts(rsquared_chart_options)
 

@@ -16,6 +16,8 @@ def create_highcharts_options(
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
     x_axis_title: Optional[str] = None,
+    y_axis_max: Optional[float] = None,
+    y_axis_min: Optional[float] = None,
     series_name: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     color: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     point_markers: Optional[List[Dict[str, Any]]] = None,
@@ -59,6 +61,10 @@ def create_highcharts_options(
         For single-axis charts, a string. Defaults to concatenated y-column names if multiple y-columns on a single axis.
     x_axis_title : str, optional
         X-axis title. Defaults to x_column name if not provided, or None if x_column is also None.
+    y_axis_max : float, optional
+        Maximum value for the y-axis.
+    y_axis_min : float, optional
+        Minimum value for the y-axis.
     series_name : str or List[str] or Tuple, optional
         Name(s) of the data series.
         - For single-axis charts: a string (if one y_column) or a list of strings (matching y_columns). Defaults to y_column names.
@@ -508,6 +514,10 @@ def create_highcharts_options(
                     "text": str(y_axis_title_processed)
                 }
             }
+            if y_axis_max is not None:
+                chart_options["yAxis"]["max"] = y_axis_max
+            if y_axis_min is not None:
+                chart_options["yAxis"]["min"] = y_axis_min
         
         chart_options["tooltip"] = {
             "shared": True if chart_type != 'scatter' else False, # Scatter usually has non-shared tooltips
