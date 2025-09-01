@@ -42,41 +42,44 @@ if data.empty:
 else:
     st.header("Fluxo de Investimentos")
 
-    st.subheader("Saldo Diário")
-    selected_group = st.selectbox("Selecione o grupo:", list(FLUXO_DE_INVESTIMENTOS.keys()))
-    selected_group_name = FLUXO_DE_INVESTIMENTOS[selected_group]
-    selected_group_data = data[selected_group].to_frame(selected_group_name)
-    chart_options = create_chart(
-        data=selected_group_data,
-        columns=selected_group_name,
-        names=selected_group_name,
-        chart_type='column',
-        title=f'Saldo Diário: {selected_group_name}',
-        y_axis_title="Fluxo Diário (R$)",
-        decimal_precision=0,
-    )
-    hct.streamlit_highcharts(chart_options)
+    cols = st.columns(2)
+    with cols[0]:
+        st.subheader("Saldo Diário")
+        selected_group = st.selectbox("Selecione o grupo:", list(FLUXO_DE_INVESTIMENTOS.keys()))
+        selected_group_name = FLUXO_DE_INVESTIMENTOS[selected_group]
+        selected_group_data = data[selected_group].to_frame(selected_group_name)
+        chart_options = create_chart(
+            data=selected_group_data,
+            columns=selected_group_name,
+            names=selected_group_name,
+            chart_type='column',
+            title=f'Saldo Diário: {selected_group_name}',
+            y_axis_title="Fluxo Diário (R$)",
+            decimal_precision=0,
+        )
+        hct.streamlit_highcharts(chart_options)
 
-    st.subheader("Saldo Acumulado")
-    latest_date = data.index.max()
-    period_options = {
-        "No Mês": f"{latest_date.strftime('%Y-%m')}",
-        "No Ano": f"{latest_date.strftime('%Y')}",
-        "30 Dias": f"{latest_date - timedelta(days=30)}",
-        "1 Ano": f"{latest_date - timedelta(days=365)}",
-        "2 Anos": f"{latest_date - timedelta(days=365*2)}",
-    } 
-    selected_period = st.selectbox("Selecione o período:", period_options.keys())
-    selected_period = period_options[selected_period]
-    selected_data = data.loc[selected_period:].expanding().sum()
-    selected_data.rename(FLUXO_DE_INVESTIMENTOS, axis='columns', inplace=True)
-    cumulative_chart_options = create_chart(
-        data=selected_data,
-        columns=selected_data.columns.tolist(),
-        names=selected_data.columns.tolist(),
-        chart_type='spline',
-        title='Saldo Acumulado',
-        y_axis_title="Fluxo Acumulado (R$)",
-        decimal_precision=0,
-    )
-    hct.streamlit_highcharts(cumulative_chart_options)
+    with cols[1]:
+        st.subheader("Saldo Acumulado")
+        latest_date = data.index.max()
+        period_options = {
+            "No Mês": f"{latest_date.strftime('%Y-%m')}",
+            "No Ano": f"{latest_date.strftime('%Y')}",
+            "30 Dias": f"{latest_date - timedelta(days=30)}",
+            "1 Ano": f"{latest_date - timedelta(days=365)}",
+            "2 Anos": f"{latest_date - timedelta(days=365*2)}",
+        } 
+        selected_period = st.selectbox("Selecione o período:", period_options.keys())
+        selected_period = period_options[selected_period]
+        selected_data = data.loc[selected_period:].expanding().sum()
+        selected_data.rename(FLUXO_DE_INVESTIMENTOS, axis='columns', inplace=True)
+        cumulative_chart_options = create_chart(
+            data=selected_data,
+            columns=selected_data.columns.tolist(),
+            names=selected_data.columns.tolist(),
+            chart_type='spline',
+            title='Saldo Acumulado',
+            y_axis_title="Fluxo Acumulado (R$)",
+            decimal_precision=0,
+        )
+        hct.streamlit_highcharts(cumulative_chart_options)
