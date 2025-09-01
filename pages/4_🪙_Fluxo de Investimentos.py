@@ -40,8 +40,6 @@ data = load_data(list(FLUXO_DE_INVESTIMENTOS.keys()), start_date=start_date_str)
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
-    st.header("Fluxo de Investimentos")
-
     cols = st.columns(2)
     with cols[0]:
         st.subheader("Saldo Diário")
