@@ -18,6 +18,8 @@ FACTOR_OPTIONS_SCREENER = {
     'Dollar Volume (21d/63d)': 'delta_dollar_volume_21d_63d',
 
     # Momentum e Técnico
+    'Momentum (7d)': 'momentum_7d',
+    'Momentum (14d)': 'momentum_14d',
     'Momentum (1m)': 'momentum_1m',
     'Momentum (3m)': 'momentum_3m',
     'Momentum (3m1)': 'momentum_3m1',

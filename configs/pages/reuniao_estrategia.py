@@ -239,7 +239,7 @@ CHARTS_ESTRATEGIA = {
             "names": ["DXY", "BRL/USD"],
             "chart_type": "dual_axis_line",
             "title": "DXY vs BRL",
-            "y_axis_title": ["Valor", "Valor"],
+            "y_axis_title": ["Índice", "Taxa"],
         },
         "width": 6,
         "context": "Moedas",
@@ -249,10 +249,26 @@ CHARTS_ESTRATEGIA = {
     "currency_performance_em": {
         "chart_config": {
             "columns": ["dxy_index", "jpm_em_currency_index"],
-            "names": ["DXY", "EM"],
+            "names": ["DM (DXY)", "EM (JPM EM Currency Index)"],
             "chart_type": "dual_axis_line",
-            "title": "DXY vs EM",
-            "y_axis_title": ["Valor", "Valor"],
+            "title": "DM vs EM",
+            "y_axis_title": ["Índice", "Índice"],
+        },
+        "transformations": [
+            {"type": "multiply", "column": "jpm_em_currency_index", "scalar": -1},
+        ],
+        "width": 6,
+        "context": "Moedas",
+        "group": "Performance",
+        "block_title": "Performance"
+    },
+    "currency_performance_em_vs_brl": {
+        "chart_config": {
+            "columns": ["brl_usd", "jpm_em_currency_index"],
+            "names": ["BRL/USD", "EM"],
+            "chart_type": "dual_axis_line",
+            "title": "BRL vs EM",
+            "y_axis_title": ["Taxa", "Índice"],
         },
         "transformations": [
             {"type": "multiply", "column": "jpm_em_currency_index", "scalar": -1},
