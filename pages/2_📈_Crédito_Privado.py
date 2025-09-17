@@ -109,7 +109,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread CDI+ por Intervalo",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0
             )
             hct.streamlit_highcharts(chart_distribution_cdi)
@@ -123,7 +123,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread CDI+ (Contagem de Ativos)",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_count_cdi)
@@ -136,7 +136,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread CDI+ (Volume Emitido)",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_volume_cdi)
@@ -169,7 +169,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ por Intervalo",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0
             )
             hct.streamlit_highcharts(chart_distribution_ipca)
@@ -183,7 +183,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ (Contagem de Ativos)",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_count_ipca)
@@ -196,7 +196,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ (Volume Emitido)",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_volume_ipca)
@@ -228,7 +228,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ Incentivado por Intervalo",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0
             )
             hct.streamlit_highcharts(chart_distribution_ipca_incent)
@@ -242,7 +242,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ Incentivado (Contagem de Ativos)",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_count_ipca_incent)
@@ -255,7 +255,7 @@ else:
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ Incentivado (Volume Emitido)",
-                y_axis_title="Percentual de Ativos",
+                y_axis_title="Percentual de Ativos (%)",
                 decimal_precision=0,
             )
             hct.streamlit_highcharts(chart_average_volume_ipca_incent)
