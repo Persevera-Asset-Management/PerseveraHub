@@ -50,7 +50,11 @@ ASSET_CONFIG = {
         "primary_keys": None,
         "update": False,
         "fields": [
-            {"label": "Código Bruto", "id": "raw_code", "type": "text_input"},
+            {
+                "label": "Código Bruto",
+                "id": "raw_code",
+                "type": "text_input",
+            },
             {
                 "label": "Código do Indicador (Mneumônico)",
                 "id": "code",
