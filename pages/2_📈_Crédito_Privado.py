@@ -23,11 +23,11 @@ check_authentication()
 st.title("Crédito Privado")
 
 @st.cache_data(ttl=3600)
-def load_data(start_date):
+def load_emissions(start_date):
     try:
         return get_emissions(start_date=start_date, selected_fields=['code', 'empresa', 'data_emissao', 'data_vencimento', 'indice', 'juros_criterio_novo_taxa', 'valor_nominal_na_emissao', 'quantidade_emitida'])
     except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
+        st.error(f"Error loading emissions: {str(e)}")
         return pd.DataFrame()
 
 with st.sidebar:
@@ -35,13 +35,13 @@ with st.sidebar:
     start_date = st.date_input("Data Inicial", pd.to_datetime(date.today() - timedelta(days=4*365)), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
-with st.spinner("Carregando dados de mercado...", show_time=True):
-    data = load_data(start_date=start_date_str)
+with st.spinner("Carregando dados de emissões...", show_time=True):
+    data = load_emissions(start_date=start_date_str)
     
 with st.spinner("Calculando spread CDI+...", show_time=True):
     spread_di = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=True)
 
-with st.spinner("Calculando spread IPCA...", show_time=True):
+with st.spinner("Calculando spread IPCA+...", show_time=True):
     spread_ipca = calculate_spread("IPCA", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=True)
     spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=True)
 
@@ -220,10 +220,11 @@ else:
         with row_3[1]:
             chart_distribution_ipca_incent = create_chart(
                 data=spread_ipca_incent,
-                columns=['count_yield_0_50bp', 'count_yield_50_75bp', 'count_yield_75_100bp',
+                columns=['count_yield_under_neg50bp', 'count_yield_neg50_0bp',
+                         'count_yield_0_50bp', 'count_yield_50_75bp', 'count_yield_75_100bp',
                          'count_yield_100_150bp', 'count_yield_150_250bp',
                          'count_yield_above_250bp'],
-                names=["0-50bp", "50-75bp", "75-100bp", "100-150bp", "150-250bp", "Acima de 250bp"],
+                names=["Abaixo de -50bp", "-50bp a 0bp", "0-50bp", "50-75bp", "75-100bp", "100-150bp", "150-250bp", "Acima de 250bp"],
                 chart_type='area',
                 stacking='percent',
                 title="Distribuição do Spread IPCA+ Incentivado por Intervalo",
@@ -257,4 +258,4 @@ else:
                 y_axis_title="Percentual de Ativos",
                 decimal_precision=0,
             )
-            hct.streamlit_highcharts(chart_average_volume_ipca_incent)
+            hct.streamlit_highcharts(chart_average_count_ipca_incent)
