@@ -131,8 +131,9 @@ all_cols = selected_descriptors_list + selected_descriptors_list_momentum + sele
 all_cols = list(dict.fromkeys(all_cols))
 
 # Load data
-data_load_date = (pd.to_datetime(date.today()) - timedelta(days=180)).strftime('%Y-%m-%d')
-raw_data = load_data(start_date=data_load_date, descriptors_list=all_cols)
+with st.spinner("Carregando dados das empresas...", show_time=True):
+    data_load_date = (pd.to_datetime(date.today()) - timedelta(days=180)).strftime('%Y-%m-%d')
+    raw_data = load_data(start_date=data_load_date, descriptors_list=all_cols)
 
 if not raw_data.empty:
     raw_data = raw_data.ffill()
