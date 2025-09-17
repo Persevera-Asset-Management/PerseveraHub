@@ -16,6 +16,15 @@ st.set_page_config(
     layout="wide"
 )
 
+x = [
+    "br_focus_ipca_median_2025",]
+
+df = get_series(x, start_date="2015-01-01", field='close')
+df = df.resample('W').last().diff().to_frame('diff')
+df['sign'] = np.sign(df.values)
+
+df.ffill().to_clipboard()
+
 display_logo()
 load_css()
 check_authentication()

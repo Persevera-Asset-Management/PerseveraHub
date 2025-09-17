@@ -220,8 +220,8 @@ CHARTS_ESTRATEGIA = {
     },
     "metals_commodities": {
         "chart_config": {
-            "columns": ["gold_100oz_futures", "silver_futures", "lme_aluminum_futures", "lme_copper_futures", "sgx_iron_ore_62_futures", "platinum_futures", "palladium_futures"],
-            "names": ["Ouro", "Prata", "Alumínio", "Cobre", "Minério de Ferro", "Platina", "Paládio"],
+            "columns": ["gold_100oz_futures", "silver_futures", "lme_aluminum_futures", "lme_copper_futures", "sgx_iron_ore_62_futures", "lithium_futures"],
+            "names": ["Ouro", "Prata", "Alumínio", "Cobre", "Minério de Ferro", "Lítio"],
             "chart_type": "line",
             "title": "Commodities (Metais)",
             "y_axis_title": "Valor",

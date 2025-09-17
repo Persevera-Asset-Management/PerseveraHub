@@ -103,3 +103,7 @@ create_download_button(row_credito[0], "Debentures.com.br", "Debentures.com.br",
 # ANBIMA (Debentures)
 anbima_debentures_func = functools.partial(fds.get_anbima_debentures_data, save_to_db=True)
 create_download_button(row_credito[1], "ANBIMA (Debentures)", "ANBIMA (Debentures)", anbima_debentures_func)
+
+# ANBIMA (Títulos Públicos)
+anbima_titulos_publicos_func = functools.partial(fds.get_anbima_titulos_publicos_data, save_to_db=True)
+create_download_button(row_credito[2], "ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", anbima_titulos_publicos_func)
