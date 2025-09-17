@@ -258,4 +258,4 @@ else:
                 y_axis_title="Percentual de Ativos",
                 decimal_precision=0,
             )
-            hct.streamlit_highcharts(chart_average_count_ipca_incent)
+            hct.streamlit_highcharts(chart_average_volume_ipca_incent)
