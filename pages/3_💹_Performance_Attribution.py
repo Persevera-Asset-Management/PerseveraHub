@@ -87,10 +87,13 @@ if table_data is not None:
         rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['Nom. Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
 
         with st.expander("Dados Brutos"):
+            percent_cols = ['Nom. Mês', 'Nom. Ano', '%', 'Contribuição']
+            numeric_cols_format_as_float = list(rentabilidade_acumulada_consolidada.columns.drop(percent_cols))
             st.dataframe(
                 style_table(
-                    rentabilidade_acumulada_consolidada.replace(0., np.nan),
-                    percent_cols=['Nom. Mês', 'Nom. Ano', '%']
+                    rentabilidade_acumulada_consolidada.replace(0., np.nan).eval('Contribuição = Contribuição * 100'),
+                    percent_cols=percent_cols,
+                    numeric_cols_format_as_float=numeric_cols_format_as_float
                 )
             )
 
