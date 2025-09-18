@@ -104,7 +104,7 @@ if table_data is not None:
                     date_cols=['Data Liquidação'],
                     numeric_cols_format_as_float=['Quantidade', 'Valor Bruto']
                 ),
-                hide_index=False
+                hide_index=True
             )
         contribuicao_classes = rentabilidade_acumulada_consolidada.filter(classes_ativos, axis=0)
         contribuicao_ativos = rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]
