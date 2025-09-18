@@ -17,8 +17,10 @@ def get_carteiras_adm():
         table_name="Estr-CartAdm/Carteira Administrada",
         include_fibery_fields=False
     )
-    df = df[["Estr-CartAdm/Name", "Estr-CartAdm/Data Início Gestão"]]
-    df = df.dropna()
+    df = df[["Estr-CartAdm/Name", "Estr-CartAdm/Data Início Gestão", "Estr-CartAdm/Data Fim Gestão"]]
+    df = df.dropna(subset=["Estr-CartAdm/Data Início Gestão"])
+    df = df[df["Estr-CartAdm/Data Fim Gestão"].isna()]
+    df.drop(columns=["Estr-CartAdm/Data Fim Gestão"], inplace=True)
     df = df.rename(columns={"Estr-CartAdm/Name": "Código", "Estr-CartAdm/Data Início Gestão": "Data Início Gestão"})
     df["Código"] = df["Código"].str.split("-").str[0]
     df.set_index("Código", inplace=True)
