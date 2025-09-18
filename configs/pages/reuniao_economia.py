@@ -55,6 +55,24 @@ CHARTS_ECONOMIA = {
         "group": "Indústria",
         "block_title": "Industrial Production & Capacity Utilization"
     },
+    "us_industrial_production_var": {
+        "chart_config": {
+            "columns": ["us_industrial_production_index", "us_capacity_utilization_nsa_index"],
+            "names": ["var. Anual", "var. Mensal"],
+            "chart_type": "dual_axis_line_column",
+            "title": "Produção Industrial (var. Mensal e Anual)",
+            "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
+        },
+        "transformations": [
+            {"type": "yearly_variation", "column": "us_capacity_utilization_nsa_index", "frequency": "MS"},
+            {"type": "monthly_variation", "column": "us_industrial_production_index", "frequency": "MS"}
+        ],
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Indústria",
+        "block_title": "Industrial Production & Capacity Utilization"
+    },
+
     "us_industrial_production_yoy": {
         "chart_config": {
             "columns": ["us_industrial_production_index"],
@@ -854,11 +872,11 @@ CHARTS_ECONOMIA = {
     },
     "us_budget_balance": {
         "chart_config": {
-            "columns": ["us_budget_balance_to_gdp", "us_budget_balance_total"],
-            "names": ["% do PIB", "Valor"],
-            "chart_type": "dual_axis_line_area",
-            "title": "Saldo Orçamentário",
-            "y_axis_title": ("% do PIB", "Valor"),
+            "columns": "us_budget_balance_to_gdp",
+            "names": "% do PIB",
+            "chart_type": "line",
+            "title": "Budget Balance",
+            "y_axis_title": "% do PIB",
         },
         "width": 6,
         "context": "Estados Unidos",
@@ -868,10 +886,10 @@ CHARTS_ECONOMIA = {
     "us_interest_payments": {
         "chart_config": {
             "columns": ["us_interest_payments_to_gdp", "us_interest_payments_total"],
-            "names": ["% do PIB", "Valor"],
+            "names": ["% do PIB", "Total"],
             "chart_type": "dual_axis_line_area",
-            "title": "Pagamento de Juros",
-            "y_axis_title": ("% do PIB", "Valor"),
+            "title": "Interest Payments",
+            "y_axis_title": ("% do PIB", "Total"),
         },
         "width": 6,
         "context": "Estados Unidos",
