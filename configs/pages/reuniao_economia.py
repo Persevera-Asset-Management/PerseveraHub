@@ -852,7 +852,32 @@ CHARTS_ECONOMIA = {
         "group": "Fiscal",
         "block_title": "Dívida Pública"
     },
-
+    "us_budget_balance": {
+        "chart_config": {
+            "columns": ["us_budget_balance_to_gdp", "us_budget_balance_total"],
+            "names": ["% do PIB", "Valor"],
+            "chart_type": "dual_axis_line_area",
+            "title": "Saldo Orçamentário",
+            "y_axis_title": ("% do PIB", "Valor"),
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Fiscal",
+        "block_title": "Contas Públicas"
+    },
+    "us_interest_payments": {
+        "chart_config": {
+            "columns": ["us_interest_payments_to_gdp", "us_interest_payments_total"],
+            "names": ["% do PIB", "Valor"],
+            "chart_type": "dual_axis_line_area",
+            "title": "Pagamento de Juros",
+            "y_axis_title": ("% do PIB", "Valor"),
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Fiscal",
+        "block_title": "Contas Públicas"
+    },
 
     # === Brasil ===
     # IBC-Br
