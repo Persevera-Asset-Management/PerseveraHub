@@ -57,7 +57,7 @@ CHARTS_ECONOMIA = {
     },
     "us_industrial_production_var": {
         "chart_config": {
-            "columns": ["us_industrial_production_index", "us_industrial_production_nsa_index"],
+            "columns": ["us_industrial_production_nsa_index", "us_industrial_production_index"],
             "names": ["var. Anual", "var. Mensal"],
             "chart_type": "dual_axis_line_column",
             "title": "Produção Industrial (var. Mensal e Anual)",
@@ -67,35 +67,6 @@ CHARTS_ECONOMIA = {
             {"type": "yearly_variation", "column": "us_industrial_production_nsa_index", "frequency": "MS"},
             {"type": "monthly_variation", "column": "us_industrial_production_index", "frequency": "MS"}
         ],
-        "width": 6,
-        "context": "Estados Unidos",
-        "group": "Indústria",
-        "block_title": "Industrial Production & Capacity Utilization"
-    },
-
-    "us_industrial_production_yoy": {
-        "chart_config": {
-            "columns": ["us_industrial_production_index"],
-            "names": ["Produção Industrial"],
-            "chart_type": "line",
-            "title": "Produção Industrial (var. Anual %)",
-            "y_axis_title": "%",
-        },
-        "transformations": [{"type": "yearly_variation", "column": "us_industrial_production_index", "frequency": "MS"}],
-        "width": 6,
-        "context": "Estados Unidos",
-        "group": "Indústria",
-        "block_title": "Industrial Production & Capacity Utilization"
-    },
-    "us_industrial_production_mom": {
-        "chart_config": {
-            "columns": ["us_industrial_production_index"],
-            "names": ["Produção Industrial"],
-            "chart_type": "column",
-            "title": "Produção Industrial (var. Mensal %)",
-            "y_axis_title": "%",
-        },
-        "transformations": [{"type": "monthly_variation", "column": "us_industrial_production_index", "frequency": "MS"}],
         "width": 6,
         "context": "Estados Unidos",
         "group": "Indústria",
