@@ -99,7 +99,7 @@ with st.sidebar:
     )
 
     selected_cols_options = FACTOR_OPTIONS_SCREENER
-    default_selected_display_names = ['ADTV (21d)', 'Momentum (1m)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
+    default_selected_display_names = ['ADTV (21d)', 'Momentum (7d)', 'Momentum (1m)', 'Dividend Yield Fwd (%)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
 
     selected_display_names = st.multiselect("Selecione as métricas para exibir:", options=list(selected_cols_options.keys()), default=default_selected_display_names)
     selected_momentum_components = st.multiselect("Componentes de Momentum:", options=list(selected_cols_options.keys()), default=list(FACTOR_MOMENTUM_COMPONENTS.keys()))
@@ -179,7 +179,7 @@ if not raw_data.empty:
     data = data[cols]
 
     # Ensure 'ADTV (21d)' and 'Momentum (1m)' come first if present
-    first_cols = ['ADTV (21d)', 'Momentum (1m)']
+    first_cols = ['ADTV (21d)', 'Momentum (7d)', 'Momentum (1m)']
     first_cols = [col for col in first_cols if col in data.columns]
     remaining_cols = [col for col in data.columns if col not in first_cols]
     data = data[first_cols + remaining_cols]

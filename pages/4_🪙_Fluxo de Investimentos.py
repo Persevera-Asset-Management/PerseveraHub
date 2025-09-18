@@ -16,15 +16,6 @@ st.set_page_config(
     layout="wide"
 )
 
-x = [
-    "br_focus_ipca_median_2025",]
-
-df = get_series(x, start_date="2015-01-01", field='close')
-df = df.resample('W').last().diff().to_frame('diff')
-df['sign'] = np.sign(df.values)
-
-df.ffill().to_clipboard()
-
 display_logo()
 load_css()
 check_authentication()
@@ -44,7 +35,8 @@ with st.sidebar:
     start_date = st.date_input("Data Inicial", min_value=datetime(1990, 1, 1), value=datetime(2015, 1, 1), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
-data = load_data(list(FLUXO_DE_INVESTIMENTOS.keys()), start_date=start_date_str)
+with st.spinner("Carregando dados...", show_time=True):
+    data = load_data(list(FLUXO_DE_INVESTIMENTOS.keys()), start_date=start_date_str)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
