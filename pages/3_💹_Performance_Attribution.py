@@ -89,7 +89,7 @@ if table_data is not None:
         with st.expander("Dados Brutos"):
             st.dataframe(
                 style_table(
-                    rentabilidade_acumulada_consolidada,
+                    rentabilidade_acumulada_consolidada.replace(0., np.nan),
                     percent_cols=['Nom. Mês', 'Nom. Ano', '%']
                 )
             )
@@ -112,29 +112,27 @@ if table_data is not None:
         contribuicao_ativos.at['Taxa de Administração', 'Contribuição'] = 100 - rentabilidade_acumulada_consolidada[~rentabilidade_acumulada_consolidada.index.isin(classes_ativos)]['%'].sum()
         contribuicao_ativos = contribuicao_ativos.sort_values(by='Contribuição', ascending=False)
 
-        row_1 = st.columns(4)
+        row_1 = st.columns(3)
         with row_1[0]:
-            st.metric("Contribuição Calculada (Classes)", f"{contribuicao_classes.iloc[:-1]['Contribuição'].sum():,.2f}%", help="Soma das contribuições calculadas a partir das classes de ativos")
-        with row_1[1]:
             st.metric("Contribuição Calculada (Ativos)", f"{contribuicao_ativos['Contribuição'].sum():,.2f}%", help="Soma das contribuições calculadas a partir dos ativos")
-        with row_1[2]:
+        with row_1[1]:
             st.metric("Contribuição Real (ComDinheiro)", f"{contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
-        with row_1[3]:
+        with row_1[2]:
             st.metric("Diferença", f"{contribuicao_ativos['Contribuição'].sum() - contribuicao_classes.at['Total', 'Contribuição']:,.2f}%")
 
         contribuicao_classes['Contribuição'] = contribuicao_classes['Contribuição'].mul(100)
         contribuicao_ativos['Contribuição'] = contribuicao_ativos['Contribuição'].mul(100)
 
-        chart_contribuicao_classes = create_chart(
-            data=contribuicao_classes,
-            columns=['Contribuição'],
-            names=['Contribuição'],
-            chart_type='column',
-            title="Contribuição das Classes",
-            y_axis_title="bps",
-            x_axis_title="Classe",
-            )
-        hct.streamlit_highcharts(chart_contribuicao_classes)
+        # chart_contribuicao_classes = create_chart(
+        #     data=contribuicao_classes,
+        #     columns=['Contribuição'],
+        #     names=['Contribuição'],
+        #     chart_type='column',
+        #     title="Contribuição das Classes",
+        #     y_axis_title="bps",
+        #     x_axis_title="Classe",
+        #     )
+        # hct.streamlit_highcharts(chart_contribuicao_classes)
 
         chart_contribuicao_ativos = create_chart(
             data=contribuicao_ativos,
