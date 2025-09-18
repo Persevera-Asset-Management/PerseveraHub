@@ -125,7 +125,8 @@ def parse_pasted_data(pasted_text: str, has_header: bool, x_col_name_input: str)
         st.error(f"Erro ao processar dados colados: {e}")
         return None, [], []
 
-indicators_codes = load_indicator_codes()
+with st.spinner("Carregando códigos das séries...", show_time=True):
+    indicators_codes = load_indicator_codes()
 
 # --- Inputs do Usuário --- 
 st.sidebar.header("Configurações do Gráfico")
@@ -259,7 +260,9 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             start_date_str = start_date_input.strftime('%Y-%m-%d')
             end_date_str = end_date_input.strftime('%Y-%m-%d')
 
-            chart_data = load_series_data(codes_list, start_date_str, end_date_str)
+            with st.spinner("Carregando dados das séries...", show_time=True):
+                chart_data = load_series_data(codes_list, start_date_str, end_date_str)
+            
             y_columns_for_chart = list(chart_data.columns) # Use actual columns from DataFrame
             legend_names_for_chart = y_columns_for_chart.copy() # Use a copy for legends
             st.session_state.y_columns_options = list(chart_data.columns) # Update options for UI

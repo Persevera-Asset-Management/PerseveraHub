@@ -77,23 +77,23 @@ with st.sidebar:
 
 if btn_run:
     start_time = time.time()
-    with st.spinner("Carregando dados de mercado..."):
+    with st.spinner("Carregando dados de mercado...", show_time=True):
         factor_codes = [k for k, v in FACTOR_OPTIONS.items() if v in selected_factors]
         data_indicators = load_indicators(factor_codes, start_date=start_date_str)
 
-    with st.spinner("Carregando dados de fundos..."):
+    with st.spinner("Carregando dados de fundos...", show_time=True):
         fund_cnpjs = peers[peers['short_name'].isin(selected_funds)]['fund_cnpj'].tolist()
         data_funds = load_funds_data(fund_cnpjs, start_date=start_date_str)
         data_funds.rename(columns=peers.set_index('fund_cnpj')['short_name'].to_dict(), inplace=True)
 
-    with st.spinner("Reparando dados..."):
+    with st.spinner("Reparando dados...", show_time=True):
         returns = helpers.prepare_data(data_funds, data_indicators)
         returns = returns.dropna(how='any')
 
-    with st.spinner("Iniciando análise..."):
+    with st.spinner("Iniciando análise...", show_time=True):
         best_subset_analysis = BestSubsetStyleAnalysis(returns_data=returns, fund_cols=selected_funds, factor_cols=factor_codes[1:])
 
-    with st.spinner("Executando análise para o período mais recente..."):
+    with st.spinner("Executando análise para o período mais recente...", show_time=True ):
         best_subset_results = best_subset_analysis.run_analysis(
             min_window=min_window,
             max_window=max_window,

@@ -61,7 +61,9 @@ if 'df' not in st.session_state:
     st.session_state.df = None
 
 start_date = pd.to_datetime(date.today() - timedelta(days=365*5))
-df = load_data(start_date=start_date, descriptors_list=["price_close", "median_dollar_volume_traded_21d"])
+
+with st.spinner("Carregando dados...", show_time=True):
+    df = load_data(start_date=start_date, descriptors_list=["price_close", "median_dollar_volume_traded_21d"])
 
 if df.empty:
     st.warning("Não foi possível carregar os dados.")

@@ -32,7 +32,7 @@ if 'df' not in st.session_state:
     st.session_state.df = None
 
 if btn_run:
-    with st.spinner("Carregando dados..."):
+    with st.spinner("Carregando dados...", show_time=True):
         provider = ComdinheiroProvider()
         st.session_state.df = provider.get_data(
             category='comdinheiro',

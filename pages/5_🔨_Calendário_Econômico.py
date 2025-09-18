@@ -21,7 +21,7 @@ except Exception as e:
     st.error(f"Erro ao inicializar FinancialDataService: {e}")
     st.stop()
 
-with st.spinner("Carregando dados..."):
+with st.spinner("Carregando dados...", show_time=True):
     try:
         calendar_data = fds.get_investing_calendar_data(save_to_db=False)
         

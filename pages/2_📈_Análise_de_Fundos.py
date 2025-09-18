@@ -205,7 +205,8 @@ with st.sidebar:
 st.header(selected_fund_name)
 
 # Load data for the selected fund
-nav_data, total_equity_data = load_fund_data(selected_fund_name)
+with st.spinner(f"Carregando dados de {selected_fund_name}...", show_time=True):
+    nav_data, total_equity_data = load_fund_data(selected_fund_name)
 
 if nav_data.empty:
     st.warning(f"Não foi possível carregar dados de NAV para o fundo {selected_fund_name}.")

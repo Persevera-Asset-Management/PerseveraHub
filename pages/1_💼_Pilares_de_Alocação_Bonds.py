@@ -61,8 +61,9 @@ def get_performance_table(df, time_frames=[5, 10, 15, 20, 25], annualize=True):
 # Chart configurations
 codes = [{v: k for k, v in INDICADORES.items()}[code] for code in selected_codes]
 
-data = load_data(codes, start_date=start_date_str)
-data.dropna(thresh=data.columns.size - 2, inplace=True)
+with st.spinner("Carregando dados...", show_time=True):
+    data = load_data(codes, start_date=start_date_str)
+    data.dropna(thresh=data.columns.size - 2, inplace=True)
 
 if 'us_fed_funds_effective_rate' in data.columns:
     fed_annual_rate = data['us_fed_funds_effective_rate'].ffill().bfill() / 100.0
@@ -111,7 +112,7 @@ selected_codes_simulation = st.multiselect(label="Selecione dois grupos de bonds
 btn_simular = st.button("Simular")
 
 if btn_simular:
-    with st.spinner("Simulando carteira..."):
+    with st.spinner("Simulando carteira...", show_time=True):
         if len(selected_codes_simulation) != 2:
             st.warning("Selecione exatamente dois grupos para simular.")
         else:

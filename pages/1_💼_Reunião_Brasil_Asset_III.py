@@ -41,7 +41,8 @@ with st.sidebar:
     start_date = st.date_input("Data Inicial", pd.to_datetime(date.today() - timedelta(days=365)), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
-data = load_data(CODES, start_date=start_date_str)
+with st.spinner("Carregando dados...", show_time=True):
+    data = load_data(CODES, start_date=start_date_str)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
