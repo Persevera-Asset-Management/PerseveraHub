@@ -40,7 +40,7 @@ if 'table_data' not in st.session_state:
     st.session_state.table_data = None
 
 if btn_run:
-    with st.spinner("Carregando dados..."):
+    with st.spinner("Carregando dados...", show_time=True):
         provider = ComdinheiroProvider()
         table_data = provider.get_data(
             category='comdinheiro',
@@ -84,13 +84,13 @@ if table_data is not None:
         rentabilidade_acumulada = rentabilidade_acumulada.drop_duplicates().set_index(['Ativo', 'Classe']).apply(lambda x: pd.to_numeric(x, errors='coerce'))
         posicao_consolidada = table_data['Posição Consolidada - No Mês'].set_index('Ativo').apply(lambda x: pd.to_numeric(x, errors='coerce')).groupby('Ativo').sum()
         rentabilidade_acumulada_consolidada = pd.merge(rentabilidade_acumulada, posicao_consolidada, on='Ativo', how='outer').fillna(0)
-        rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['no Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
+        rentabilidade_acumulada_consolidada['Contribuição'] = rentabilidade_acumulada_consolidada['Nom. Mês'] * rentabilidade_acumulada_consolidada['%'] / 100
 
         with st.expander("Dados Brutos"):
             st.dataframe(
                 style_table(
                     rentabilidade_acumulada_consolidada,
-                    percent_cols=['No Mês', 'No Ano', '%']
+                    percent_cols=['Nom. Mês', 'Nom. Ano', '%']
                 )
             )
 
