@@ -57,14 +57,14 @@ CHARTS_ECONOMIA = {
     },
     "us_industrial_production_var": {
         "chart_config": {
-            "columns": ["us_industrial_production_index", "us_capacity_utilization_nsa_index"],
+            "columns": ["us_industrial_production_index", "us_industrial_production_nsa_index"],
             "names": ["var. Anual", "var. Mensal"],
             "chart_type": "dual_axis_line_column",
             "title": "Produção Industrial (var. Mensal e Anual)",
             "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
         },
         "transformations": [
-            {"type": "yearly_variation", "column": "us_capacity_utilization_nsa_index", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "us_industrial_production_nsa_index", "frequency": "MS"},
             {"type": "monthly_variation", "column": "us_industrial_production_index", "frequency": "MS"}
         ],
         "width": 6,
