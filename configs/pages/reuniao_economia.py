@@ -149,7 +149,7 @@ CHARTS_ECONOMIA = {
             "names": ["Vendas", "Contruções", "Permissões"],
             "chart_type": "line",
             "title": "Novas Unidades Habitacionais Privadas",
-            "y_axis_title": "Valor",
+            "y_axis_title": "Unidades",
         },
         "width": 6,
         "context": "Estados Unidos",
@@ -162,7 +162,7 @@ CHARTS_ECONOMIA = {
             "names": ["Vendas", "Contruções", "Permissões"],
             "chart_type": "line",
             "title": "Novas Unidades Habitacionais Privadas (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "var. Anual %",
         },
         "transformations": [{"type": "yearly_variation", "column": "us_new_home_sales_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_housing_starts_total", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_building_permits_total", "frequency": "MS"}],
         "width": 6,
@@ -176,7 +176,7 @@ CHARTS_ECONOMIA = {
             "names": ["Nacional (S&P CS)", "Maiores 20 Cidades (S&P CS)", "Nacional (Zillow)"],
             "chart_type": "line",
             "title": "S&P CoreLogic Case-Shiller Price Indices (var. Anual %)",
-            "y_axis_title": "%",
+            "y_axis_title": "var. Anual %",
         },
         "transformations": [{"type": "yearly_variation", "column": "us_case_shiller_home_prices_national_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_case_shiller_home_prices_20_city_index", "frequency": "MS"}, {"type": "yearly_variation", "column": "us_zillow_home_prices_national_index", "frequency": "MS"}],
         "width": 6,
@@ -185,6 +185,33 @@ CHARTS_ECONOMIA = {
         "block_title": "Índices de Preços de Imóveis"
     },
     
+    "us_debt_service_payments_to_dpi": {
+        "chart_config": {
+            "columns": ["us_household_debt_service_payments_to_dpi", "us_mortgage_debt_service_payments_to_dpi", "us_consumer_debt_service_payments_to_dpi"],
+            "names": ["Household (M + C)", "Mortgage", "Consumer"],
+            "chart_type": "line",
+            "title": "Dívida (% Renda Pessoal Disponível)",
+            "y_axis_title": "% Renda Pessoal Disponível",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Imobiliário",
+        "block_title": "Acessibilidade"
+    },
+    "us_housing_affordability_index": {
+        "chart_config": {
+            "columns": "us_housing_affordability_index",
+            "names": "Índice",
+            "chart_type": "line",
+            "title": "Housing Affordability Index",
+            "y_axis_title": "Índice",
+        },
+        "width": 6,
+        "context": "Estados Unidos",
+        "group": "Imobiliário",
+        "block_title": "Acessibilidade"
+    },
+
     # Crédito
     "us_delinquency_rates": {
         "chart_config": {
