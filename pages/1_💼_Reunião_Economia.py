@@ -98,7 +98,7 @@ else:
         st.header("Brasil")
         br_context = charts_by_context.get("Brasil", {})
         
-        br_tabs = st.tabs(["PIB", "IBC-Br", "Indústria", "Serviços", "Varejo", "Inflação", "Commodities", "Fiscal", "Emprego", "Sentimento", "Crédito", "Setor Externo"])
+        br_tabs = st.tabs(["PIB", "IBC-Br", "Indústria", "Serviços", "Varejo", "Inflação", "Fiscal", "Emprego", "Sentimento", "Crédito", "Setor Externo"])
         
         with br_tabs[0]:
             if "PIB" in br_context:
@@ -125,27 +125,22 @@ else:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Inflação", charts_by_context)
 
         with br_tabs[6]:
-            if "Commodities" in br_context:
-                render_chart_group_with_context(data, chart_configs, "Brasil", "Commodities", charts_by_context)
-                # charts_by_context['Brasil']['Commodities']
-
-        with br_tabs[7]:
             if "Fiscal" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Fiscal", charts_by_context)
 
-        with br_tabs[8]:
+        with br_tabs[7]:
             if "Emprego" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Emprego", charts_by_context)
 
-        with br_tabs[9]:
+        with br_tabs[8]:
             if "Sentimento" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Sentimento", charts_by_context)
 
-        with br_tabs[10]:
+        with br_tabs[9]:
             if "Crédito" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Crédito", charts_by_context)
 
-        with br_tabs[11]:
+        with br_tabs[10]:
             if "Setor Externo" in br_context:
                 render_chart_group_with_context(data, chart_configs, "Brasil", "Setor Externo", charts_by_context)
 
