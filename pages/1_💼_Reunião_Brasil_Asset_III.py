@@ -71,12 +71,13 @@ else:
     # Tab 4: Crédito Privado
     with tabs[3]:
         st.header("Crédito Privado")
-        spread = calculate_spread("DI", start_date=start_date_str)
+        spread_cdi = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=False)
+        spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=False)
 
         row_1 = st.columns(2)
         with row_1[0]:
-            chart_options = create_chart(
-                data=spread,
+            chart_spread_cdi_options = create_chart(
+                data=spread_cdi,
                 columns=["median", "mean", "weighted_mean"],
                 names=["Mediana", "Média", "Média Ponderada"],
                 chart_type='line',
@@ -84,5 +85,16 @@ else:
                 y_axis_title="Spread (%)",
                 decimal_precision=3
             )
+            hct.streamlit_highcharts(chart_spread_cdi_options)
 
-            hct.streamlit_highcharts(chart_options)
+        with row_1[1]:
+            chart_spread_ipca_incent_options = create_chart(
+                data=spread_ipca_incent,
+                columns=["median", "mean", "weighted_mean"],
+                names=["Mediana", "Média", "Média Ponderada"],
+                chart_type='line',
+                title="Evolução do Spread IPCA+ Incentivado",
+                y_axis_title="Spread (%)",
+                decimal_precision=3
+            )
+            hct.streamlit_highcharts(chart_spread_ipca_incent_options)

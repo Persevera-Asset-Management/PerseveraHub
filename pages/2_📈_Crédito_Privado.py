@@ -45,7 +45,11 @@ with st.spinner("Calculando spread IPCA+...", show_time=True):
     spread_ipca = calculate_spread("IPCA", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=True)
     spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=True)
 
-if data.empty or spread_di.empty or spread_ipca.empty or spread_ipca_incent.empty:
+if (data.empty or
+    spread_di.empty or
+    spread_ipca.empty or
+    spread_ipca_incent.empty
+):
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
     # Create tabs for different regions
