@@ -44,6 +44,12 @@ with st.sidebar:
 with st.spinner("Carregando dados...", show_time=True):
     data = load_data(CODES, start_date=start_date_str)
 
+with st.spinner("Calculando spread CDI+...", show_time=True):
+    spread_cdi = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=False)
+
+with st.spinner("Calculando spread IPCA+ Incentivado...", show_time=True):
+    spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=False)
+
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
@@ -71,8 +77,6 @@ else:
     # Tab 4: Crédito Privado
     with tabs[3]:
         st.header("Crédito Privado")
-        spread_cdi = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=False)
-        spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=False)
 
         row_1 = st.columns(2)
         with row_1[0]:

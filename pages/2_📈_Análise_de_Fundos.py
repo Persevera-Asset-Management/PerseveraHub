@@ -475,7 +475,9 @@ if not stats_data_filtered.empty:
                     chart_type='line',
                     title="",
                     y_axis_title="Correlação",
-                    x_axis_title="Data"
+                    x_axis_title="Data",
+                    y_axis_max=1,
+                    y_axis_min=-1
                 )
                 hct.streamlit_highcharts(correlation_chart_options, key=f"correlation_{selected_fund_name}")
             else:
