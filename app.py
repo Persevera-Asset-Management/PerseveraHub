@@ -26,6 +26,9 @@ if st.session_state.authentication_status:
 
     # Main content
     st.title("Persevera Asset Management")
+    import persevera_tools
+    st.write(f"Versão atual: persevera_tools v{persevera_tools.__version__}")
+
     # st.write("This dashboard provides tools and analytics for financial analysis across different asset classes.")
 
     # Footer
