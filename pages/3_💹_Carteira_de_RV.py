@@ -22,7 +22,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Carteira de RV")
+st.title("Carteira")
 
 @st.cache_data(ttl=3600)
 def load_active_securities():
@@ -112,9 +112,10 @@ def get_performance_table(series, start_date, end_date):
     df_result = df_result.reset_index().rename(columns={'index': 'code'})
     return df_result
 
-active_securities = load_active_securities()
-equities_portfolio = get_equities_portfolio()
-current_stocks = equities_portfolio[equities_portfolio['date'] == equities_portfolio['date'].max()].sort_values(by='code')
+with st.spinner("Carregando ações ativas e composição da carteira..."):
+    active_securities = load_active_securities()
+    equities_portfolio = get_equities_portfolio()
+    current_stocks = equities_portfolio[equities_portfolio['date'] == equities_portfolio['date'].max()].sort_values(by='code')
 
 # Definição dos parâmetros
 with st.sidebar:
@@ -128,7 +129,7 @@ with st.spinner("Carregando preços das ações da carteira..."):
     data_equities_portfolio = load_data(list(equities_portfolio['code'].unique()), start_date=equities_portfolio['date'].min(), field='price_close')
 
 with st.spinner("Carregando indicadores..."):
-    indicators = load_indicators('br_ibovespa', start_date=equities_portfolio['date'].min())
+    indicators = load_indicators(['br_ibovespa', 'br_smll', 'br_cdi_index'], start_date=equities_portfolio['date'].min())
 
 if data.empty or len(selected_stocks) == 0:
     st.warning("Por favor, selecione ao menos uma ação para continuar.")
@@ -191,7 +192,7 @@ else:
         with col_1[1]:
             st.metric("Volatilidade Anualizada Estimada (Equal Weight)", f"{portfolio_volatility_equal_weight:.2%}")
         with col_1[2]:
-            st.metric("Volatilidade Anualizada do Ibovespa", f"{(indicators.pct_change().std() * np.sqrt(252) * 100):.2f}%")
+            st.metric("Volatilidade Anualizada do Ibovespa", f"{(indicators['br_ibovespa'].pct_change().std() * np.sqrt(252) * 100):.2f}%")
 
         correlation_matrix = returns.corr()
         correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
@@ -226,7 +227,7 @@ else:
 
         returns_equities_portfolio = weights_df.mul(data_equities_portfolio.pct_change(), axis=0).sum(axis=1)
         returns_df = pd.concat([returns_equities_portfolio, indicators.pct_change().fillna(0)], axis=1)
-        returns_df.columns = ['Carteira de RV', 'Ibovespa']
+        returns_df.columns = ['Carteira', 'Ibovespa', 'SMLL', 'CDI']
         cumulative_returns_equities_portfolio = (1 + returns_df).cumprod() - 1
 
         # Date Range Selection
@@ -301,6 +302,7 @@ else:
             styled_performance_table = style_table(
                 performance_table.set_index('code'),
                 numeric_cols_format_as_float=['day', 'mtd', 'ytd', '3m', '6m', '12m', 'custom'],
+                highlight_quartile=['day', 'mtd', 'ytd', '3m', '6m', '12m', 'custom'],
                 highlight_color='lightblue'
             )
             st.dataframe(styled_performance_table, use_container_width=True)
@@ -310,8 +312,8 @@ else:
             # Performance acumulado
             chart_performance_options = create_chart(
                 data=cumulative_returns_equities_portfolio * 100,
-                columns=["Carteira de RV", "Ibovespa"],
-                names=["Carteira de RV", "Ibovespa"],
+                columns=["Carteira", "Ibovespa", "SMLL", "CDI"],
+                names=["Carteira", "Ibovespa", "SMLL", "CDI"],
                 chart_type='line',
                 title="Performance Acumulada",
                 y_axis_title="Retorno (%)",
@@ -323,8 +325,8 @@ else:
             # Performance diária
             chart_daily_returns_options = create_chart(
                 data=returns_df * 10000,
-                columns=["Carteira de RV", "Ibovespa"],
-                names=["Carteira de RV", "Ibovespa"],
+                columns=["Carteira", "Ibovespa"],
+                names=["Carteira", "Ibovespa"],
                 chart_type='column',
                 title="Retorno Diário",
                 y_axis_title="Retorno (bps)",
