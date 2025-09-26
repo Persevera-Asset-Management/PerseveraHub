@@ -24,23 +24,24 @@ except Exception as e:
 with st.spinner("Carregando dados...", show_time=True):
     try:
         calendar_data = fds.get_investing_calendar_data(save_to_db=False)
+        del_cols = ['event_id', 'country', 'currency']
         
         # Estados Unidos
         st.subheader('Estados Unidos')
         st.dataframe(style_table(
-            calendar_data[calendar_data['country'] == 'United States'],
+            calendar_data[calendar_data['country'] == 'United States'].drop(columns=del_cols),
             highlight_row_by_column='Importância',
             highlight_row_if_value_equals='High',
-            column_names=['Data','Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL'],
+            column_names=['Data', 'Nome', 'Importância', 'URL'],
         ), hide_index=True)
 
         # Brasil
         st.subheader('Brasil')
         st.dataframe(style_table(
-            calendar_data[calendar_data['country'] == 'Brazil'],
+            calendar_data[calendar_data['country'] == 'Brazil'].drop(columns=del_cols),
             highlight_row_by_column='Importância',
             highlight_row_if_value_equals='High',
-            column_names=['Data','Id', 'País', 'Moeda', 'Nome', 'Importância', 'URL'],
+            column_names=['Data', 'Nome', 'Importância', 'URL'],
         ), hide_index=True)
 
     except Exception as e:
