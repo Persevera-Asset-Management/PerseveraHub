@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
+from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
@@ -64,6 +65,53 @@ def calculate_portfolio_volatility(weights, returns):
     portfolio_variance = np.dot(weights_decimal.T, np.dot(cov_matrix_annual, weights_decimal))
     return np.sqrt(portfolio_variance)
 
+@st.cache_data(ttl=3600)
+def get_performance_table(series, start_date, end_date):
+    df = series.ffill()
+    if df.empty:
+        return pd.DataFrame()
+
+    gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
+    gp_monthly = df.groupby(pd.Grouper(level='date', freq="ME")).last()
+    gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
+
+    day_ret = gp_daily.pct_change(fill_method=None).iloc[-1]
+    mtd_ret = gp_monthly.pct_change(fill_method=None).iloc[-1]
+    ytd_ret = gp_yearly.pct_change(fill_method=None).iloc[-1]
+
+    def get_relative_return(months):
+        start_date_calc = df.index[-1] - relativedelta(months=months)
+        period_df = df.loc[start_date_calc:]
+        if len(period_df) > 1:
+            return df.iloc[-1] / period_df.iloc[0] - 1
+        return pd.Series(np.nan, index=df.columns)
+
+    ret_3m = get_relative_return(3)
+    ret_6m = get_relative_return(6)
+    ret_12m = get_relative_return(12)
+
+    custom_period_df = df.loc[start_date:end_date]
+    if len(custom_period_df) > 1:
+        custom_ret = custom_period_df.iloc[-1] / custom_period_df.iloc[0] - 1
+    else:
+        custom_ret = pd.Series(np.nan, index=df.columns)
+
+    returns = {
+        'day': day_ret,
+        'mtd': mtd_ret,
+        'ytd': ytd_ret,
+        '3m': ret_3m,
+        '6m': ret_6m,
+        '12m': ret_12m,
+        'custom': custom_ret,
+    }
+
+    df_result = pd.DataFrame(returns)
+    df_result = df_result.apply(lambda x: x * 100)
+    
+    df_result = df_result.reset_index().rename(columns={'index': 'code'})
+    return df_result
+
 active_securities = load_active_securities()
 equities_portfolio = get_equities_portfolio()
 current_stocks = equities_portfolio[equities_portfolio['date'] == equities_portfolio['date'].max()].sort_values(by='code')
@@ -73,9 +121,14 @@ with st.sidebar:
     st.header("Parâmetros")
     selected_stocks = st.multiselect("Ações selecionadas", options=active_securities, default=current_stocks['code'].tolist())
 
-data = load_data(selected_stocks, start_date=pd.to_datetime(date.today() - timedelta(days=365)), field=['price_close', 'beta']).swaplevel(axis=1)
-data_equities_portfolio = load_data(list(equities_portfolio['code'].unique()), start_date=equities_portfolio['date'].min(), field='price_close')
-indicators = load_indicators('br_ibovespa', start_date=equities_portfolio['date'].min())
+with st.spinner("Carregando preços das ações selecionadas..."):
+    data = load_data(selected_stocks, start_date=pd.to_datetime(date.today() - timedelta(days=365)), field=['price_close', 'beta']).swaplevel(axis=1)
+
+with st.spinner("Carregando preços das ações da carteira..."):
+    data_equities_portfolio = load_data(list(equities_portfolio['code'].unique()), start_date=equities_portfolio['date'].min(), field='price_close')
+
+with st.spinner("Carregando indicadores..."):
+    indicators = load_indicators('br_ibovespa', start_date=equities_portfolio['date'].min())
 
 if data.empty or len(selected_stocks) == 0:
     st.warning("Por favor, selecione ao menos uma ação para continuar.")
@@ -161,9 +214,11 @@ else:
         weights_df = weights_df.ffill()
 
         with st.expander("Histórico de Alocações", expanded=False):
+            weights_history_table = weights_df.replace(0, np.nan).mul(100)
+            weights_history_table.index = weights_history_table.index.strftime('%Y-%m-%d')
             st.dataframe(
                 style_table(
-                    weights_df.replace(0, np.nan).mul(100),
+                    weights_history_table,
                     percent_cols=weights_df.columns.tolist()
                 ),
                 hide_index=False
@@ -174,6 +229,82 @@ else:
         returns_df.columns = ['Carteira de RV', 'Ibovespa']
         cumulative_returns_equities_portfolio = (1 + returns_df).cumprod() - 1
 
+        # Date Range Selection
+        min_date_val = cumulative_returns_equities_portfolio.index.min().date()
+        max_date_val = cumulative_returns_equities_portfolio.index.max().date()
+
+        # Initialize or validate st.session_state.start_date (as Timestamp)
+        if 'start_date' not in st.session_state:
+            st.session_state.start_date = pd.to_datetime(min_date_val)
+        else:
+            # Ensure it's a Timestamp if it exists
+            if not isinstance(st.session_state.start_date, pd.Timestamp):
+                st.session_state.start_date = pd.to_datetime(st.session_state.start_date)
+            # Compare .date() part and clamp
+            if st.session_state.start_date.date() < min_date_val:
+                st.session_state.start_date = pd.to_datetime(min_date_val)
+            elif st.session_state.start_date.date() > max_date_val: 
+                st.session_state.start_date = pd.to_datetime(max_date_val)
+
+        # Initialize or validate st.session_state.end_date (as Timestamp)
+        if 'end_date' not in st.session_state:
+            st.session_state.end_date = pd.to_datetime(max_date_val)
+        else:
+            # Ensure it's a Timestamp if it exists
+            if not isinstance(st.session_state.end_date, pd.Timestamp):
+                st.session_state.end_date = pd.to_datetime(st.session_state.end_date)
+            # Compare .date() part and clamp
+            if st.session_state.end_date.date() > max_date_val:
+                st.session_state.end_date = pd.to_datetime(max_date_val)
+            elif st.session_state.end_date.date() < min_date_val: 
+                st.session_state.end_date = pd.to_datetime(min_date_val)
+                    
+        # Ensure start_date <= end_date after clamping
+        if st.session_state.start_date > st.session_state.end_date:
+            st.session_state.start_date = st.session_state.end_date
+            
+        cols_date = st.columns(2)
+        with cols_date[0]:
+            start_date_input = st.date_input(
+                "Data Inicial",
+                format="DD/MM/YYYY",
+                value=st.session_state.start_date.date(), 
+                min_value=min_date_val,
+                max_value=max_date_val,
+                key='start_date_picker'
+            )
+        with cols_date[1]:
+            end_date_input = st.date_input(
+                "Data Final",
+                format="DD/MM/YYYY",
+                value=st.session_state.end_date.date(), 
+                min_value=min_date_val,
+                max_value=max_date_val,
+                key='end_date_picker'
+            )
+            
+        # Update session state with Timestamps from the input (which are datetime.date objects)
+        st.session_state.start_date = pd.to_datetime(start_date_input)
+        st.session_state.end_date = pd.to_datetime(end_date_input)
+
+        if st.session_state.start_date > st.session_state.end_date: # Check after user input
+            st.warning("Data inicial deve ser anterior à data final.")
+            st.stop() 
+
+        performance_table = get_performance_table(
+            series=cumulative_returns_equities_portfolio.add(1),
+            start_date=st.session_state.start_date,
+            end_date=st.session_state.end_date
+        )
+
+        if not performance_table.empty:
+            styled_performance_table = style_table(
+                performance_table.set_index('code'),
+                numeric_cols_format_as_float=['day', 'mtd', 'ytd', '3m', '6m', '12m', 'custom'],
+                highlight_color='lightblue'
+            )
+            st.dataframe(styled_performance_table, use_container_width=True)
+
         col_1 = st.columns(2)
         with col_1[0]:
             # Performance acumulado
@@ -182,7 +313,7 @@ else:
                 columns=["Carteira de RV", "Ibovespa"],
                 names=["Carteira de RV", "Ibovespa"],
                 chart_type='line',
-                title="Evolução da Carteira de RV",
+                title="Performance Acumulada",
                 y_axis_title="Retorno (%)",
                 decimal_precision=2
             )
@@ -192,10 +323,10 @@ else:
             # Performance diária
             chart_daily_returns_options = create_chart(
                 data=returns_df * 10000,
-                columns=["Carteira de RV"],
-                names=["Carteira de RV"],
+                columns=["Carteira de RV", "Ibovespa"],
+                names=["Carteira de RV", "Ibovespa"],
                 chart_type='column',
-                title="Retorno Diário da Carteira de RV",
+                title="Retorno Diário",
                 y_axis_title="Retorno (bps)",
                 decimal_precision=0
             )
