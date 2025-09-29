@@ -16,8 +16,8 @@ def create_highcharts_options(
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
     x_axis_title: Optional[str] = None,
-    y_axis_max: Optional[float] = None,
-    y_axis_min: Optional[float] = None,
+    y_axis_max: Optional[Union[float, Tuple[Optional[float], Optional[float]]]] = None,
+    y_axis_min: Optional[Union[float, Tuple[Optional[float], Optional[float]]]] = None,
     series_name: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     color: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     point_markers: Optional[List[Dict[str, Any]]] = None,
@@ -61,10 +61,10 @@ def create_highcharts_options(
         For single-axis charts, a string. Defaults to concatenated y-column names if multiple y-columns on a single axis.
     x_axis_title : str, optional
         X-axis title. Defaults to x_column name if not provided, or None if x_column is also None.
-    y_axis_max : float, optional
-        Maximum value for the y-axis.
-    y_axis_min : float, optional
-        Minimum value for the y-axis.
+    y_axis_max : float or Tuple[Optional[float], Optional[float]], optional
+        Maximum value for the y-axis. For dual-axis charts, provide a tuple e.g., (100, None).
+    y_axis_min : float or Tuple[Optional[float], Optional[float]], optional
+        Minimum value for the y-axis. For dual-axis charts, provide a tuple e.g., (0, None).
     series_name : str or List[str] or Tuple, optional
         Name(s) of the data series.
         - For single-axis charts: a string (if one y_column) or a list of strings (matching y_columns). Defaults to y_column names.
@@ -507,6 +507,23 @@ def create_highcharts_options(
                     "opposite": True
                 }
             ]
+            if y_axis_max is not None:
+                if isinstance(y_axis_max, (list, tuple)) and len(y_axis_max) == 2:
+                    if y_axis_max[0] is not None:
+                        chart_options["yAxis"][0]["max"] = y_axis_max[0]
+                    if y_axis_max[1] is not None:
+                        chart_options["yAxis"][1]["max"] = y_axis_max[1]
+                else:
+                    raise ValueError("For dual-axis charts, y_axis_max must be a tuple of two values (e.g., (100, None)).")
+
+            if y_axis_min is not None:
+                if isinstance(y_axis_min, (list, tuple)) and len(y_axis_min) == 2:
+                    if y_axis_min[0] is not None:
+                        chart_options["yAxis"][0]["min"] = y_axis_min[0]
+                    if y_axis_min[1] is not None:
+                        chart_options["yAxis"][1]["min"] = y_axis_min[1]
+                else:
+                    raise ValueError("For dual-axis charts, y_axis_min must be a tuple of two values (e.g., (0, None)).")
         else: # Single y-axis configuration
             # y_axis_title_processed is a string here, as set in the single-axis block
             chart_options["yAxis"] = {
@@ -515,9 +532,15 @@ def create_highcharts_options(
                 }
             }
             if y_axis_max is not None:
-                chart_options["yAxis"]["max"] = y_axis_max
+                if isinstance(y_axis_max, (int, float)):
+                    chart_options["yAxis"]["max"] = y_axis_max
+                else:
+                    raise ValueError(f"For single-axis charts, y_axis_max must be a number. Got: {y_axis_max}")
             if y_axis_min is not None:
-                chart_options["yAxis"]["min"] = y_axis_min
+                if isinstance(y_axis_min, (int, float)):
+                    chart_options["yAxis"]["min"] = y_axis_min
+                else:
+                    raise ValueError(f"For single-axis charts, y_axis_min must be a number. Got: {y_axis_min}")
         
         chart_options["tooltip"] = {
             "shared": True if chart_type != 'scatter' else False, # Scatter usually has non-shared tooltips
