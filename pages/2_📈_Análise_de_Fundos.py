@@ -79,6 +79,7 @@ def load_fund_data(fund_name):
         if not nav.empty:
             persevera_cols_nav = nav.filter(like='Persevera').columns
             if not persevera_cols_nav.empty:
+                nav = nav.replace(0, np.nan)
                 nav = nav.dropna(subset=[persevera_cols_nav[0]])
             nav = nav.sort_index(axis=1)
 

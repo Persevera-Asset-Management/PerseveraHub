@@ -37,8 +37,9 @@ with st.sidebar:
     start_date_str = start_date.strftime('%Y-%m-%d')
 
 # Load data with progress indicator
-with st.spinner("Carregando dados dos índices..."):
+with st.spinner("Carregando dados dos índices...", show_time=True):
     data = load_data(list(INDICADORES.keys()), field=['close', 'pct_members_above_50dma', 'pct_members_above_100dma', 'pct_members_above_150dma', 'pct_members_above_200dma'], start_date=start_date_str)
+    data.ffill(inplace=True, limit=1)
 
 if data.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
