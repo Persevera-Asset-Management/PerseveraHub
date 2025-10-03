@@ -120,3 +120,6 @@ logs/
 
 # Local configuration
 config.local.py 
+
+#Ignore cursor AI rules
+.cursor\rules\codacy.mdc

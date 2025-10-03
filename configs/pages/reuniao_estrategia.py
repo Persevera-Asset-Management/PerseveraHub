@@ -166,11 +166,11 @@ CHARTS_ESTRATEGIA = {
     # Reservas Internacionais
     "br_international_reserves": {
         "chart_config": {
-            "columns": ["br_international_reserves_total"],
-            "names": ["Reservas Internacionais"],
-            "chart_type": "line",
+            "columns": ["br_international_reserves_total", "br_international_reserves_spot_net_interventions"],
+            "names": ["Reservas Internacionais", "Intervenções do BC (net)"],
+            "chart_type": "dual_axis_line_column",
             "title": "Reservas Internacionais",
-            "y_axis_title": "US$",
+            "y_axis_title": ("US$", "US$"),
         },
         "width": 6,
         "context": "Moedas",

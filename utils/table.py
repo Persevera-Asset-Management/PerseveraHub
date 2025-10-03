@@ -1,6 +1,8 @@
 import pandas as pd
 from pandas.io.formats.style import Styler
 from typing import List, Dict, Any, Optional, Union, Tuple, Literal
+from dateutil.relativedelta import relativedelta
+import numpy as np
 
 def style_table(
     df: pd.DataFrame,
@@ -206,3 +208,49 @@ def style_table(
     styled_obj = styled_obj.set_table_styles(alignment_styles, overwrite=False)
 
     return styled_obj
+
+def get_performance_table(series):
+    df = series.ffill()
+    if df.empty:
+        return pd.DataFrame()
+
+    gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
+    gp_monthly = df.groupby(pd.Grouper(level='date', freq="ME")).last()
+    gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
+
+    day_ret = gp_daily.pct_change(fill_method=None).iloc[-1]
+    mtd_ret = gp_monthly.pct_change(fill_method=None).iloc[-1]
+    ytd_ret = gp_yearly.pct_change(fill_method=None).iloc[-1]
+
+    def get_relative_return(months):
+        start_date_calc = df.index[-1] - relativedelta(months=months)
+        period_df = df.loc[start_date_calc:]
+        if len(period_df) > 1:
+            return df.iloc[-1] / period_df.iloc[0] - 1
+        return pd.Series(np.nan, index=df.columns)
+
+    ret_1m = get_relative_return(1)
+    ret_3m = get_relative_return(3)
+    ret_6m = get_relative_return(6)
+    ret_12m = get_relative_return(12)
+    ret_24m = get_relative_return(24)
+    ret_36m = get_relative_return(36)
+
+    returns = {
+        'mtd': mtd_ret,
+        'ytd': ytd_ret,
+        '1m': ret_1m,
+        '3m': ret_3m,
+        '6m': ret_6m,
+        '12m': ret_12m,
+        '24m': ret_24m,
+        '36m': ret_36m,
+    }
+
+    time_frames = {**returns}
+
+    df_result = pd.DataFrame(time_frames)
+    df_result = df_result.apply(lambda x: x * 100)    
+    df_result = df_result.reset_index()
+    
+    return df_result
