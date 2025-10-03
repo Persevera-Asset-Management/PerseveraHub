@@ -74,7 +74,7 @@ CHARTS_ESTRATEGIA = {
             "names": ["5y", "10y"],
             "chart_type": "line",
             "title": "IG Taxas",
-            "y_axis_title": "bps",
+            "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Juros",
@@ -100,7 +100,7 @@ CHARTS_ESTRATEGIA = {
             "names": ["5y", "10y"],
             "chart_type": "line",
             "title": "HY Taxas",
-            "y_axis_title": "bps",
+            "y_axis_title": "Taxa (%)",
         },
         "width": 6,
         "context": "Juros",
@@ -150,8 +150,8 @@ CHARTS_ESTRATEGIA = {
     },
     "br_focus_selic": {
         "chart_config": {
-            "columns": ["br_focus_selic_median_2025R5", "br_focus_selic_median_2025R6", "br_focus_selic_median_2025R7", "br_focus_selic_median_2025R8", "br_focus_selic_median_2026R1", "br_focus_selic_median_2026R2"],
-            "names": ["R5 (jul/25)", "R6 (set/25)", "R7 (nov/25)", "R8 (dez/25)", "R1 (jan/26)", "R2 (fev/26)"],
+            "columns": ["br_focus_selic_median_2025R7", "br_focus_selic_median_2025R8", "br_focus_selic_median_2026R1", "br_focus_selic_median_2026R2"],
+            "names": ["R7 (nov/25)", "R8 (dez/25)", "R1 (jan/26)", "R2 (fev/26)"],
             "chart_type": "line",
             "title": "SELIC Focus (Próximas Reuniões)",
             "y_axis_title": "Taxa (%)",
