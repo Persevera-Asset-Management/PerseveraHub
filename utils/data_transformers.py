@@ -509,6 +509,31 @@ class MultiplyTransformer(DataTransformer):
         
         return result
 
+class SubtractTransformer(DataTransformer):
+    """Subtracts a given column by a scalar value"""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        scalar = config.get('scalar')
+
+        if not column or column not in data.columns:
+            print(f"Warning: Column '{column}' not found for subtraction. Skipping.")
+            return data
+
+        if scalar is None:
+            print(f"Warning: Scalar not provided for subtraction on column '{column}'. Skipping.")
+            return data
+        
+        if not isinstance(scalar, (int, float)):
+            print(f"Warning: Scalar '{scalar}' is not a number. Skipping subtraction for column '{column}'.")
+            return data
+
+        result = data.copy()
+        new_column_name = f"{column}_subtracted_by_{scalar}"
+        result[new_column_name] = result[column] - scalar
+        
+        return result
+
 class DivideTransformer(DataTransformer):
     """Divides a given column by a scalar value"""
     @staticmethod
@@ -762,6 +787,7 @@ TRANSFORMERS = {
     "rolling_sum_plus_yearly_variation": RollingSumPlusYearlyVariationTransformer,
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
+    "subtract": SubtractTransformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
     "saar_ma": SeasonallyAdjustedAnnualRateMovingAverageTransformer,
 }
