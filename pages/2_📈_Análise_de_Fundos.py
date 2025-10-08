@@ -109,7 +109,7 @@ def get_performance_table(nav, total_equity, start_date, end_date):
 
     benchmarks = ['CDI', 'Ibovespa', 'SMLL']
 
-    day_ret = gp_daily.pct_change(fill_method=None).iloc[-1]
+    day_ret = gp_daily.dropna(how='all', axis='rows').pct_change(fill_method=None).iloc[-1]
     mtd_ret = gp_monthly.pct_change(fill_method=None).iloc[-1]
     ytd_ret = gp_yearly.pct_change(fill_method=None).iloc[-1]
 
