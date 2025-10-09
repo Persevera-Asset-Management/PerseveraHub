@@ -33,8 +33,8 @@ def load_indicators(codes, start_date):
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    start_date = st.date_input("Data", format="DD/MM/YYYY", value=datetime(2024, 12, 30), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
-    end_date = st.date_input("Data", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
+    start_date = st.date_input("Data Inicial", format="DD/MM/YYYY", value=datetime(2024, 12, 30), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
+    end_date = st.date_input("Data Final", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
     btn_run = st.button("Executar")
 
@@ -74,7 +74,7 @@ if nav_data is not None:
         st.dataframe(style_table(
             performance_table.drop(columns=['24m', '36m']),
             numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m']),
-        hide_index=True)
+        hide_index=False)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
