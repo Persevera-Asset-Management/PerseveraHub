@@ -58,7 +58,7 @@ if btn_run:
         indicators.ffill(inplace=True)
 
 nav_data = st.session_state.nav_data
-if nav_data and indicators:
+if nav_data is not None or indicators is not None:
     try:
         df = pd.merge(
             nav_data.pivot(index='date', columns='portfolio', values='nav'),
