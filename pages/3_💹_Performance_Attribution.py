@@ -34,7 +34,7 @@ with st.sidebar:
     else:
         selected_inception_date = st.date_input("Data de Início (Inception)", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
 
-    btn_run = st.button("Gerar Relatório")
+    btn_run = st.button("Executar")
 
 if 'table_data' not in st.session_state:
     st.session_state.table_data = None

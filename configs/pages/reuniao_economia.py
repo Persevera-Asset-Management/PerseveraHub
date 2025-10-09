@@ -1025,11 +1025,11 @@ CHARTS_ECONOMIA = {
     # Indústria
     "br_industrial_production": {
         "chart_config": {
-            "columns": "br_industrial_production",
-            "names": "Índice",
-            "chart_type": "line",
-            "title": "Produção Industrial",
-            "y_axis_title": "Valor",
+            "columns": ["br_industrial_production", "br_cni_manufacture_industry_capacity_utilization"],
+            "names": ["Produção Industrial", "Utilização de Capacidade"],
+            "chart_type": "dual_axis_line",
+            "title": "Produção Industrial e Utilização de Capacidade",
+            "y_axis_title": ["Valor", "Taxa (%)"],
         },
         "width": 6,
         "context": "Brasil",
