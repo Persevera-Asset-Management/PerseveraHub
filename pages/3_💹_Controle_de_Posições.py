@@ -53,7 +53,7 @@ if df is not None:
       with row_1[0]:
         # Posição Atual
         st.markdown("##### Posição Atual")
-        df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
+        df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
           **{
               'Quantidade': ('Quantidade', 'sum'),
               'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -74,6 +74,22 @@ if df is not None:
         st.markdown("##### Composição do Portfolio")
         df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
         df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
+        correct_order = [
+          'Caixa e Equivalentes',
+          'Renda Fixa Pós-Fixado',
+          'Renda Fixa Pré-Fixados',
+          'Renda Fixa Atrelada à Inflação',
+          'Renda Fixa em Moeda Estrangeira',
+          'Renda Variável Nacional',
+          'Renda Variável Internacional',
+          'Retorno Total',
+          'Fundos Imobiliários',
+          'Investimentos Alternativos',
+          'Criptomoedas',
+          'Commodities',
+        ]
+
+        df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
 
         chart_portfolio_composition = create_chart(
             data=df_portfolio_composition_current,

@@ -35,3 +35,8 @@ def check_authentication():
     authenticator = initialize_authenticator()
     authenticator.logout('Logout', 'sidebar')
     return authenticator 
+
+def custom_logout():
+    """Logs the user out without rendering a button."""
+    if 'authenticator' in st.session_state:
+        st.session_state.authenticator._logout_logic() 

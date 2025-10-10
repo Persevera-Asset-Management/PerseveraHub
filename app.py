@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from utils.ui import display_logo, load_css
-from utils.auth import login_form, initialize_authenticator
+from utils.auth import login_form, initialize_authenticator, custom_logout
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +22,19 @@ if 'authentication_status' not in st.session_state:
 
 if st.session_state.authentication_status:
     authenticator = initialize_authenticator()
-    authenticator.logout('Logout', 'sidebar')
+    
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if st.button('Logout'):
+            custom_logout()
+            st.rerun()
+
+    with col2:
+        if st.button("Clear Cache"):
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            st.toast("Cache cleared successfully!")
+            st.rerun()
 
     # Main content
     st.title("Persevera Asset Management")
