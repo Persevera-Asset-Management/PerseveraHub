@@ -1,27 +1,16 @@
 from persevera_tools.db.fibery import read_fibery
 
-def get_carteiras():
-    df = read_fibery(
-        table_name="Estr-Cadastro/Parte Legal",
-        include_fibery_fields=False
-    )
-    df = df[
-        (df["Estr-Cadastro/Is CPF?"] == True) &
-        (df["Estr-Cadastro/Código (Acrônimo)"].notna()) &
-        (df["Estr-Cadastro/Código (Acrônimo)"].str.len() == 4)
-    ]
-    return sorted(df["Ops-Cadastro/Código (Acrônimo)"].tolist())
 
 def get_carteiras_adm():
     df = read_fibery(
         table_name="Estr-CartAdm/Carteira Administrada",
         include_fibery_fields=False
     )
-    df = df[["Estr-CartAdm/Name", "Estr-CartAdm/Data Início Gestão", "Estr-CartAdm/Data Fim Gestão"]]
-    df = df.dropna(subset=["Estr-CartAdm/Data Início Gestão"])
-    df = df[df["Estr-CartAdm/Data Fim Gestão"].isna()]
-    df.drop(columns=["Estr-CartAdm/Data Fim Gestão"], inplace=True)
-    df = df.rename(columns={"Estr-CartAdm/Name": "Código", "Estr-CartAdm/Data Início Gestão": "Data Início Gestão"})
+    df = df[["Name", "Data Início Gestão", "Data Fim Gestão"]]
+    df = df.dropna(subset=["Data Início Gestão"])
+    df = df[df["Data Fim Gestão"].isna()]
+    df.drop(columns=["Data Fim Gestão"], inplace=True)
+    df = df.rename(columns={"Name": "Código", "Data Início Gestão": "Data Início Gestão"})
     df["Código"] = df["Código"].str.split("-").str[0]
     df.set_index("Código", inplace=True)
     return df.to_dict('index')
