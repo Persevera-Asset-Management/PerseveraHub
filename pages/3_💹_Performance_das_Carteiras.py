@@ -41,6 +41,9 @@ with st.sidebar:
 if 'nav_data' not in st.session_state:
     st.session_state.nav_data = None
 
+if 'indicators' not in st.session_state:
+    st.session_state.indicators = None
+
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
         provider = ComdinheiroProvider()
@@ -54,11 +57,13 @@ if btn_run:
         st.session_state.nav_data.dropna(inplace=True)
     
     with st.spinner("Carregando indicadores...", show_time=True):
-        indicators = load_indicators(['br_ibovespa', 'br_cdi_index'], start_date=start_date.strftime('%Y-%m-%d'))
-        indicators.ffill(inplace=True)
+        st.session_state.indicators = load_indicators(['br_ibovespa', 'br_cdi_index'], start_date=start_date.strftime('%Y-%m-%d'))
+        st.session_state.indicators.ffill(inplace=True)
 
 nav_data = st.session_state.nav_data
-if nav_data is not None or indicators is not None:
+indicators = st.session_state.indicators
+
+if nav_data is not None and indicators is not None and not nav_data.empty and not indicators.empty:
     try:
         df = pd.merge(
             nav_data.pivot(index='date', columns='portfolio', values='nav'),
