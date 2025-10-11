@@ -30,6 +30,14 @@ def load_positions():
     df = df[["creation-date", "Name", "Portfolio", "Classificação do Conjunto", "Ativo Nome Completo", "Quantidade", "Valor Unitário", "Saldo"]]
     return df
 
+def load_target_allocations():
+  df = read_fibery(
+    table_name="Ops-Portfolios/Parâmetro de PctPL Polinv",
+    include_fibery_fields=False
+  )
+  df = df[["creation-date", "Name", "Classificação do Conjunto", "Saldo"]]
+  return df
+
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
@@ -49,29 +57,28 @@ if df is not None:
     try:
       st.subheader(selected_carteira)
       
+      # Posição Atual
+      st.markdown("##### Composição Completa")
+      df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
+        **{
+            'Quantidade': ('Quantidade', 'sum'),
+            'Valor Unitário': ('Valor Unitário', 'mean'),
+            'Saldo': ('Saldo', 'sum')
+        }
+      )
+
+      df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()]
+      st.dataframe(
+        style_table(
+          df_portfolio_positions_current,
+          numeric_cols_format_as_float=['Quantidade', 'Valor Unitário', 'Saldo'],
+        )
+      )
+
       row_1 = st.columns(2)
       with row_1[0]:
-        # Posição Atual
-        st.markdown("##### Posição Atual")
-        df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
-          **{
-              'Quantidade': ('Quantidade', 'sum'),
-              'Valor Unitário': ('Valor Unitário', 'mean'),
-              'Saldo': ('Saldo', 'sum')
-          }
-        )
-
-        df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()]
-        st.dataframe(
-          style_table(
-            df_portfolio_positions_current,
-            numeric_cols_format_as_float=['Quantidade', 'Valor Unitário', 'Saldo'],
-          )
-        )
-
-      with row_1[1]:
         # Composição do Portfolio
-        st.markdown("##### Composição do Portfolio")
+        st.markdown("##### Alocação Atual")
         df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
         df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
         correct_order = [
@@ -95,11 +102,14 @@ if df is not None:
             data=df_portfolio_composition_current,
             columns=['Saldo'],
             names=['Saldo'],
-            chart_type='pie',
+            chart_type='donut',
             title="Percentual de Alocação das Classes",
             y_axis_title="R$",
         )
         hct.streamlit_highcharts(chart_portfolio_composition)
 
+      with row_1[1]:
+        st.markdown("##### Alocação Alvo")
+  
     except Exception as e:
         st.error(f"Ocorreu um erro ao carregar os dados: {e}")

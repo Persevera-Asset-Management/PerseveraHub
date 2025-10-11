@@ -11,7 +11,7 @@ def create_highcharts_options(
     y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
     instruments: Optional[List[Dict[str, str]]] = None,
     x_column: Optional[str] = None,
-    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column', 'heatmap'] = 'line',
+    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'donut', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column', 'heatmap'] = 'line',
     stacking: Optional[Literal['normal', 'percent']] = None,
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
@@ -421,7 +421,7 @@ def create_highcharts_options(
         is_datetime = True
         x_label = x_column_effective
     else: # Not datetime
-        if chart_type == 'pie':
+        if chart_type == 'pie' or chart_type == 'donut':
             x_label = None
         elif chart_type in ['bar', 'column']: # Category axis type for non-datetime bar/column
             x_label = x_column_effective
@@ -435,7 +435,7 @@ def create_highcharts_options(
     x_axis_type: Optional[str]
     if is_datetime:
         x_axis_type = 'datetime'
-    elif chart_type == 'pie':
+    elif chart_type == 'pie' or chart_type == 'donut':
         x_axis_type = None
     elif chart_type in ['bar', 'column']: # Ensure this only applies if not datetime
         x_axis_type = 'category'
@@ -445,8 +445,8 @@ def create_highcharts_options(
     # Create base chart options
     chart_options = {
         "chart": {
-            "type": chart_type if not is_dual_axis else 'line', # dual_axis is effectively multiple line/area series on a base 'line' chart
-            "zoomType": zoom_type if chart_type != 'pie' else None,
+            "type": 'pie' if chart_type in ['pie', 'donut'] else (chart_type if not is_dual_axis else 'line'),
+            "zoomType": zoom_type if chart_type not in ['pie', 'donut'] else None,
             "resetZoomButton": {
                 "position": {
                     "align": "right",
@@ -454,7 +454,7 @@ def create_highcharts_options(
                     "x": -10,
                     "y": 10
                 }
-            } if chart_type != 'pie' else None,
+            } if chart_type not in ['pie', 'donut'] else None,
             "height": height
         },
         "title": {
@@ -485,7 +485,7 @@ def create_highcharts_options(
         chart_options['colors'] = DEFAULT_CHART_COLORS
     
     # Add chart-type specific options
-    if chart_type != 'pie':
+    if chart_type not in ['pie', 'donut']:
         chart_options["xAxis"] = {
             "type": x_axis_type,
             "title": {
@@ -663,6 +663,7 @@ def create_highcharts_options(
         chart_options["plotOptions"]["pie"] = {
             "allowPointSelect": True,
             "cursor": "pointer",
+            "innerSize": "65%" if chart_type == 'donut' else "0%",
             "dataLabels": {
                 "enabled": True,
                 "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}} %"
@@ -702,7 +703,7 @@ def create_highcharts_options(
              chart_options["colors"] = [color]
 
     # Add additional point marker series if provided (not for pie charts)
-    if point_markers and chart_type != 'pie':
+    if point_markers and chart_type not in ['pie', 'donut']:
         for marker in point_markers:
             chart_options["series"].append(marker)
     
