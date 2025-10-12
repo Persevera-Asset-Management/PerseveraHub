@@ -49,8 +49,8 @@ if 'df' not in st.session_state:
 
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
-        st.session_state.df_positions = load_positions()
-        st.session_state.df = st.session_state.df_positions[st.session_state.df_positions['Portfolio'] == selected_carteira]
+      st.session_state.df_positions = load_positions()
+      st.session_state.df = st.session_state.df_positions[st.session_state.df_positions['Portfolio'] == selected_carteira]
 
 df = st.session_state.df
 if df is not None:
@@ -61,9 +61,9 @@ if df is not None:
       st.markdown("##### Composição Completa")
       df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
         **{
-            'Quantidade': ('Quantidade', 'sum'),
-            'Valor Unitário': ('Valor Unitário', 'mean'),
-            'Saldo': ('Saldo', 'sum')
+          'Quantidade': ('Quantidade', 'sum'),
+          'Valor Unitário': ('Valor Unitário', 'mean'),
+          'Saldo': ('Saldo', 'sum')
         }
       )
 
@@ -83,8 +83,8 @@ if df is not None:
         df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
         correct_order = [
           'Caixa e Equivalentes',
-          'Renda Fixa Pós-Fixado',
-          'Renda Fixa Pré-Fixados',
+          'Renda Fixa Pós-Fixada',
+          'Renda Fixa Pré-Fixada',
           'Renda Fixa Atrelada à Inflação',
           'Renda Fixa em Moeda Estrangeira',
           'Renda Variável Nacional',
@@ -99,12 +99,12 @@ if df is not None:
         df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
 
         chart_portfolio_composition = create_chart(
-            data=df_portfolio_composition_current,
-            columns=['Saldo'],
-            names=['Saldo'],
-            chart_type='donut',
-            title="Percentual de Alocação das Classes",
-            y_axis_title="R$",
+          data=df_portfolio_composition_current,
+          columns=['Saldo'],
+          names=['Saldo'],
+          chart_type='donut',
+          title="Percentual de Alocação das Classes",
+          y_axis_title="R$",
         )
         hct.streamlit_highcharts(chart_portfolio_composition)
 
@@ -112,4 +112,4 @@ if df is not None:
         st.markdown("##### Alocação Alvo")
   
     except Exception as e:
-        st.error(f"Ocorreu um erro ao carregar os dados: {e}")
+      st.error(f"Ocorreu um erro ao carregar os dados: {e}")
