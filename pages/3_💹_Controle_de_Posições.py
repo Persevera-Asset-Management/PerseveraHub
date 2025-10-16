@@ -101,12 +101,13 @@ if df is not None:
       )
 
       df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()]
-
+      df_portfolio_positions_current['%'] = df_portfolio_positions_current['Saldo'] / df_portfolio_positions_current['Saldo'].sum() * 100
+  
       with st.expander("Composição Completa", expanded=False):
         st.dataframe(
           style_table(
             df_portfolio_positions_current,
-            numeric_cols_format_as_float=['Quantidade', 'Valor Unitário', 'Saldo'],
+            numeric_cols_format_as_float=['Quantidade', 'Valor Unitário', 'Saldo', '%'],
           )
         )
       
