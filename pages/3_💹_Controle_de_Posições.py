@@ -140,7 +140,7 @@ if df is not None:
           columns=['Saldo'],
           names=['Saldo'],
           chart_type='donut',
-          title="Alocação Atual",
+          title="",
           y_axis_title="%",
         )
         hct.streamlit_highcharts(chart_portfolio_composition)
@@ -159,7 +159,7 @@ if df is not None:
             columns=['Target'],
             names=['Target'],
             chart_type='donut',
-            title="Alocação Alvo",
+            title="",
             y_axis_title="%",
           )
           hct.streamlit_highcharts(chart_portfolio_composition_target)
