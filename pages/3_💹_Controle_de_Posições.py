@@ -128,6 +128,7 @@ if df is not None:
       else:
         st.warning("Política de Investimentos não cadastrada")
 
+      st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
       row_1 = st.columns(2)
       with row_1[0]:
         # Composição do Portfolio
