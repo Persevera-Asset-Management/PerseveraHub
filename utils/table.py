@@ -3,6 +3,9 @@ from pandas.io.formats.style import Styler
 from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 from dateutil.relativedelta import relativedelta
 import numpy as np
+import io
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 def style_table(
     df: pd.DataFrame,
@@ -208,6 +211,7 @@ def style_table(
     styled_obj = styled_obj.set_table_styles(alignment_styles, overwrite=False)
 
     return styled_obj
+
 
 def get_performance_table(series):
     df = series.ffill()

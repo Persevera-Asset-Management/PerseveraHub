@@ -1498,11 +1498,11 @@ CHARTS_ECONOMIA = {
     },
     "br_international_reserves_gold_total": {
         "chart_config": {
-            "columns": "br_international_reserves_gold_total",
-            "names": "Reservas Internacionais em Ouro",
-            "chart_type": "line",
+            "columns": ["br_international_reserves_gold_total", "br_international_reserves_gold_volume"],
+            "names": ["Reservas Internacionais em Ouro (US$ milhões)", "Volume (oz)"],
+            "chart_type": "dual_axis_line",
             "title": "Reservas Internacionais - Ouro (inclusive depósito de ouro)",
-            "y_axis_title": "US$ milhões",
+            "y_axis_title": ("US$ milhões", "Volume (oz)"),
         },
         "width": 6,
         "context": "Brasil",
