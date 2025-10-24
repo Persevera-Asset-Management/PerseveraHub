@@ -115,13 +115,13 @@ with st.sidebar:
     if days_since_previous_friday == 0:  # Se hoje for sexta, pega a anterior
         days_since_previous_friday = 7
     start_of_week = today - timedelta(days=days_since_previous_friday)
-    start_of_month = today.replace(day=1)
+    start_of_month = today.replace(day=1) - relativedelta(days=1)
     start_of_year = date(today.year - 1, 12, 31)
 
-    last_date = st.date_input("Data Final", min_value=datetime(1990, 1, 1), value=today, format="DD/MM/YYYY")
-    wtd_date = st.date_input("Início da Semana (WTD)", min_value=datetime(1990, 1, 1), value=start_of_week, format="DD/MM/YYYY")
-    mtd_date = st.date_input("Início do Mês (MTD)", min_value=datetime(1990, 1, 1), value=start_of_month, format="DD/MM/YYYY")
-    ytd_date = st.date_input("Início do Ano (YTD)", min_value=datetime(1990, 1, 1), value=start_of_year, format="DD/MM/YYYY")
+    last_date = st.date_input("Data Final", min_value=datetime(1990, 1, 1), max_value=today, value=today, format="DD/MM/YYYY")
+    wtd_date = st.date_input("Início da Semana (WTD)", min_value=datetime(1990, 1, 1), max_value=today, value=start_of_week, format="DD/MM/YYYY")
+    mtd_date = st.date_input("Início do Mês (MTD)", min_value=datetime(1990, 1, 1), max_value=today, value=start_of_month, format="DD/MM/YYYY")
+    ytd_date = st.date_input("Início do Ano (YTD)", min_value=datetime(1990, 1, 1), max_value=today, value=start_of_year, format="DD/MM/YYYY")
 
     last_date_str = last_date.strftime('%Y-%m-%d')
     wtd_date_str = wtd_date.strftime('%Y-%m-%d')
@@ -144,7 +144,7 @@ with st.spinner("Carregando dados...", show_time=True):
 with st.spinner("Calculando variações...", show_time=True):
     df = pd.DataFrame()
     df['Variação\nna semana'] = data.loc[last_date_str] / data.loc[wtd_date_str] - 1
-    df[f'Variação\nem {mtd_date.strftime("%b/%Y")}'] = data.loc[last_date_str] / data.loc[mtd_date_str] - 1
+    df[f'Variação\nem {(mtd_date + relativedelta(days=1)).strftime("%b/%Y")}'] = data.loc[last_date_str] / data.loc[mtd_date_str] - 1
     df[f'Variação\nem {(ytd_date + relativedelta(years=1)).strftime("%Y")}'] = data.loc[last_date_str] / data.loc[ytd_date_str] - 1
     df = df.mul(100)
     
