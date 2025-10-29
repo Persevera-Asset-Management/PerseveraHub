@@ -28,7 +28,7 @@ def load_positions():
       table_name="Inv-Asset Allocation/Posição",
       include_fibery_fields=False
     )
-    df = df[["creation-date", "Name", "Portfolio", "Classificação do Conjunto", "Ativo Nome Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+    df = df[["creation-date", "Name", "Portfolio", "Classificação do Conjunto", "Nome Emissor", "Nome Devedor", "Ativo Nome Completo", "Quantidade", "Valor Unitário", "Saldo"]]
     return df
 
 @st.cache_data
@@ -153,7 +153,7 @@ if df is not None:
         if selected_carteira in df_target_allocations.index:
           df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
           df_target_allocations_current = df_target_allocations_current.loc[df_target_allocations_current.index.get_level_values(level=0).max()]
-          df_target_allocations_current = df_target_allocations_current.mul(100)
+          df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
           df_target_allocations_current = df_target_allocations_current.reindex(correct_order)
 
           chart_portfolio_composition_target = create_chart(
@@ -167,6 +167,27 @@ if df is not None:
           hct.streamlit_highcharts(chart_portfolio_composition_target)
         else:
           st.warning("Alocação alvo não cadastrada")      
+
+      row_2 = st.columns(2)
+      with row_2[0]:
+        # Concentração de Emissores
+        st.markdown("##### Distribuição de Emissores")
+
+        df_emissor = df.copy()
+        df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
+        df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='creation-date', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
+        df_portfolio_positions_emissores_current = df_portfolio_positions_emissores.loc[df_portfolio_positions_emissores.index.get_level_values(level=0).max()]
+
+        chart_portfolio_composition = create_chart(
+          data=df_portfolio_positions_emissores_current,
+          columns=['Saldo'],
+          names=['Emissor'],
+          chart_type='donut',
+          title="",
+          y_axis_title="%",
+        )
+        hct.streamlit_highcharts(chart_portfolio_composition)
+
 
     except Exception as e:
       st.error(f"Ocorreu um erro ao carregar os dados: {e}")
