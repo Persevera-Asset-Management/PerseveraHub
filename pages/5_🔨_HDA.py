@@ -128,7 +128,6 @@ with st.sidebar:
     mtd_date_str = mtd_date.strftime('%Y-%m-%d')
     ytd_date_str = ytd_date.strftime('%Y-%m-%d')
 
-@st.cache_data(ttl=3600)
 def load_data(codes, start_date, field='close'):
     try:
         return get_series(codes, start_date=start_date, field=field)
