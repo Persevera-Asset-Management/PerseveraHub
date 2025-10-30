@@ -186,6 +186,7 @@ def load_benchmark_data(fund_name, _nav_index):
                      'Phoenix': ('br_cdi_index',),
                      'Prospera': ('br_cdi_index',),
                      'Compass': ('br_cdi_index',),
+                     'Marujo': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
                      'Nemesis': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
                      'Proteus': ('br_cdi_index', 'br_ibovespa', 'br_smll')}
 
@@ -200,8 +201,8 @@ def load_benchmark_data(fund_name, _nav_index):
     return df_benchmark
 
 with st.sidebar:
-    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus']
-    selected_fund_name = st.selectbox("Selecione o fundo:", fund_names_list, index=5)
+    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus', 'Marujo']
+    selected_fund_name = st.selectbox("Selecione o grupo de fundos:", fund_names_list, index=5)
 
 st.header(selected_fund_name)
 
@@ -466,7 +467,7 @@ if not stats_data_filtered.empty:
             st.info(f"Coluna de Patrimônio Líquido para {persevera_fund_col_name} não encontrada nos dados de PL total.")
 
     with tabs[3]:   # Correlação (Janela de 21 dias úteis)
-        if selected_fund_name in ["Nemesis", "Proteus"]:
+        if selected_fund_name in ["Nemesis", "Proteus", "Marujo"]:
             correlation_data = stats_data_filtered.iloc[:,0].pct_change().rolling(window=21).corr(stats_data_filtered.iloc[:,1:].pct_change())
             if not correlation_data.empty:
                 correlation_chart_options = create_chart(
