@@ -177,6 +177,7 @@ if df is not None:
         df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
         df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='creation-date', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
         df_portfolio_positions_emissores_current = df_portfolio_positions_emissores.loc[df_portfolio_positions_emissores.index.get_level_values(level=0).max()]
+        df_portfolio_positions_emissores_current = df_portfolio_positions_emissores_current.sort_values(by='Saldo', ascending=False)
 
         chart_portfolio_composition = create_chart(
           data=df_portfolio_positions_emissores_current,
