@@ -74,12 +74,14 @@ if nav_data is not None and indicators is not None and not nav_data.empty and no
         )
         # df.ffill(inplace=True)
         performance_table = get_performance_table(df)
-        performance_table.set_index('index', inplace=True)
+        performance_table.drop(columns=['24m', '36m'], inplace=True)
+        performance_table = performance_table.rename(columns={'index': 'Carteira'})
 
         st.dataframe(style_table(
-            performance_table.drop(columns=['24m', '36m']),
+            performance_table,
             numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m']),
-        hide_index=False)
+            highlight_row_if_value_equals='CDI',
+        hide_index=True)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
