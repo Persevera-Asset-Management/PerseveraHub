@@ -79,8 +79,10 @@ if nav_data is not None and indicators is not None and not nav_data.empty and no
 
         st.dataframe(style_table(
             performance_table,
-            numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m']),
-            highlight_row_if_value_equals='CDI',
+            numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m'],
+            highlight_row_by_column='Carteira',
+            highlight_row_if_value_equals='CDI'
+            ),
         hide_index=True)
 
     except Exception as e:
