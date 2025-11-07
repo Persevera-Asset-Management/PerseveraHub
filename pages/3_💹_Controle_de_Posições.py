@@ -32,6 +32,14 @@ def load_positions():
     return df
 
 @st.cache_data
+def load_accounts():
+    df = read_fibery(table_name="Ops-InstFin/Conta", include_fibery_fields=False)
+    df = df[["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]]
+    df = df.dropna(subset=["Portfolio"])
+    df["Nome Completo"] = df["Titularidade Principal"].str.split("|").str[1].str.strip()
+    return df
+
+@st.cache_data
 def load_target_allocations():
   df = read_fibery(
     table_name="Ops-Portfolios/Parâmetro de PctPL Polinv",
@@ -63,14 +71,19 @@ if 'df' not in st.session_state:
 if 'df_target_allocations' not in st.session_state:
     st.session_state.df_target_allocations = None
 
+if 'df_accounts' not in st.session_state:
+    st.session_state.df_accounts = None
+
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
       st.session_state.df_positions = load_positions()
       st.session_state.df_target_allocations = load_target_allocations()
+      st.session_state.df_accounts = load_accounts()
       st.session_state.df = st.session_state.df_positions[st.session_state.df_positions['Portfolio'] == selected_carteira]
 
 df = st.session_state.df
 df_target_allocations = st.session_state.df_target_allocations
+df_accounts = st.session_state.df_accounts
 
 correct_order = [
   'Caixa e Equivalentes',
@@ -90,6 +103,14 @@ correct_order = [
 if df is not None:
     try:
       st.subheader(selected_carteira)
+
+      # Informações Gerais
+      st.code(f"""
+      {df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Nome Completo'].values[0]} ({selected_carteira})
+
+      Conta(s): {', '.join(df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Nr Conta'].values)}
+      Custodiante(s): {', '.join(df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Custodiante'].values)}
+      """, language='markdown')
       
       # Composição Completa
       df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
