@@ -45,8 +45,8 @@ def load_target_allocations():
     table_name="Ops-Portfolios/Parâmetro de PctPL Polinv",
     include_fibery_fields=False
   )
-  df["Portfolio"] = np.where(df["Política de Investimento"].isna(), df["Alocação Target"].str.split("-").str[0], df["Política de Investimento"].str.split("-").str[0])
-  df["Tipo Documento"] = np.where(df["Política de Investimento"].isna(), df["Alocação Target"].str.split("-").str[1], df["Política de Investimento"].str.split("-").str[1])
+  df["Portfolio"] = np.where(df["Política de Investimento"].isna(), df["Alocação Target"].str.split("_").str[0], df["Política de Investimento"].str.split("_").str[0])
+  df["Tipo Documento"] = np.where(df["Política de Investimento"].isna(), df["Alocação Target"].str.split("_").str[1], df["Política de Investimento"].str.split("_").str[1])
   df["Data Documento"] = np.where(df["Política de Investimento"].isna(), pd.to_datetime(df["Alocação Target"].str[-10:]), pd.to_datetime(df["Política de Investimento"].str[-10:]))
   df = df[["Portfolio", "Tipo Documento", "Data Documento", "Name", "PL Min", "PL Max", "Target"]]
 
@@ -62,8 +62,8 @@ def load_target_allocations():
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteira = st.selectbox("Carteira selecionada", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
-    btn_run = st.button("Executar")
+    selected_carteira = st.selectbox("Carteira selecionada", options=[""] + sorted(CODIGOS_CARTEIRAS_ADM.keys()))
+    # btn_run = st.button("Executar")
 
 if 'df' not in st.session_state:
     st.session_state.df = None
@@ -74,16 +74,12 @@ if 'df_target_allocations' not in st.session_state:
 if 'df_accounts' not in st.session_state:
     st.session_state.df_accounts = None
 
-if btn_run:
+def load_data():
     with st.spinner("Carregando dados...", show_time=True):
       st.session_state.df_positions = load_positions()
       st.session_state.df_target_allocations = load_target_allocations()
       st.session_state.df_accounts = load_accounts()
       st.session_state.df = st.session_state.df_positions[st.session_state.df_positions['Portfolio'] == selected_carteira]
-
-df = st.session_state.df
-df_target_allocations = st.session_state.df_target_allocations
-df_accounts = st.session_state.df_accounts
 
 correct_order = [
   'Caixa e Equivalentes',
@@ -100,116 +96,122 @@ correct_order = [
   'Commodities',
 ]
 
-if df is not None:
-    try:
-      st.subheader(selected_carteira)
+if selected_carteira is not "":
+  load_data()
 
-      # Informações Gerais
-      st.code(f"""
-      {df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Nome Completo'].values[0]} ({selected_carteira})
+  df = st.session_state.df
+  df_target_allocations = st.session_state.df_target_allocations
+  df_accounts = st.session_state.df_accounts
 
-      Conta(s): {', '.join(df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Nr Conta'].values)}
-      Custodiante(s): {', '.join(df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Custodiante'].values)}
-      """, language='markdown')
-      
-      # Composição Completa
-      df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
-        **{
-          'Quantidade': ('Quantidade', 'sum'),
-          'Valor Unitário': ('Valor Unitário', 'mean'),
-          'Saldo': ('Saldo', 'sum')
-        }
+  try:
+    st.subheader(selected_carteira)
+
+    # Informações Gerais
+    st.code(f"""
+    {df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Nome Completo'].values[0]} ({selected_carteira})
+
+    Conta(s): {', '.join(df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Nr Conta'].values)}
+    Custodiante(s): {', '.join(df_accounts.loc[df_accounts['Portfolio'] == selected_carteira, 'Custodiante'].values)}
+    """, language='markdown')
+    
+    # Composição Completa
+    df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
+      **{
+        'Quantidade': ('Quantidade', 'sum'),
+        'Valor Unitário': ('Valor Unitário', 'mean'),
+        'Saldo': ('Saldo', 'sum')
+      }
+    )
+
+    df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()]
+    df_portfolio_positions_current['%'] = df_portfolio_positions_current['Saldo'] / df_portfolio_positions_current['Saldo'].sum() * 100
+
+    with st.expander("Composição Completa", expanded=False):
+      st.dataframe(
+        style_table(
+          df_portfolio_positions_current,
+          numeric_cols_format_as_float=['Quantidade', 'Valor Unitário', 'Saldo', '%'],
+        )
       )
+    
+    # Política de Investimentos
+    if selected_carteira in df_target_allocations.index:
+      df_policy_investments_current = df_target_allocations.loc[selected_carteira].dropna(subset=['PL Min', 'PL Max'])
+      df_policy_investments_current = df_policy_investments_current.loc[df_policy_investments_current.index.get_level_values(level=0).max()]
+      df_policy_investments_current = df_policy_investments_current.mul(100)
+      df_policy_investments_current = df_policy_investments_current.reindex(correct_order)
 
-      df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()]
-      df_portfolio_positions_current['%'] = df_portfolio_positions_current['Saldo'] / df_portfolio_positions_current['Saldo'].sum() * 100
-  
-      with st.expander("Composição Completa", expanded=False):
+      with st.expander("Política de Investimentos", expanded=False):
         st.dataframe(
           style_table(
-            df_portfolio_positions_current,
-            numeric_cols_format_as_float=['Quantidade', 'Valor Unitário', 'Saldo', '%'],
+            df_policy_investments_current.drop(columns='Target'),
+            percent_cols=['PL Min', 'PL Max', 'Target'],
           )
         )
-      
-      # Política de Investimentos
+    else:
+      st.warning("Política de Investimentos não cadastrada")
+
+    st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
+    row_1 = st.columns(2)
+    with row_1[0]:
+      # Composição do Portfolio
+      st.markdown("##### Alocação Atual")
+      df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
+      df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
+
+      chart_portfolio_composition = create_chart(
+        data=df_portfolio_composition_current,
+        columns=['Saldo'],
+        names=['Saldo'],
+        chart_type='donut',
+        title="",
+        y_axis_title="%",
+      )
+      hct.streamlit_highcharts(chart_portfolio_composition)
+
+    with row_1[1]:
+      st.markdown("##### Alocação Alvo")
+
       if selected_carteira in df_target_allocations.index:
-        df_policy_investments_current = df_target_allocations.loc[selected_carteira].dropna(subset=['PL Min', 'PL Max'])
-        df_policy_investments_current = df_policy_investments_current.loc[df_policy_investments_current.index.get_level_values(level=0).max()]
-        df_policy_investments_current = df_policy_investments_current.mul(100)
-        df_policy_investments_current = df_policy_investments_current.reindex(correct_order)
+        df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
+        df_target_allocations_current = df_target_allocations_current.loc[df_target_allocations_current.index.get_level_values(level=0).max()]
+        df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
+        df_target_allocations_current = df_target_allocations_current.reindex(correct_order)
 
-        with st.expander("Política de Investimentos", expanded=False):
-          st.dataframe(
-            style_table(
-              df_policy_investments_current.drop(columns='Target'),
-              percent_cols=['PL Min', 'PL Max', 'Target'],
-            )
-          )
+        chart_portfolio_composition_target = create_chart(
+          data=df_target_allocations_current,
+          columns=['Target'],
+          names=['Target'],
+          chart_type='donut',
+          title="",
+          y_axis_title="%",
+        )
+        hct.streamlit_highcharts(chart_portfolio_composition_target)
       else:
-        st.warning("Política de Investimentos não cadastrada")
+        st.warning("Alocação alvo não cadastrada")      
 
-      st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
-      row_1 = st.columns(2)
-      with row_1[0]:
-        # Composição do Portfolio
-        st.markdown("##### Alocação Atual")
-        df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
-        df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
-        df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
+    row_2 = st.columns(2)
+    with row_2[0]:
+      # Concentração de Emissores
+      st.markdown("##### Distribuição de Emissores")
 
-        chart_portfolio_composition = create_chart(
-          data=df_portfolio_composition_current,
-          columns=['Saldo'],
-          names=['Saldo'],
-          chart_type='donut',
-          title="",
-          y_axis_title="%",
-        )
-        hct.streamlit_highcharts(chart_portfolio_composition)
+      df_emissor = df.copy()
+      df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
+      df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='creation-date', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_positions_emissores_current = df_portfolio_positions_emissores.loc[df_portfolio_positions_emissores.index.get_level_values(level=0).max()]
+      df_portfolio_positions_emissores_current = df_portfolio_positions_emissores_current.sort_values(by='Saldo', ascending=False)
 
-      with row_1[1]:
-        st.markdown("##### Alocação Alvo")
-
-        if selected_carteira in df_target_allocations.index:
-          df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
-          df_target_allocations_current = df_target_allocations_current.loc[df_target_allocations_current.index.get_level_values(level=0).max()]
-          df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
-          df_target_allocations_current = df_target_allocations_current.reindex(correct_order)
-
-          chart_portfolio_composition_target = create_chart(
-            data=df_target_allocations_current,
-            columns=['Target'],
-            names=['Target'],
-            chart_type='donut',
-            title="",
-            y_axis_title="%",
-          )
-          hct.streamlit_highcharts(chart_portfolio_composition_target)
-        else:
-          st.warning("Alocação alvo não cadastrada")      
-
-      row_2 = st.columns(2)
-      with row_2[0]:
-        # Concentração de Emissores
-        st.markdown("##### Distribuição de Emissores")
-
-        df_emissor = df.copy()
-        df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
-        df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='creation-date', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
-        df_portfolio_positions_emissores_current = df_portfolio_positions_emissores.loc[df_portfolio_positions_emissores.index.get_level_values(level=0).max()]
-        df_portfolio_positions_emissores_current = df_portfolio_positions_emissores_current.sort_values(by='Saldo', ascending=False)
-
-        chart_portfolio_composition = create_chart(
-          data=df_portfolio_positions_emissores_current,
-          columns=['Saldo'],
-          names=['Emissor'],
-          chart_type='donut',
-          title="",
-          y_axis_title="%",
-        )
-        hct.streamlit_highcharts(chart_portfolio_composition)
+      chart_portfolio_composition = create_chart(
+        data=df_portfolio_positions_emissores_current,
+        columns=['Saldo'],
+        names=['Emissor'],
+        chart_type='donut',
+        title="",
+        y_axis_title="%",
+      )
+      hct.streamlit_highcharts(chart_portfolio_composition)
 
 
-    except Exception as e:
-      st.error(f"Ocorreu um erro ao carregar os dados: {e}")
+  except Exception as e:
+    st.error(f"Ocorreu um erro ao carregar os dados: {e}")
