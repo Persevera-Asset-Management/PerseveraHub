@@ -28,7 +28,7 @@ def load_positions():
       table_name="Inv-Asset Allocation/Posição",
       include_fibery_fields=False
     )
-    df = df[["creation-date", "Name", "Portfolio", "Classificação do Conjunto", "Nome Emissor", "Nome Devedor", "Ativo Nome Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+    df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Emissor", "Nome Devedor", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
     return df
 
 @st.cache_data
@@ -50,7 +50,7 @@ def load_target_allocations():
   df["Data Documento"] = np.where(df["Política de Investimento"].isna(), pd.to_datetime(df["Alocação Target"].str[-10:]), pd.to_datetime(df["Política de Investimento"].str[-10:]))
   df = df[["Portfolio", "Tipo Documento", "Data Documento", "Name", "PL Min", "PL Max", "Target"]]
 
-  df = df.groupby(['Portfolio', pd.Grouper(key='Data Documento', freq='D'), 'Name']).agg(
+  df = df.groupby(['Portfolio', pd.Grouper(key='Data Documento', freq='D'), 'Nome Ativo']).agg(
     **{
       'PL Min': ('PL Min', 'mean'),
       'PL Max': ('PL Max', 'mean'),
@@ -115,7 +115,7 @@ if selected_carteira is not "":
     """, language='markdown')
     
     # Composição Completa
-    df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
+    df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
       **{
         'Quantidade': ('Quantidade', 'sum'),
         'Valor Unitário': ('Valor Unitário', 'mean'),

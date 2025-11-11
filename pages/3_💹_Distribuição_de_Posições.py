@@ -28,7 +28,7 @@ def load_positions():
       table_name="Inv-Asset Allocation/Posição",
       include_fibery_fields=False
     )
-    df = df[["creation-date", "Name", "Portfolio", "Classificação do Conjunto", "Ativo Nome Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+    df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
     return df
 
 if 'df' not in st.session_state:
