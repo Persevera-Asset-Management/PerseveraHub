@@ -24,20 +24,20 @@ st.title("Controle de Posições")
 
 @st.cache_data
 def load_positions():
-    df = read_fibery(
-      table_name="Inv-Asset Allocation/Posição",
-      include_fibery_fields=False
-    )
-    df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Emissor", "Nome Devedor", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
-    return df
+  df = read_fibery(
+    table_name="Inv-Asset Allocation/Posição",
+    include_fibery_fields=False
+  )
+  df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Emissor", "Nome Devedor", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+  return df
 
 @st.cache_data
 def load_accounts():
-    df = read_fibery(table_name="Ops-InstFin/Conta", include_fibery_fields=False)
-    df = df[["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]]
-    df = df.dropna(subset=["Portfolio"])
-    df["Nome Completo"] = df["Titularidade Principal"].str.split("|").str[1].str.strip()
-    return df
+  df = read_fibery(table_name="Ops-InstFin/Conta", include_fibery_fields=False)
+  df = df[["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]]
+  df = df.dropna(subset=["Portfolio"])
+  df["Nome Completo"] = df["Titularidade Principal"].str.split("|").str[1].str.strip()
+  return df
 
 @st.cache_data
 def load_target_allocations():
@@ -50,7 +50,7 @@ def load_target_allocations():
   df["Data Documento"] = np.where(df["Política de Investimento"].isna(), pd.to_datetime(df["Alocação Target"].str[-10:]), pd.to_datetime(df["Política de Investimento"].str[-10:]))
   df = df[["Portfolio", "Tipo Documento", "Data Documento", "Name", "PL Min", "PL Max", "Target"]]
 
-  df = df.groupby(['Portfolio', pd.Grouper(key='Data Documento', freq='D'), 'Nome Ativo']).agg(
+  df = df.groupby(['Portfolio', pd.Grouper(key='Data Documento', freq='D'), 'Name']).agg(
     **{
       'PL Min': ('PL Min', 'mean'),
       'PL Max': ('PL Max', 'mean'),
@@ -96,7 +96,7 @@ correct_order = [
   'Commodities',
 ]
 
-if selected_carteira is not "":
+if selected_carteira != "":
   load_data()
 
   df = st.session_state.df

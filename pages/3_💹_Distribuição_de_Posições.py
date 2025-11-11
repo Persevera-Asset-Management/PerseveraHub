@@ -24,12 +24,12 @@ st.title("Distribuição de Posições")
 
 @st.cache_data
 def load_positions():
-    df = read_fibery(
-      table_name="Inv-Asset Allocation/Posição",
-      include_fibery_fields=False
-    )
-    df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
-    return df
+  df = read_fibery(
+    table_name="Inv-Asset Allocation/Posição",
+    include_fibery_fields=False
+  )
+  df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+  return df
 
 if 'df' not in st.session_state:
     st.session_state.df = None
@@ -60,7 +60,7 @@ with st.sidebar:
 if df is not None:
   try:
     # Composição Completa
-    df_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Name', 'Ativo Nome Completo', 'Classificação do Conjunto']).agg(
+    df_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
       **{
         'Quantidade': ('Quantidade', 'sum'),
         'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -90,7 +90,7 @@ if df is not None:
     # Posições por Ativo e Classe
     for asset_class in asset_classes:
       df_asset_class_positions = df_positions_current[df_positions_current['Classificação do Conjunto'] == asset_class]
-      df_asset_class_positions = df_asset_class_positions.pivot(index=['Name', 'Ativo Nome Completo'], columns='Portfolio', values='Saldo')
+      df_asset_class_positions = df_asset_class_positions.pivot(index=['Nome Ativo', 'Nome Ativo Completo'], columns='Portfolio', values='Saldo')
 
       if selected_visualization == 'Financeiro (R$)':
         df_asset_class_positions_visualization = df_asset_class_positions
