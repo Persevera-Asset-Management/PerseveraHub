@@ -28,7 +28,7 @@ def load_positions():
     table_name="Inv-Asset Allocation/Posição",
     include_fibery_fields=False
   )
-  df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Emissor", "Nome Devedor", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+  df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Classificação Instrumento", "Nome Emissor", "Nome Devedor", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
   return df
 
 @st.cache_data
@@ -123,7 +123,7 @@ if selected_carteira != "":
       }
     )
 
-    df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()]
+    df_portfolio_positions_current = df_portfolio_positions.loc[df_portfolio_positions.index.get_level_values(level=0).max()].copy()
     df_portfolio_positions_current['%'] = df_portfolio_positions_current['Saldo'] / df_portfolio_positions_current['Saldo'].sum() * 100
 
     with st.expander("Composição Completa", expanded=False):
@@ -202,7 +202,7 @@ if selected_carteira != "":
       df_portfolio_positions_emissores_current = df_portfolio_positions_emissores.loc[df_portfolio_positions_emissores.index.get_level_values(level=0).max()]
       df_portfolio_positions_emissores_current = df_portfolio_positions_emissores_current.sort_values(by='Saldo', ascending=False)
 
-      chart_portfolio_composition = create_chart(
+      chart_portfolio_positions_emissores = create_chart(
         data=df_portfolio_positions_emissores_current,
         columns=['Saldo'],
         names=['Emissor'],
@@ -210,8 +210,27 @@ if selected_carteira != "":
         title="",
         y_axis_title="%",
       )
-      hct.streamlit_highcharts(chart_portfolio_composition)
+      hct.streamlit_highcharts(chart_portfolio_positions_emissores)
 
+    with row_2[1]:
+      # Concentração de Emissores
+      st.markdown("##### Distribuição de Instrumentos")
+
+      df_instrument = df.copy()
+      df_instrument['Instrumento'] = df_instrument['Classificação Instrumento']
+      df_portfolio_positions_instruments = df_instrument.groupby([pd.Grouper(key='creation-date', freq='D'), 'Instrumento']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_positions_instruments_current = df_portfolio_positions_instruments.loc[df_portfolio_positions_instruments.index.get_level_values(level=0).max()]
+      df_portfolio_positions_instruments_current = df_portfolio_positions_instruments_current.sort_values(by='Saldo', ascending=False)
+
+      chart_portfolio_positions_instruments = create_chart(
+        data=df_portfolio_positions_instruments_current,
+        columns=['Saldo'],
+        names=['Instrumento'],
+        chart_type='donut',
+        title="",
+        y_axis_title="%",
+      )
+      hct.streamlit_highcharts(chart_portfolio_positions_instruments)
 
   except Exception as e:
     st.error(f"Ocorreu um erro ao carregar os dados: {e}")
