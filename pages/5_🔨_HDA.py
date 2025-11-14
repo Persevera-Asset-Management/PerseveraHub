@@ -118,10 +118,10 @@ with st.sidebar:
     start_of_month = today.replace(day=1) - relativedelta(days=1)
     start_of_year = date(today.year - 1, 12, 31)
 
-    last_date = st.date_input("Data Final", min_value=datetime(1990, 1, 1), max_value=today, value=today, format="DD/MM/YYYY")
-    wtd_date = st.date_input("Início da Semana (WTD)", min_value=datetime(1990, 1, 1), max_value=today, value=start_of_week, format="DD/MM/YYYY")
-    mtd_date = st.date_input("Início do Mês (MTD)", min_value=datetime(1990, 1, 1), max_value=today, value=start_of_month, format="DD/MM/YYYY")
-    ytd_date = st.date_input("Início do Ano (YTD)", min_value=datetime(1990, 1, 1), max_value=today, value=start_of_year, format="DD/MM/YYYY")
+    last_date = st.date_input("Data Final", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=today, format="DD/MM/YYYY")
+    wtd_date = st.date_input("Início da Semana (WTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_week, format="DD/MM/YYYY")
+    mtd_date = st.date_input("Início do Mês (MTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_month, format="DD/MM/YYYY")
+    ytd_date = st.date_input("Início do Ano (YTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_year, format="DD/MM/YYYY")
 
     last_date_str = last_date.strftime('%Y-%m-%d')
     wtd_date_str = wtd_date.strftime('%Y-%m-%d')
