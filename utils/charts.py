@@ -29,7 +29,9 @@ def create_highcharts_options(
     point_name_column: Optional[str] = None,
     tooltip_point_format: Optional[str] = None,
     exporting: Optional[Dict[str, Any]] = None,
-    legend_layout: Optional[Literal['horizontal', 'vertical']] = None
+    legend_layout: Optional[Literal['horizontal', 'vertical']] = None,
+    show_legend: bool = True,
+    show_point_name_labels: bool = False
 ) -> Dict[str, Any]:
     """
     Generate Highcharts options for various chart types.
@@ -97,6 +99,10 @@ def create_highcharts_options(
         Configuration for the exporting module (e.g., {"enabled": True}).
     legend_layout : {'horizontal', 'vertical'}, optional
         Layout of the legend. If None, uses Highcharts default for the selected chart type.
+    show_point_name_labels : bool, optional
+        When True and `point_name_column` is provided, show each point's `name` inside the chart.
+    show_legend : bool, optional
+        Whether to display the legend. Defaults to True.
         
     Returns:
     --------
@@ -461,7 +467,7 @@ def create_highcharts_options(
             "text": title
         },
         "legend": {
-            "enabled": True,
+            "enabled": show_legend,
         },
         "credits": {
             "enabled": False
@@ -480,6 +486,18 @@ def create_highcharts_options(
         chart_options["legend"]["layout"] = 'horizontal'
         chart_options["legend"]["align"] = 'center'
         chart_options["legend"]["verticalAlign"] = 'bottom'
+
+    if show_point_name_labels and point_name_column:
+        data_labels_config = {
+            "enabled": True,
+            "format": "{point.name}"
+        }
+        # Base config for all series types
+        chart_options["plotOptions"]["series"]["dataLabels"] = data_labels_config
+        # Also attach specifically for scatter charts, which is where we currently use this
+        if "scatter" not in chart_options["plotOptions"]:
+            chart_options["plotOptions"]["scatter"] = {}
+        chart_options["plotOptions"]["scatter"]["dataLabels"] = data_labels_config
     
     if color is None:
         chart_options['colors'] = DEFAULT_CHART_COLORS
@@ -576,15 +594,31 @@ def create_highcharts_options(
                 else: # Linear axis
                     _x_val = _row[x_column_effective]
                 
+                point_name_val = None
+                if point_name_column and point_name_column in _row and pd.notna(_row[point_name_column]):
+                    point_name_val = str(_row[point_name_column])
+
                 if pd.notna(_row[y_col_for_series]):
-                    if chart_type == 'scatter' and point_name_column and point_name_column in _row:
-                        _s_data.append({
-                            "x": float(_x_val) if isinstance(_x_val, (int, float, str)) and str(_x_val).replace('.', '', 1).isdigit() else _x_val, # ensure numeric for scatter x
-                            "y": float(_row[y_col_for_series]),
-                            "name": str(_row[point_name_column])
-                        })
+                    y_value = float(_row[y_col_for_series])
+                    if chart_type == 'scatter':
+                        scatter_x = float(_x_val) if isinstance(_x_val, (int, float, str)) and str(_x_val).replace('.', '', 1).isdigit() else _x_val
+                        point_entry = {
+                            "x": scatter_x,
+                            "y": y_value
+                        }
+                        if point_name_val is not None:
+                            point_entry["name"] = point_name_val
+                        _s_data.append(point_entry)
                     else:
-                        _s_data.append([_x_val, float(_row[y_col_for_series])])
+                        if point_name_val is not None:
+                            point_entry = {
+                                "x": _x_val,
+                                "y": y_value,
+                                "name": point_name_val
+                            }
+                            _s_data.append(point_entry)
+                        else:
+                            _s_data.append([_x_val, y_value])
             return _s_data
 
         if is_dual_axis:

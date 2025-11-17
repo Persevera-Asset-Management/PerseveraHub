@@ -97,6 +97,9 @@ with cols[0]:
         title="Retorno vs Volatilidade",
         y_axis_title="Returns (%)",
         x_axis_title="Volatility (%)",
+        show_legend=False,
+        zoom_type='xy',
+        show_point_name_labels=True,
         tooltip_point_format=(
             '<b>{point.name}</b><br/>'
             'Risco: {point.x:.2f}%<br/>'
@@ -115,10 +118,13 @@ with cols[1]:
         title="Assimetria vs Curtose",
         y_axis_title="Assimetria",
         x_axis_title="Curtose",
+        show_legend=False,
+        zoom_type='xy',
+        show_point_name_labels=True,
         tooltip_point_format=(
             '<b>{point.name}</b><br/>'
-            'Assimetria: {point.x:.2f}<br/>'
-            'Curtose: {point.y:.2f}'
+            'Curtose: {point.x:.2f}<br/>'
+            'Assimetria: {point.y:.2f}'
         ),
     )
     hct.streamlit_highcharts(chart_stats)

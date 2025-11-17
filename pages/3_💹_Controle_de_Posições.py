@@ -155,7 +155,7 @@ if selected_carteira != "":
     row_1 = st.columns(2)
     with row_1[0]:
       # Composição do Portfolio
-      st.markdown("##### Alocação Atual")
+      # st.markdown("##### Alocação Atual")
       df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
       df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
       df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
@@ -165,13 +165,13 @@ if selected_carteira != "":
         columns=['Saldo'],
         names=['Saldo'],
         chart_type='donut',
-        title="",
+        title="Alocação Atual",
         y_axis_title="%",
       )
       hct.streamlit_highcharts(chart_portfolio_composition)
 
     with row_1[1]:
-      st.markdown("##### Alocação Alvo")
+      # st.markdown("##### Alocação Alvo")
 
       if selected_carteira in df_target_allocations.index:
         df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
@@ -184,7 +184,7 @@ if selected_carteira != "":
           columns=['Target'],
           names=['Target'],
           chart_type='donut',
-          title="",
+          title="Alocação Alvo",
           y_axis_title="%",
         )
         hct.streamlit_highcharts(chart_portfolio_composition_target)
@@ -194,7 +194,7 @@ if selected_carteira != "":
     row_2 = st.columns(2)
     with row_2[0]:
       # Concentração de Emissores
-      st.markdown("##### Distribuição de Emissores")
+      # st.markdown("##### Distribuição de Emissores")
 
       df_emissor = df.copy()
       df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
@@ -207,14 +207,14 @@ if selected_carteira != "":
         columns=['Saldo'],
         names=['Emissor'],
         chart_type='donut',
-        title="",
+        title="Distribuição de Emissores",
         y_axis_title="%",
       )
       hct.streamlit_highcharts(chart_portfolio_positions_emissores)
 
     with row_2[1]:
       # Concentração de Emissores
-      st.markdown("##### Distribuição de Instrumentos")
+      # st.markdown("##### Distribuição de Instrumentos")
 
       df_instrument = df.copy()
       df_instrument['Instrumento'] = df_instrument['Classificação Instrumento']
@@ -227,7 +227,7 @@ if selected_carteira != "":
         columns=['Saldo'],
         names=['Instrumento'],
         chart_type='donut',
-        title="",
+        title="Distribuição de Instrumentos",
         y_axis_title="%",
       )
       hct.streamlit_highcharts(chart_portfolio_positions_instruments)
