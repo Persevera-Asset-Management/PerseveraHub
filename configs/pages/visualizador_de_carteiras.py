@@ -1,6 +1,7 @@
 from persevera_tools.db.fibery import read_fibery
+import streamlit as st
 
-
+st.cache_data()
 def get_carteiras_adm():
     df = read_fibery(
         table_name="Estr-CartAdm/Carteira Administrada",
