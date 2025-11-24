@@ -42,12 +42,10 @@ with st.spinner("Calculando spread CDI+...", show_time=True):
     spread_di = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=True)
 
 with st.spinner("Calculando spread IPCA+...", show_time=True):
-    spread_ipca = calculate_spread("IPCA", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=True)
     spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=True)
 
 if (data.empty or
     spread_di.empty or
-    spread_ipca.empty or
     spread_ipca_incent.empty
 ):
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
@@ -147,69 +145,11 @@ else:
 
     # Tab 3: Spread IPCA
     with tabs[2]:
-        # Não incentivado
-        st.header("IPCA+")
-
-        row_1 = st.columns(2)
-        with row_1[0]:
-            chart_spread_ipca = create_chart(
-                data=spread_ipca,
-                columns=["median", "mean", "weighted_mean"],
-                names=["Mediana", "Média", "Média Ponderada"],
-                chart_type='line',
-                title="Evolução do Spread IPCA+",
-                y_axis_title="Spread (%)",
-                decimal_precision=3
-            )
-            hct.streamlit_highcharts(chart_spread_ipca)
-
-        with row_1[1]:
-            chart_distribution_ipca = create_chart(
-                data=spread_ipca,
-                columns=['count_yield_0_50bp', 'count_yield_50_75bp', 'count_yield_75_100bp',
-                         'count_yield_100_150bp', 'count_yield_150_250bp',
-                         'count_yield_above_250bp'],
-                names=["0-50bp", "50-75bp", "75-100bp", "100-150bp", "150-250bp", "Acima de 250bp"],
-                chart_type='area',
-                stacking='percent',
-                title="Distribuição do Spread IPCA+ por Intervalo",
-                y_axis_title="Percentual de Ativos (%)",
-                decimal_precision=0
-            )
-            hct.streamlit_highcharts(chart_distribution_ipca)
-    
-        row_2 = st.columns(2)
-        with row_2[0]:
-            chart_average_count_ipca = create_chart(
-                data=spread_ipca,
-                columns=['count_above_mean', 'count_under_mean'],
-                names=["Acima da Média", "Abaixo da Média"],
-                chart_type='area',
-                stacking='percent',
-                title="Distribuição do Spread IPCA+ (Contagem de Ativos)",
-                y_axis_title="Percentual de Ativos (%)",
-                decimal_precision=0,
-            )
-            hct.streamlit_highcharts(chart_average_count_ipca)
-
-        with row_2[1]:
-            chart_average_volume_ipca = create_chart(
-                data=spread_ipca,
-                columns=['volume_above_mean', 'volume_under_mean'],
-                names=["Acima da Média", "Abaixo da Média"],
-                chart_type='area',
-                stacking='percent',
-                title="Distribuição do Spread IPCA+ (Volume Emitido)",
-                y_axis_title="Percentual de Ativos (%)",
-                decimal_precision=0,
-            )
-            hct.streamlit_highcharts(chart_average_volume_ipca)
-
         # Incentivado
         st.header("IPCA+ Incentivado")
 
-        row_3 = st.columns(2)
-        with row_3[0]:
+        row_1 = st.columns(2)
+        with row_1[0]:
             chart_spread_ipca_incent = create_chart(
                 data=spread_ipca_incent,
                 columns=["median", "mean", "weighted_mean"],
@@ -221,7 +161,7 @@ else:
             )
             hct.streamlit_highcharts(chart_spread_ipca_incent)
 
-        with row_3[1]:
+        with row_1[1]:
             chart_distribution_ipca_incent = create_chart(
                 data=spread_ipca_incent,
                 columns=['count_yield_under_neg50bp', 'count_yield_neg50_0bp',
@@ -237,8 +177,8 @@ else:
             )
             hct.streamlit_highcharts(chart_distribution_ipca_incent)
     
-        row_4 = st.columns(2)
-        with row_4[0]:
+        row_2 = st.columns(2)
+        with row_2[0]:
             chart_average_count_ipca_incent = create_chart(
                 data=spread_ipca_incent,
                 columns=['count_above_mean', 'count_under_mean'],
@@ -251,7 +191,7 @@ else:
             )
             hct.streamlit_highcharts(chart_average_count_ipca_incent)
 
-        with row_4[1]:
+        with row_2[1]:
             chart_average_volume_ipca_incent = create_chart(
                 data=spread_ipca_incent,
                 columns=['volume_above_mean', 'volume_under_mean'],
