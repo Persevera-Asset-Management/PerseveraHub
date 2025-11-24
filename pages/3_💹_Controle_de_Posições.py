@@ -34,6 +34,7 @@ def load_positions():
 @st.cache_data
 def load_accounts():
   df = read_fibery(table_name="Ops-InstFin/Conta", include_fibery_fields=False)
+  df = df[df["Status Habilitação"] == "Sob Gestão"]
   df = df[["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]]
   df = df.dropna(subset=["Portfolio"])
   df["Nome Completo"] = df["Titularidade Principal"].str.split("|").str[1].str.strip()
