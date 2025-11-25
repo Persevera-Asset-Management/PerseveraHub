@@ -28,6 +28,8 @@ def create_highcharts_options(
     decimal_precision: int = 2,
     point_name_column: Optional[str] = None,
     tooltip_point_format: Optional[str] = None,
+    vertical_line: Optional[Dict[str, Any]] = None,
+    horizontal_line: Optional[Union[Dict[str, Any], List[Optional[Dict[str, Any]]]]] = None,
     exporting: Optional[Dict[str, Any]] = None,
     legend_layout: Optional[Literal['horizontal', 'vertical']] = None,
     show_legend: bool = True,
@@ -95,6 +97,31 @@ def create_highcharts_options(
         Column to use for individual point names, especially for scatter charts.
     tooltip_point_format : str, optional
         Custom HTML string format for the tooltip's point display.
+    vertical_line : Dict[str, Any], optional
+        Configuração de uma linha vertical no eixo X (apenas para tipos de gráfico que não sejam 'pie' ou 'donut').
+        Estrutura esperada (exemplo):
+            {
+                "value": <valor no eixo X (datetime, número ou categoria)>,
+                "color": "#FF0000",
+                "width": 2,
+                "zIndex": 5,
+                "label": {"text": "Hoje", "rotation": 0, "align": "left"}
+            }
+        Se o eixo X for de datas, o valor será automaticamente convertido para timestamp em milissegundos.
+    horizontal_line : Dict[str, Any] ou List[Dict[str, Any]], opcional
+        Configuração de linha(s) horizontal(is) no eixo Y (apenas para tipos de gráfico que não sejam 'pie' ou 'donut').
+        Uso típico (gráfico de um eixo):
+            {
+                "value": <valor no eixo Y>,
+                "color": "#FF0000",
+                "width": 2,
+                "zIndex": 5,
+                "label": {"text": "Limite", "align": "right"}
+            }
+        Em gráficos de dois eixos, pode ser:
+            - Um único dict (aplicado ao eixo primário, índice 0); ou
+            - Uma lista/tupla com até dois dicts, por exemplo:
+                [conf_eixo_primario, conf_eixo_secundario]
     exporting : Dict[str, Any], optional
         Configuration for the exporting module (e.g., {"enabled": True}).
     legend_layout : {'horizontal', 'vertical'}, optional
@@ -510,6 +537,29 @@ def create_highcharts_options(
                 "text": final_x_axis_title
             }
         }
+
+        # Add optional vertical line on the X axis (only for non-pie/donut charts)
+        if vertical_line is not None and isinstance(vertical_line, dict):
+            # Copy to avoid mutating the original dict passed by the caller
+            vline_conf = vertical_line.copy()
+            v_value = vline_conf.get("value", None)
+
+            # If x-axis is datetime, convert to JS timestamp in milliseconds
+            if v_value is not None and x_axis_type == "datetime":
+                try:
+                    v_ts = pd.Timestamp(v_value)
+                    vline_conf["value"] = int(v_ts.timestamp() * 1000)
+                except Exception:
+                    # If conversion fails, keep the original value
+                    pass
+
+            # Ensure mandatory Highcharts keys if not provided
+            if "width" not in vline_conf:
+                vline_conf["width"] = 1
+            if "color" not in vline_conf:
+                vline_conf["color"] = "#FF0000"
+
+            chart_options["xAxis"]["plotLines"] = [vline_conf]
         
         if is_dual_axis:
             # y_axis_title_processed is Tuple[str, str] here, as set in the dual_axis_line block
@@ -525,6 +575,31 @@ def create_highcharts_options(
                     "opposite": True
                 }
             ]
+
+            # Optional horizontal line(s) on Y axes for dual-axis charts
+            if horizontal_line is not None:
+                def _apply_horizontal_line_to_axis(axis_index: int, h_conf_raw: Dict[str, Any]) -> None:
+                    if not isinstance(h_conf_raw, dict) or axis_index not in (0, 1):
+                        return
+                    h_conf = h_conf_raw.copy()
+                    # Ensure mandatory Highcharts keys if not provided
+                    if "width" not in h_conf:
+                        h_conf["width"] = 1
+                    if "color" not in h_conf:
+                        h_conf["color"] = "#FF0000"
+
+                    axis_obj = chart_options["yAxis"][axis_index]
+                    existing_plot_lines = axis_obj.get("plotLines", [])
+                    axis_obj["plotLines"] = existing_plot_lines + [h_conf]
+
+                if isinstance(horizontal_line, dict):
+                    # Single config: apply to primary axis (0)
+                    _apply_horizontal_line_to_axis(0, horizontal_line)
+                elif isinstance(horizontal_line, (list, tuple)):
+                    for idx, h_conf_item in enumerate(horizontal_line):
+                        if h_conf_item is not None and idx in (0, 1):
+                            _apply_horizontal_line_to_axis(idx, h_conf_item)
+
             if y_axis_max is not None:
                 if isinstance(y_axis_max, (list, tuple)) and len(y_axis_max) == 2:
                     if y_axis_max[0] is not None:
@@ -549,6 +624,16 @@ def create_highcharts_options(
                     "text": str(y_axis_title_processed)
                 }
             }
+
+            # Optional horizontal line on single Y axis
+            if horizontal_line is not None and isinstance(horizontal_line, dict):
+                hline_conf = horizontal_line.copy()
+                if "width" not in hline_conf:
+                    hline_conf["width"] = 1
+                if "color" not in hline_conf:
+                    hline_conf["color"] = "#FF0000"
+                chart_options["yAxis"]["plotLines"] = [hline_conf]
+
             if y_axis_max is not None:
                 if isinstance(y_axis_max, (int, float)):
                     chart_options["yAxis"]["max"] = y_axis_max

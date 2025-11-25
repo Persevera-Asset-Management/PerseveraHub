@@ -28,7 +28,13 @@ def load_positions():
     table_name="Inv-Asset Allocation/Posição",
     include_fibery_fields=False
   )
-  df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Classificação Instrumento", "Nome Emissor", "Nome Devedor", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+  df = df[[
+    "creation-date", "Portfolio",
+    "Nome Ativo", "Nome Ativo Completo",
+    "Classificação do Conjunto", "Classificação Instrumento",
+    "Nome Emissor", "Nome Devedor", "Data de Vencimento RF",
+    "Quantidade", "Valor Unitário", "Saldo"
+  ]]
   return df
 
 @st.cache_data
@@ -39,6 +45,13 @@ def load_accounts():
   df = df.dropna(subset=["Portfolio"])
   df["Nome Completo"] = df["Titularidade Principal"].str.split("|").str[1].str.strip()
   return df
+
+@st.cache_data
+def load_instruments_fgc():
+  df = read_fibery(table_name="Inv-Taxonomia/Classificação Instrumento", include_fibery_fields=False)
+  df = df[["Name", "Cobertura FGC"]]
+  instruments_list = df[df["Cobertura FGC"]]["Name"].tolist()
+  return instruments_list
 
 @st.cache_data
 def load_target_allocations():
@@ -75,9 +88,13 @@ if 'df_target_allocations' not in st.session_state:
 if 'df_accounts' not in st.session_state:
     st.session_state.df_accounts = None
 
+if 'instruments_fgc' not in st.session_state:
+    st.session_state.instruments_fgc = None
+
 def load_data():
     with st.spinner("Carregando dados...", show_time=True):
       st.session_state.df_positions = load_positions()
+      st.session_state.instruments_fgc = load_instruments_fgc()
       st.session_state.df_target_allocations = load_target_allocations()
       st.session_state.df_accounts = load_accounts()
       st.session_state.df = st.session_state.df_positions[st.session_state.df_positions['Portfolio'] == selected_carteira]
@@ -103,6 +120,7 @@ if selected_carteira != "":
   df = st.session_state.df
   df_target_allocations = st.session_state.df_target_allocations
   df_accounts = st.session_state.df_accounts
+  instruments_fgc = st.session_state.instruments_fgc
 
   try:
     st.subheader(selected_carteira)
@@ -153,10 +171,9 @@ if selected_carteira != "":
       st.warning("Política de Investimentos não cadastrada")
 
     st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
+    
     row_1 = st.columns(2)
-    with row_1[0]:
-      # Composição do Portfolio
-      # st.markdown("##### Alocação Atual")
+    with row_1[0]:  # Alocação Atual
       df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
       df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
       df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
@@ -171,9 +188,7 @@ if selected_carteira != "":
       )
       hct.streamlit_highcharts(chart_portfolio_composition)
 
-    with row_1[1]:
-      # st.markdown("##### Alocação Alvo")
-
+    with row_1[1]:  # Alocação Alvo
       if selected_carteira in df_target_allocations.index:
         df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
         df_target_allocations_current = df_target_allocations_current.loc[df_target_allocations_current.index.get_level_values(level=0).max()]
@@ -193,10 +208,7 @@ if selected_carteira != "":
         st.warning("Alocação alvo não cadastrada")      
 
     row_2 = st.columns(2)
-    with row_2[0]:
-      # Concentração de Emissores
-      # st.markdown("##### Distribuição de Emissores")
-
+    with row_2[0]:  # Distribuição de Emissores
       df_emissor = df.copy()
       df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
       df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='creation-date', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
@@ -213,10 +225,7 @@ if selected_carteira != "":
       )
       hct.streamlit_highcharts(chart_portfolio_positions_emissores)
 
-    with row_2[1]:
-      # Concentração de Emissores
-      # st.markdown("##### Distribuição de Instrumentos")
-
+    with row_2[1]:  # Distribuição de Instrumentos
       df_instrument = df.copy()
       df_instrument['Instrumento'] = df_instrument['Classificação Instrumento']
       df_portfolio_positions_instruments = df_instrument.groupby([pd.Grouper(key='creation-date', freq='D'), 'Instrumento']).agg(**{'Saldo': ('Saldo', 'sum')})
@@ -232,6 +241,56 @@ if selected_carteira != "":
         y_axis_title="%",
       )
       hct.streamlit_highcharts(chart_portfolio_positions_instruments)
+
+    st.markdown("##### Renda Fixa")
+    row_3 = st.columns(2)
+    with row_3[0]:  # Vencimentos
+      st.markdown("##### Vencimentos")
+      df_data_vencimento_rf = df.copy()
+      df_data_vencimento_rf = df_data_vencimento_rf.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']).agg(
+        **{
+          'Quantidade': ('Quantidade', 'sum'),
+          'Valor Unitário': ('Valor Unitário', 'mean'),
+          'Saldo': ('Saldo', 'sum')
+        }
+      )
+      df_data_vencimento_rf_current = df_data_vencimento_rf.loc[df_data_vencimento_rf.index.get_level_values(level=0).max()].copy()
+      df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
+      df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(df_data_vencimento_rf_current['Data de Vencimento RF'])
+      df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(by='Data de Vencimento', ascending=True)
+      
+      st.dataframe(
+        style_table(
+          df_data_vencimento_rf_current[['Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo']],
+          date_cols=['Data de Vencimento'],
+          numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
+          numeric_cols_format_as_int=['Quantidade'],
+        )
+      )
+
+    with row_3[1]:  # Cobertura do FGC
+      df_fgc = df.copy()
+      df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
+
+      df_fgc = df_fgc.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
+      
+      if df_fgc.index.get_level_values(level=0).max() in df_fgc.index:
+        df_fgc_current = df_fgc.loc[df_fgc.index.get_level_values(level=0).max()].copy()
+
+        chart_portfolio_positions_fgc = create_chart(
+          data=df_fgc_current.sort_values(by='Saldo', ascending=False),
+          columns=['Saldo'],
+          names=['Nome Emissor'],
+          chart_type='column',
+          title="Cobertura do FGC",
+          y_axis_title="Total (R$)",
+          x_axis_title="Banco Emissor",
+          show_legend=False,
+          horizontal_line={"value": 250000, "color": "#FF0000", "width": 2, "label": {"text": "Limite por Emissor", "align": "left"}}
+        )
+        hct.streamlit_highcharts(chart_portfolio_positions_fgc)
+      else:
+        st.info("Cliente não possui ativos cobertos pelo FGC")
 
   except Exception as e:
     st.error(f"Ocorreu um erro ao carregar os dados: {e}")
