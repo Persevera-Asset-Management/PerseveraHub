@@ -55,12 +55,12 @@ except Exception as e:
 st.write("##### Dados Macroeconômicos")
 macro_sources = [
     ("FRED", "FRED", "fred"),
-    ("ANBIMA", "ANBIMA", "anbima"),
+    ("ANBIMA", "ANBIMA", "anbima_indices"),
     ("SGS", "SGS", "sgs"),
     ("Focus (BCB)", "Focus (BCB)", "bcb_focus"),
     ("Sidra", "Sidra", "sidra"),
     ("MDIC", "MDIC", "mdic"),
-    ("B3 (Flows)", "B3 (Flows)", "b3"),
+    ("B3 (Flows)", "B3 (Flows)", "b3_investor_flow"),
 ]
 rows_macro = [st.columns(3) for _ in range((len(macro_sources) + 2) // 3)]
 for i, (label, name, source) in enumerate(macro_sources):
@@ -71,8 +71,8 @@ for i, (label, name, source) in enumerate(macro_sources):
 st.write("##### Fundos Sistemáticos (CTA)")
 cta_sources = [
     ("Simplify", "Simplify", "simplify"),
-    ("Invesco", "Invesco", "invesco"),
-    ("KraneShares", "KraneShares", "kraneshares"),
+    # ("Invesco", "Invesco", "invesco"),
+    # ("KraneShares", "KraneShares", "kraneshares"),
 ]
 rows_cta = [st.columns(3) for _ in range((len(cta_sources) + 2) // 3)]
 for i, (label, name, source) in enumerate(cta_sources):
@@ -94,21 +94,32 @@ except Exception as e:
 
 # --- Crédito Privado ---
 st.write("##### Crédito Privado")
-row_credito_1 = st.columns(3)
-row_credito_2 = st.columns(3)
+credito_privado_sources = [
+    ("Debentures.com.br", "Debentures.com.br", "debentures_com", ["code"]),
+    ("ANBIMA (Debentures)", "ANBIMA (Debentures)", "anbima_debentures", ["date", "code", "field", "source"]),
+    ("ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", "anbima_titulos_publicos", ["date", "code", "field", "maturity"]),
+    ("ANBIMA (CRI/CRA)", "ANBIMA (CRI/CRA)", "anbima_cri_cra", ["date", "code", "field", "source"]),
+    ("B3 (BDI)", "B3 (BDI)", "b3_bdi", ["date", "code", "field", "source"]),
+]
+rows_credito_privado = [st.columns(3) for _ in range((len(credito_privado_sources) + 2) // 3)]
+for i, (label, name, source, primary_keys) in enumerate(credito_privado_sources):
+    download_func = functools.partial(fds.get_data, source=source, primary_keys=primary_keys, save_to_db=True)
+    create_download_button(rows_credito_privado[i // 3][i % 3], label, name, download_func)
 
-# Debentures.com.br
-debentures_com_func = functools.partial(fds.get_debentures_com_data, save_to_db=True)
-create_download_button(row_credito_1[0], "Debentures.com.br", "Debentures.com.br", debentures_com_func)
 
-# ANBIMA (Debentures)
-anbima_debentures_func = functools.partial(fds.get_anbima_debentures_data, save_to_db=True)
-create_download_button(row_credito_1[1], "ANBIMA (Debentures)", "ANBIMA (Debentures)", anbima_debentures_func)
 
-# ANBIMA (Títulos Públicos)
-anbima_titulos_publicos_func = functools.partial(fds.get_anbima_titulos_publicos_data, save_to_db=True)
-create_download_button(row_credito_1[2], "ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", anbima_titulos_publicos_func)
+# # Debentures.com.br
+# debentures_com_func = functools.partial(fds.get_debentures_com_data, save_to_db=True)
+# create_download_button(row_credito_1[0], "Debentures.com.br", "Debentures.com.br", debentures_com_func)
 
-# ANBIMA (CRI/CRA)
-anbima_cri_cra_func = functools.partial(fds.get_anbima_cri_cra_data, save_to_db=True)
-create_download_button(row_credito_2[0], "ANBIMA (CRI e CRA)", "ANBIMA (CRI e CRA)", anbima_cri_cra_func)
+# # ANBIMA (Debentures)
+# anbima_debentures_func = functools.partial(fds.get_anbima_debentures_data, save_to_db=True)
+# create_download_button(row_credito_1[1], "ANBIMA (Debentures)", "ANBIMA (Debentures)", anbima_debentures_func)
+
+# # ANBIMA (Títulos Públicos)
+# anbima_titulos_publicos_func = functools.partial(fds.get_anbima_titulos_publicos_data, save_to_db=True)
+# create_download_button(row_credito_1[2], "ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", anbima_titulos_publicos_func)
+
+# # ANBIMA (CRI/CRA)
+# anbima_cri_cra_func = functools.partial(fds.get_anbima_cri_cra_data, save_to_db=True)
+# create_download_button(row_credito_2[0], "ANBIMA (CRI e CRA)", "ANBIMA (CRI e CRA)", anbima_cri_cra_func)
