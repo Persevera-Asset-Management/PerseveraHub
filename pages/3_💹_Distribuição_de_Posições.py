@@ -28,7 +28,13 @@ def load_positions():
     table_name="Inv-Asset Allocation/Posição",
     include_fibery_fields=False
   )
-  df = df[["creation-date", "Nome Ativo", "Portfolio", "Classificação do Conjunto", "Nome Ativo Completo", "Quantidade", "Valor Unitário", "Saldo"]]
+  df = df[[
+    "creation-date", "Portfolio",
+    "Nome Ativo", "Nome Ativo Completo",
+    "Classificação do Conjunto", "Classificação Instrumento",
+    "Nome Emissor", "Nome Devedor",
+    "Quantidade", "Valor Unitário", "Saldo"
+  ]]
   return df
 
 if 'df' not in st.session_state:
@@ -38,6 +44,7 @@ with st.spinner("Carregando dados...", show_time=True):
   st.session_state.df = load_positions()
 
 df = st.session_state.df
+df['Emissor Geral'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
 
 asset_classes = [
   'Caixa e Equivalentes',
@@ -60,6 +67,7 @@ with st.sidebar:
 if df is not None:
   try:
     # Composição Completa
+    st.markdown("##### Distribuição por Classe")
     df_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
       **{
         'Quantidade': ('Quantidade', 'sum'),
@@ -79,11 +87,40 @@ if df is not None:
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.reindex(asset_classes)
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.div(df_total_positions_by_asset_class_current.sum(axis=0), axis=1) * 100
 
-    st.markdown(f"##### Distribuição de Posições por Classe")
     st.dataframe(
       style_table(
         df_total_positions_by_asset_class_current,
         numeric_cols_format_as_float=list(df_total_positions_by_asset_class_current.columns),
+      )
+    )
+
+    # Emissores e Devedores
+    st.markdown("##### Distribuição por Emissores e Devedores (RF)")
+    instrumentos_rf = [
+      'CDB',
+      'CRA',
+      'CRI',
+      'LC',
+      'LCA',
+      'LCD',
+      'LCI',
+      'LF',
+      'LFS',
+      'LH',
+      'LIG',
+      'Títulos Públicos Federais',
+      'Debênture'
+    ]
+    df_positions_emissor_devedor = df[df['Classificação Instrumento'].isin(instrumentos_rf)].groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Emissor Geral']).agg(**{'Saldo': ('Saldo', 'sum')})
+    df_emissor_devedor_current = df_positions_emissor_devedor.loc[df_positions_emissor_devedor.index.get_level_values(level=0).max()].reset_index().sort_values(by='Saldo', ascending=False)
+    df_emissor_devedor_current = df_emissor_devedor_current.pivot(index='Emissor Geral', columns='Portfolio', values='Saldo')
+    df_emissor_devedor_current = df_emissor_devedor_current.reindex(df_emissor_devedor_current.index.unique())
+    df_emissor_devedor_current = df_emissor_devedor_current.div(df_total_positions_current['Saldo']) * 100
+
+    st.dataframe(
+      style_table(
+        df_emissor_devedor_current,
+        numeric_cols_format_as_float=list(df_emissor_devedor_current.columns),
       )
     )
 
