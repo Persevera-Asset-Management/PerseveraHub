@@ -484,5 +484,23 @@ if not stats_data_filtered.empty:
                 hct.streamlit_highcharts(correlation_chart_options, key=f"correlation_{selected_fund_name}")
             else:
                 st.info("Não há dados de correlação para exibir com os filtros selecionados.")
+
+    st.subheader("Correlação dos Fundos")
+    correlation_matrix = combined_nav_data.pct_change().corr()
+    correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
+
+    # Define a altura do heatmap proporcional à quantidade de variáveis
+    num_vars = correlation_matrix.shape[0]
+    heatmap_height = max(300, num_vars * 30)  # 30px por variável, com altura mínima de 300px
+
+    heatmap = create_chart(
+        data=correlation_matrix,
+        chart_type="heatmap",
+        title="",
+        height=heatmap_height
+    )
+    hct.streamlit_highcharts(heatmap, height=heatmap_height)
+
+
 else:
     st.warning("Nenhum dado para calcular estatísticas adicionais com os filtros atuais.")
