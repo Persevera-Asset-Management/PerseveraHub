@@ -39,7 +39,7 @@ if btn_load:
         data = load_data(code)
     
     if data.empty:
-        st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
+        st.warning("Não foi possível carregar os dados. Código de ativo não encontrado.")
     else:
         st.subheader("Preço por Fonte")
 
