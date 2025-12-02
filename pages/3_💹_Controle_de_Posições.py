@@ -33,7 +33,8 @@ def load_positions():
     "Nome Ativo", "Nome Ativo Completo",
     "Classificação do Conjunto", "Classificação Instrumento",
     "Nome Emissor", "Nome Devedor", "Data de Vencimento RF",
-    "Quantidade", "Valor Unitário", "Saldo"
+    "Quantidade", "Valor Unitário", "Saldo",
+    "Custodiante Acronimo"
   ]]
   return df
 
@@ -220,7 +221,7 @@ if selected_carteira != "":
         columns=['Saldo'],
         names=['Emissor'],
         chart_type='donut',
-        title="Distribuição de Emissores",
+        title="Emissores",
         y_axis_title="%",
       )
       hct.streamlit_highcharts(chart_portfolio_positions_emissores)
@@ -237,14 +238,31 @@ if selected_carteira != "":
         columns=['Saldo'],
         names=['Instrumento'],
         chart_type='donut',
-        title="Distribuição de Instrumentos",
+        title="Instrumentos",
         y_axis_title="%",
       )
       hct.streamlit_highcharts(chart_portfolio_positions_instruments)
 
-    st.markdown("##### Renda Fixa")
     row_3 = st.columns(2)
-    with row_3[0]:  # Vencimentos
+    with row_3[0]:  # Distribuição por Custodiante
+      df_custodiante = df.copy()
+      df_portfolio_positions_custodiante = df_custodiante.groupby([pd.Grouper(key='creation-date', freq='D'), 'Custodiante Acronimo']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_positions_custodiante_current = df_portfolio_positions_custodiante.loc[df_portfolio_positions_custodiante.index.get_level_values(level=0).max()]
+      df_portfolio_positions_custodiante_current = df_portfolio_positions_custodiante_current.sort_values(by='Saldo', ascending=False)
+
+      chart_portfolio_positions_custodiante = create_chart(
+        data=df_portfolio_positions_custodiante_current,
+        columns=['Saldo'],
+        names=['Custodiante'],
+        chart_type='donut',
+        title="Custodiantes",
+        y_axis_title="%",
+      )
+      hct.streamlit_highcharts(chart_portfolio_positions_custodiante)
+
+    st.markdown("##### Renda Fixa")
+    row_4 = st.columns(2)
+    with row_4[0]:  # Vencimentos
       st.markdown("##### Vencimentos")
       df_data_vencimento_rf = df.copy()
       df_data_vencimento_rf = df_data_vencimento_rf.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']).agg(
@@ -268,7 +286,7 @@ if selected_carteira != "":
         )
       )
 
-    with row_3[1]:  # Cobertura do FGC
+    with row_4[1]:  # Cobertura do FGC
       df_fgc = df.copy()
       df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
 
