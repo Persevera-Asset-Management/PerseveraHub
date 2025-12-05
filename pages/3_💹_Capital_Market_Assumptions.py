@@ -9,6 +9,7 @@ from utils.table import style_table
 from utils.auth import check_authentication
 from persevera_tools.data import get_series
 from configs.pages.capital_market_assumptions import CAPITAL_MARKET_ASSUMPTIONS
+from utils.table import get_performance_table
 
 st.set_page_config(
     page_title="Capital Market Assumptions | Persevera",
@@ -64,6 +65,7 @@ with st.spinner(f"Carregando {years} anos de dados..."):
     
     data = load_data(codes, start_date_str)
 
+performance_table = get_performance_table(data)
 returns = calculate_returns(data)
 volatility = calculate_volatility(data)
 skewness = calculate_skewness(data)
@@ -75,9 +77,19 @@ stats = pd.DataFrame({
     'Kurtosis': kurtosis,
 })
 
-stats.index = list(CAPITAL_MARKET_ASSUMPTIONS.values())
-stats.index.name = 'Classe de Ativos'
+stats.index, performance_table.index = list(CAPITAL_MARKET_ASSUMPTIONS.values()), list(CAPITAL_MARKET_ASSUMPTIONS.values())
+stats.index.name, performance_table.index.name = 'Classe de Ativos', 'Classe de Ativos'
+performance_table.drop(columns=['code'], inplace=True)
 
+st.markdown("##### Performance Acumulada")
+st.dataframe(
+    style_table(
+        performance_table,
+        numeric_cols_format_as_float=list(performance_table.columns),
+    )
+)
+
+st.markdown("##### Longo Prazo")
 st.dataframe(
     style_table(
         stats,
