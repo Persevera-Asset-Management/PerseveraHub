@@ -93,7 +93,7 @@ st.markdown("##### Longo Prazo")
 st.dataframe(
     style_table(
         stats,
-        numeric_cols_format_as_float=['Returns', 'Volatility', 'Skewness', 'Kurtosis'],
+        numeric_cols_format_as_float=['Retorno', 'Volatilidade', 'Assimetria', 'Curtose'],
     )
 )
 
@@ -102,13 +102,13 @@ cols = st.columns(2)
 with cols[0]:
     chart_stats = create_chart(
         data=stats.reset_index(),
-        columns=['Returns'],
-        x_column='Volatility',
+        columns=['Retorno'],
+        x_column='Volatilidade',
         chart_type='scatter',
         point_name_column='Classe de Ativos',
         title="Retorno vs Volatilidade",
-        y_axis_title="Returns (%)",
-        x_axis_title="Volatility (%)",
+        y_axis_title="Retorno (%)",
+        x_axis_title="Volatilidade (%)",
         show_legend=False,
         zoom_type='xy',
         show_point_name_labels=True,
@@ -123,8 +123,8 @@ with cols[0]:
 with cols[1]:
     chart_stats = create_chart(
         data=stats.reset_index(),
-        columns=['Skewness'],
-        x_column='Kurtosis',
+        columns=['Assimetria'],
+        x_column='Curtose',
         chart_type='scatter',
         point_name_column='Classe de Ativos',
         title="Assimetria vs Curtose",
