@@ -71,10 +71,10 @@ volatility = calculate_volatility(data)
 skewness = calculate_skewness(data)
 kurtosis = calculate_kurtosis(data)
 stats = pd.DataFrame({
-    'Returns': returns,
-    'Volatility': volatility,
-    'Skewness': skewness,
-    'Kurtosis': kurtosis,
+    'Retorno': returns,
+    'Volatilidade': volatility,
+    'Assimetria': skewness,
+    'Curtose': kurtosis,
 })
 
 stats.index, performance_table.index = list(CAPITAL_MARKET_ASSUMPTIONS.values()), list(CAPITAL_MARKET_ASSUMPTIONS.values())
