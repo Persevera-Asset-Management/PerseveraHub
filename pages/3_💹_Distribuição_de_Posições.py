@@ -37,14 +37,37 @@ def load_positions():
   ]]
   return df
 
+@st.cache_data
+def load_target_allocations():
+  df = read_fibery(
+    table_name="Ops-Portfolios/Parâmetro de PctPL Polinv",
+    include_fibery_fields=False
+  )
+  df["Portfolio"] = np.where(df["Política de Investimento"].isna(), df["Alocação Target"].str.split("_").str[0], df["Política de Investimento"].str.split("_").str[0])
+  df["Tipo Documento"] = np.where(df["Política de Investimento"].isna(), df["Alocação Target"].str.split("_").str[1], df["Política de Investimento"].str.split("_").str[1])
+  df["Data Documento"] = np.where(df["Política de Investimento"].isna(), pd.to_datetime(df["Alocação Target"].str[-10:]), pd.to_datetime(df["Política de Investimento"].str[-10:]))
+  df = df[["Portfolio", "Tipo Documento", "Data Documento", "Name", "Target"]]
+
+  df = df.groupby(['Portfolio', pd.Grouper(key='Data Documento', freq='D'), 'Name']).agg(
+    **{
+      'Target': ('Target', 'mean')
+    }
+  )
+  return df
+
 if 'df' not in st.session_state:
     st.session_state.df = None
 
+if 'df_target_allocations' not in st.session_state:
+    st.session_state.df_target_allocations = None
+
 with st.spinner("Carregando dados...", show_time=True):
   st.session_state.df = load_positions()
+  st.session_state.df_target_allocations = load_target_allocations()
 
 df = st.session_state.df
 df['Emissor Geral'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
+df_target_allocations = st.session_state.df_target_allocations
 
 asset_classes = [
   'Caixa e Equivalentes',
@@ -77,7 +100,6 @@ if df is not None:
     )
     df_positions_current = df_positions.loc[df_positions.index.get_level_values(level=0).max()].reset_index()
 
-    # Saldo Total
     df_total_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio']).agg(**{'Saldo': ('Saldo', 'sum')})
     df_total_positions_current = df_total_positions.loc[df_total_positions.index.get_level_values(level=0).max()]
 
@@ -85,12 +107,12 @@ if df is not None:
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class.loc[df_total_positions_by_asset_class.index.get_level_values(level=0).max()].reset_index()
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.pivot(index='Classificação do Conjunto', columns='Portfolio', values='Saldo')
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.reindex(asset_classes)
-    df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.div(df_total_positions_by_asset_class_current.sum(axis=0), axis=1) * 100
+    df_total_positions_by_asset_class_current_pct = df_total_positions_by_asset_class_current.div(df_total_positions_by_asset_class_current.sum(axis=0), axis=1) * 100
 
     st.dataframe(
       style_table(
-        df_total_positions_by_asset_class_current,
-        numeric_cols_format_as_float=list(df_total_positions_by_asset_class_current.columns),
+        df_total_positions_by_asset_class_current_pct,
+        numeric_cols_format_as_float=list(df_total_positions_by_asset_class_current_pct.columns),
       )
     )
 
@@ -123,6 +145,33 @@ if df is not None:
         numeric_cols_format_as_float=list(df_emissor_devedor_current.columns),
       )
     )
+
+    # Alocação vs Target
+    selected_classes = ["Renda Fixa Pós-Fixada", "Renda Fixa Pré-Fixada", "Renda Fixa Atrelada à Inflação"]
+    df_target_allocations_current = df_target_allocations.query("Name.isin(@selected_classes)").dropna(subset=['Target']).reset_index()
+    idx = df_target_allocations_current.groupby(['Portfolio', 'Name'])['Data Documento'].idxmax()
+    df_target_allocations_current = df_target_allocations_current.loc[idx].reset_index(drop=True)
+    df_target_allocations_current = df_target_allocations_current.pivot(index='Portfolio', columns='Name', values='Target')
+    
+    st.markdown("##### Alocação vs Target (RF)")
+    row_1 = st.columns(len(selected_classes))
+    for i, class_name in enumerate(selected_classes):
+      with row_1[i]:
+        df_class_positions = df_target_allocations_current[class_name].to_frame("Target (%)")
+        df_class_positions['Target (R$)'] = df_class_positions["Target (%)"] * df_total_positions_current['Saldo']
+        df_class_positions['Atual (R$)'] = df_total_positions_by_asset_class_current.loc[class_name]
+        df_class_positions['Diferença (R$)'] = df_class_positions['Target (R$)'] - df_class_positions['Atual (R$)']
+        df_class_positions['Target (%)'] = df_class_positions['Target (%)'] * 100
+        df_class_positions = df_class_positions.dropna()
+
+        st.markdown(f"###### {class_name}")
+        st.dataframe(
+          style_table(
+            df_class_positions,
+            numeric_cols_format_as_float=['Target (R$)', 'Atual (R$)', 'Diferença (R$)'],
+            percent_cols=['Target (%)'],
+          )
+        )
 
     # Posições por Ativo e Classe
     for asset_class in asset_classes:
