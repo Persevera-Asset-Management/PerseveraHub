@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, date
 from persevera_tools.data import FinancialDataService
 from persevera_tools.data.funds import get_persevera_peers
 from persevera_tools.data.sma import get_building_blocks
+from persevera_tools.db.fibery import read_fibery
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 import functools
@@ -83,9 +84,11 @@ for i, (label, name, source) in enumerate(cta_sources):
 st.write("##### Fundos de Investimento (CVM)")
 row_cvm = st.columns(3)
 try:
-    cnpjs_peers = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
-    cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
-    cnpjs = cnpjs_peers + cnpjs_building_blocks
+    df = read_fibery(table_name="Inv-Taxonomia/Ativos", include_fibery_fields=False)
+    cnpjs = df[df["Classificação Instrumento"] == "Fundo de Investimento"]["Name"].drop_duplicates().tolist()
+    # cnpjs_peers = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
+    # cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
+    # cnpjs = cnpjs_peers + cnpjs_building_blocks
     cvm_download_func = functools.partial(fds.get_cvm_data, source='cvm', cnpjs=cnpjs, save_to_db=True)
     create_download_button(row_cvm[0], "Todos os Fundos", "Fundos de Investimento", cvm_download_func)
 except Exception as e:
@@ -105,21 +108,3 @@ rows_credito_privado = [st.columns(3) for _ in range((len(credito_privado_source
 for i, (label, name, source, primary_keys) in enumerate(credito_privado_sources):
     download_func = functools.partial(fds.get_data, source=source, primary_keys=primary_keys, save_to_db=True)
     create_download_button(rows_credito_privado[i // 3][i % 3], label, name, download_func)
-
-
-
-# # Debentures.com.br
-# debentures_com_func = functools.partial(fds.get_debentures_com_data, save_to_db=True)
-# create_download_button(row_credito_1[0], "Debentures.com.br", "Debentures.com.br", debentures_com_func)
-
-# # ANBIMA (Debentures)
-# anbima_debentures_func = functools.partial(fds.get_anbima_debentures_data, save_to_db=True)
-# create_download_button(row_credito_1[1], "ANBIMA (Debentures)", "ANBIMA (Debentures)", anbima_debentures_func)
-
-# # ANBIMA (Títulos Públicos)
-# anbima_titulos_publicos_func = functools.partial(fds.get_anbima_titulos_publicos_data, save_to_db=True)
-# create_download_button(row_credito_1[2], "ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", anbima_titulos_publicos_func)
-
-# # ANBIMA (CRI/CRA)
-# anbima_cri_cra_func = functools.partial(fds.get_anbima_cri_cra_data, save_to_db=True)
-# create_download_button(row_credito_2[0], "ANBIMA (CRI e CRA)", "ANBIMA (CRI e CRA)", anbima_cri_cra_func)

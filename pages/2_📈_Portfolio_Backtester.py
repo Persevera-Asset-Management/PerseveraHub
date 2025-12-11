@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta
-from persevera_tools.data import get_series
+from persevera_tools.data import get_series, get_funds_data
 from utils.chart_helpers import create_chart
 import streamlit_highcharts as hct
 from utils.table import style_table
@@ -25,14 +25,17 @@ st.title('Portfolio Backtester')
 @st.cache_data(ttl=3600)
 def load_data(codes, field, start_date):
     try:
-        return get_series(codes, start_date=start_date, field=field)
+        indicators = get_series(codes, start_date=start_date, field=field)
+        funds = get_funds_data(cnpjs=codes, start_date=start_date, fields=['fund_nav'])
+        df = pd.concat([indicators.dropna(how='all', axis='columns'), funds.dropna(how='all', axis='columns')], axis=1)
+        return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
 
 with st.sidebar:
     st.header("Parâmetros")
-    start_date = st.date_input("Data Inicial", min_value=datetime(2010, 1, 1), value=datetime(2010, 1, 1), format="DD/MM/YYYY")
+    start_date = st.date_input("Data Inicial", min_value=datetime(2000, 1, 1), max_value=datetime.today(), value=datetime(2010, 1, 1), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
 st.subheader("Configuração dos Portfólios")
@@ -125,8 +128,8 @@ if run_backtest:
         st.warning("Não há histórico suficiente para calcular o backtest.")
         st.stop()
 
-    # Calcula retornos
-    returns = prices.pct_change(fill_method=None).fillna(0.0)
+    # Calcula retornos (mantendo NaNs para tratar ativos "não iniciados")
+    returns = prices.pct_change(fill_method=None)
 
     # Processa cada portfólio
     result_df = pd.DataFrame(index=prices.index)
@@ -155,7 +158,24 @@ if run_backtest:
         portfolio_weights_info[portfolio_name] = weights
 
         # Calcula curva do portfólio
-        portfolio_returns = (returns * weights.values).sum(axis=1)
+        # Ajuste: se um ativo não tem dado em um determinado dia (NaN em `returns`),
+        # o peso dele é redistribuído proporcionalmente entre os ativos com dado.
+        weights_matrix = pd.DataFrame(
+            np.tile(weights.values, (len(returns), 1)),
+            index=returns.index,
+            columns=returns.columns,
+        )
+
+        # Zera pesos nos dias/ativos sem retorno observado
+        valid_mask = returns.notna()
+        weights_matrix = weights_matrix.where(valid_mask, 0.0)
+
+        # Renormaliza linha a linha para que a soma de pesos dos ativos "válidos" seja 1
+        row_sums = weights_matrix.sum(axis=1)
+        weights_matrix = weights_matrix.div(row_sums.replace(0, np.nan), axis=0).fillna(0.0)
+
+        # Para dias em que nenhum ativo tem dado, o retorno do portfólio será 0
+        portfolio_returns = (returns.fillna(0.0) * weights_matrix).sum(axis=1)
         portfolio_index = (1 + portfolio_returns).cumprod() * 100
         
         result_df[portfolio_name] = portfolio_index
