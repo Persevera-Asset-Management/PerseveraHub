@@ -25,8 +25,15 @@ st.title('Portfolio Backtester')
 @st.cache_data(ttl=3600)
 def load_data(codes, field, start_date):
     try:
-        indicators = get_series(codes, start_date=start_date, field=field)
-        funds = get_funds_data(cnpjs=codes, start_date=start_date, fields=['fund_nav'])
+        try:
+            indicators = get_series(codes, start_date=start_date, field=field)
+        except Exception as e:
+            indicators = pd.DataFrame()
+        try:
+            funds = get_funds_data(cnpjs=codes, start_date=start_date, fields=['fund_nav'])
+        except Exception as e:
+            funds = pd.DataFrame()
+        
         df = pd.concat([indicators.dropna(how='all', axis='columns'), funds.dropna(how='all', axis='columns')], axis=1)
         return df
     except Exception as e:

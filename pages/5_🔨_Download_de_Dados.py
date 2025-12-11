@@ -80,8 +80,8 @@ for i, (label, name, source) in enumerate(cta_sources):
     download_func = functools.partial(fds.get_data, source=source, save_to_db=True)
     create_download_button(rows_cta[i // 3][i % 3], label, name, download_func)
 
-# --- Fundos de Investimento (CVM) --- 
-st.write("##### Fundos de Investimento (CVM)")
+# --- Fundos de Investimento --- 
+st.write("##### Fundos de Investimento")
 row_cvm = st.columns(3)
 try:
     df = read_fibery(table_name="Inv-Taxonomia/Ativos", include_fibery_fields=False)
@@ -90,7 +90,10 @@ try:
     # cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
     # cnpjs = cnpjs_peers + cnpjs_building_blocks
     cvm_download_func = functools.partial(fds.get_cvm_data, source='cvm', cnpjs=cnpjs, save_to_db=True)
-    create_download_button(row_cvm[0], "Todos os Fundos", "Fundos de Investimento", cvm_download_func)
+    create_download_button(row_cvm[0], "CVM", "CVM", cvm_download_func)
+
+    mais_retorno_download_func = functools.partial(fds.get_data, source='mais_retorno_fundos', primary_keys=['fund_cnpj', 'date'], save_to_db=True)
+    create_download_button(row_cvm[1], "Mais Retorno (FIDC)", "Mais Retorno (FIDC)", mais_retorno_download_func)
 except Exception as e:
     st.error(f"Ocorreu um erro ao obter a lista de CNPJs para os fundos: {e}")
 
@@ -103,6 +106,7 @@ credito_privado_sources = [
     ("ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", "anbima_titulos_publicos", ["date", "code", "field", "maturity"]),
     ("ANBIMA (CRI/CRA)", "ANBIMA (CRI/CRA)", "anbima_cri_cra", ["date", "code", "field", "source"]),
     ("B3 (BDI)", "B3 (BDI)", "b3_bdi", ["date", "code", "field", "source"]),
+    ("Mais Retorno", "Mais Retorno", "mais_retorno_debentures", ["date", "code", "field", "source"]),
 ]
 rows_credito_privado = [st.columns(3) for _ in range((len(credito_privado_sources) + 2) // 3)]
 for i, (label, name, source, primary_keys) in enumerate(credito_privado_sources):
