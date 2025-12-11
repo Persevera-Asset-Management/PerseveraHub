@@ -24,7 +24,9 @@ st.title("Crédito Privado (Pricing)")
 
 def load_data(code):
     try:
-        return get_series(code, field='price_close')
+        df = get_series(code, field=['price_close', 'price_close_adj'])
+        df.columns = df.columns.droplevel(0)
+        return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
