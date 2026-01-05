@@ -159,17 +159,18 @@ if df is not None:
       with row_1[i]:
         df_class_positions = df_target_allocations_current[class_name].to_frame("Target (%)")
         df_class_positions['Target (R$)'] = df_class_positions["Target (%)"] * df_total_positions_current['Saldo']
-        df_class_positions['Atual (R$)'] = df_total_positions_by_asset_class_current.loc[class_name]
+        df_class_positions['Atual (R$)'] = df_total_positions_by_asset_class_current.loc[class_name].fillna(0)
         df_class_positions['Diferença (R$)'] = df_class_positions['Target (R$)'] - df_class_positions['Atual (R$)']
         df_class_positions['Target (%)'] = df_class_positions['Target (%)'] * 100
-        df_class_positions = df_class_positions.dropna()
+        df_class_positions['Atual (%)'] = df_total_positions_by_asset_class_current.loc[class_name].fillna(0) / df_total_positions_current['Saldo'] * 100
+        df_class_positions = df_class_positions.dropna(thresh=2)
 
         st.markdown(f"###### {class_name}")
         st.dataframe(
           style_table(
-            df_class_positions,
+            df_class_positions[['Target (%)', 'Atual (%)', 'Target (R$)', 'Atual (R$)', 'Diferença (R$)']],
             numeric_cols_format_as_float=['Target (R$)', 'Atual (R$)', 'Diferença (R$)'],
-            percent_cols=['Target (%)'],
+            percent_cols=['Target (%)', 'Atual (%)'],
           )
         )
 
