@@ -401,3 +401,4 @@ if st.session_state.get('chart_options_for_download'):
             mime=st.session_state.png_payload["mime"],
             key="dl_png_button"
         )
+        

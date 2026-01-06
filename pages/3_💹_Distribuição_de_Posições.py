@@ -24,18 +24,23 @@ st.title("Distribuição de Posições")
 
 @st.cache_data
 def load_positions():
-  df = read_fibery(
-    table_name="Inv-Asset Allocation/Posição",
-    include_fibery_fields=False
-  )
-  df = df[[
-    "creation-date", "Portfolio",
-    "Nome Ativo", "Nome Ativo Completo",
-    "Classificação do Conjunto", "Classificação Instrumento",
-    "Nome Emissor", "Nome Devedor",
-    "Quantidade", "Valor Unitário", "Saldo"
-  ]]
-  return df
+  df = pd.DataFrame()
+  try:
+    df = read_fibery(
+      table_name="Inv-Asset Allocation/Posição",
+      include_fibery_fields=False
+    )
+    df = df[[
+      "creation-date", "Portfolio",
+      "Nome Ativo", "Nome Ativo Completo",
+      "Classificação do Conjunto", "Classificação Instrumento",
+      "Nome Emissor", "Nome Devedor",
+      "Quantidade", "Valor Unitário", "Saldo"
+    ]]
+    return df
+  except Exception as e:
+    st.error(f"Ocorreu um erro ao carregar os dados: {e}")
+    return pd.DataFrame()
 
 @st.cache_data
 def load_target_allocations():
@@ -65,7 +70,10 @@ with st.spinner("Carregando dados...", show_time=True):
   st.session_state.df = load_positions()
   st.session_state.df_target_allocations = load_target_allocations()
 
-df = st.session_state.df
+df_raw = st.session_state.df
+df = df_raw.copy()
+df.replace(' ', np.nan, inplace=True)
+df.dropna(subset=['Nome Ativo', 'Classificação do Conjunto'], inplace=True)
 df['Emissor Geral'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
 df_target_allocations = st.session_state.df_target_allocations
 
@@ -74,9 +82,7 @@ asset_classes = [
   'Renda Fixa Pós-Fixada',
   'Renda Fixa Pré-Fixada',
   'Renda Fixa Atrelada à Inflação',
-  'Renda Fixa em Moeda Estrangeira',
-  'Renda Variável Nacional',
-  'Renda Variável Internacional',
+  'Renda Variável',
   'Retorno Total',
   'Fundos Imobiliários',
   'Investimentos Alternativos',
