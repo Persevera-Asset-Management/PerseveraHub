@@ -28,8 +28,11 @@ def load_positions():
   try:
     df = read_fibery(
       table_name="Inv-Asset Allocation/Posição",
-      include_fibery_fields=False
+        where_filter=[">=", ["fibery/creation-date"], "$cutoffDate"],
+        params={"$cutoffDate": "2026-01-01T00:00:00Z"},
+        include_fibery_fields=False,
     )
+
     df = df[[
       "creation-date", "Portfolio",
       "Nome Ativo", "Nome Ativo Completo",
