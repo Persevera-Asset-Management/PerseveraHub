@@ -8,6 +8,7 @@ from persevera_tools.db.fibery import read_fibery
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 import functools
+import numpy as np
 
 st.set_page_config(
     page_title="Download de Dados | Persevera",
@@ -85,7 +86,7 @@ st.write("##### Fundos de Investimento")
 row_cvm = st.columns(3)
 try:
     df = read_fibery(table_name="Inv-Taxonomia/Ativos", include_fibery_fields=False)
-    cnpjs = df[df["Classificação Instrumento"] == "Fundo de Investimento"]["Name"].drop_duplicates().tolist()
+    cnpjs = df[np.isin(df["Classificação Instrumento"], ["Fundo de Investimento", "Previdência Privada"])]["Name"].drop_duplicates().tolist()
     # cnpjs_peers = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
     # cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
     # cnpjs = cnpjs_peers + cnpjs_building_blocks
