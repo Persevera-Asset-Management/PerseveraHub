@@ -8,6 +8,7 @@ INDICADORES_GRUPOS = {
         "us_bloomberg_corporate_bond_index": "Índice de Títulos Corporativos (EUA)",
         "crb_index": "Índice CRB de Commodities",
         "bitcoin_usd": "Bitcoin",
+        "gold_100oz_futures": "Ouro",
     },
     "Mercado Local": {
         "br_ibovespa": "Ibovespa",
