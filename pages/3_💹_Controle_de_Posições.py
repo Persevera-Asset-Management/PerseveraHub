@@ -41,7 +41,8 @@ def load_positions():
     "Custodiante Acronimo"
   ]]
 
-  df['Data de Vencimento'] = np.where(df['Data de Vencimento RF'].isna(), None, pd.to_datetime(df['Data de Vencimento RF']))
+  # df['Data de Vencimento'] = np.where(df['Data de Vencimento RF'].isna(), None, pd.to_datetime(df['Data de Vencimento RF']))
+  df['Data de Vencimento'] = pd.to_datetime(df['Data de Vencimento RF'])
   df['Data Posição'] = pd.to_datetime(df['Data Posição'])
 
   return df
