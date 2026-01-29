@@ -41,8 +41,6 @@ def load_positions():
     "Custodiante Acronimo"
   ]]
 
-  # df['Data de Vencimento'] = np.where(df['Data de Vencimento RF'].isna(), None, pd.to_datetime(df['Data de Vencimento RF']))
-  df['Data de Vencimento'] = pd.to_datetime(df['Data de Vencimento RF'])
   df['Data Posição'] = pd.to_datetime(df['Data Posição'])
 
   return df
@@ -281,7 +279,7 @@ if selected_carteira != "":
       )
       df_data_vencimento_rf_current = df_data_vencimento_rf.loc[df_data_vencimento_rf.index.get_level_values(level=0).max()].copy()
       df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
-      # df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(df_data_vencimento_rf_current['Data de Vencimento RF'])
+      df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(df_data_vencimento_rf_current['Data de Vencimento RF'])
       df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(by='Data de Vencimento', ascending=True)
       
       st.dataframe(
