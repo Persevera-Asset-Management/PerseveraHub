@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
@@ -24,15 +24,16 @@ st.title("Controle de Posições")
 
 @st.cache_data
 def load_positions():
+  dataRecente = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%dT00:00:00Z')
   df = read_fibery(
       table_name="Inv-Asset Allocation/Posição",
-      where_filter=[">=", ["fibery/creation-date"], "$cutoffDate"],
-      params={"$cutoffDate": "2026-01-01T00:00:00Z"},
+      where_filter=[">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
+      params={"$dataRecente": dataRecente},
       include_fibery_fields=False,
   )
 
   df = df[[
-    "creation-date", "Portfolio",
+    "Data Posição", "Portfolio",
     "Nome Ativo", "Nome Ativo Completo",
     "Classificação do Conjunto", "Classificação Instrumento",
     "Nome Emissor", "Nome Devedor", "Data de Vencimento RF",
@@ -136,7 +137,7 @@ if selected_carteira != "":
     """, language='markdown')
     
     # Composição Completa
-    df_portfolio_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
+    df_portfolio_positions = df.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
       **{
         'Quantidade': ('Quantidade', 'sum'),
         'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -176,7 +177,7 @@ if selected_carteira != "":
     
     row_1 = st.columns(2)
     with row_1[0]:  # Alocação Atual
-      df_portfolio_composition = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_composition = df.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Conjunto']).agg(**{'Saldo': ('Saldo', 'sum')})
       df_portfolio_composition_current = df_portfolio_composition.loc[df_portfolio_composition.index.get_level_values(level=0).max()]
       df_portfolio_composition_current = df_portfolio_composition_current.reindex(correct_order).dropna()
 
@@ -213,7 +214,7 @@ if selected_carteira != "":
     with row_2[0]:  # Distribuição de Emissores
       df_emissor = df.copy()
       df_emissor['Emissor'] = df_emissor['Nome Devedor'].fillna(df_emissor['Nome Emissor'])
-      df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='creation-date', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_positions_emissores = df_emissor.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
       df_portfolio_positions_emissores_current = df_portfolio_positions_emissores.loc[df_portfolio_positions_emissores.index.get_level_values(level=0).max()]
       df_portfolio_positions_emissores_current = df_portfolio_positions_emissores_current.sort_values(by='Saldo', ascending=False)
 
@@ -230,7 +231,7 @@ if selected_carteira != "":
     with row_2[1]:  # Distribuição de Instrumentos
       df_instrument = df.copy()
       df_instrument['Instrumento'] = df_instrument['Classificação Instrumento']
-      df_portfolio_positions_instruments = df_instrument.groupby([pd.Grouper(key='creation-date', freq='D'), 'Instrumento']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_positions_instruments = df_instrument.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Instrumento']).agg(**{'Saldo': ('Saldo', 'sum')})
       df_portfolio_positions_instruments_current = df_portfolio_positions_instruments.loc[df_portfolio_positions_instruments.index.get_level_values(level=0).max()]
       df_portfolio_positions_instruments_current = df_portfolio_positions_instruments_current.sort_values(by='Saldo', ascending=False)
 
@@ -247,7 +248,7 @@ if selected_carteira != "":
     row_3 = st.columns(2)
     with row_3[0]:  # Distribuição por Custodiante
       df_custodiante = df.copy()
-      df_portfolio_positions_custodiante = df_custodiante.groupby([pd.Grouper(key='creation-date', freq='D'), 'Custodiante Acronimo']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_portfolio_positions_custodiante = df_custodiante.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Custodiante Acronimo']).agg(**{'Saldo': ('Saldo', 'sum')})
       df_portfolio_positions_custodiante_current = df_portfolio_positions_custodiante.loc[df_portfolio_positions_custodiante.index.get_level_values(level=0).max()]
       df_portfolio_positions_custodiante_current = df_portfolio_positions_custodiante_current.sort_values(by='Saldo', ascending=False)
 
@@ -266,7 +267,7 @@ if selected_carteira != "":
     with row_4[0]:  # Vencimentos
       st.markdown("##### Vencimentos")
       df_data_vencimento_rf = df.copy()
-      df_data_vencimento_rf = df_data_vencimento_rf.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']).agg(
+      df_data_vencimento_rf = df_data_vencimento_rf.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']).agg(
         **{
           'Quantidade': ('Quantidade', 'sum'),
           'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -291,7 +292,7 @@ if selected_carteira != "":
       df_fgc = df.copy()
       df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
 
-      df_fgc = df_fgc.groupby([pd.Grouper(key='creation-date', freq='D'), 'Nome Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
+      df_fgc = df_fgc.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Nome Emissor']).agg(**{'Saldo': ('Saldo', 'sum')})
       
       if df_fgc.index.get_level_values(level=0).max() in df_fgc.index:
         df_fgc_current = df_fgc.loc[df_fgc.index.get_level_values(level=0).max()].copy()

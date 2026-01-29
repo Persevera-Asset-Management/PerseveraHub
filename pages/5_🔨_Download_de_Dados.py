@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta, date
 from persevera_tools.data import FinancialDataService
-from persevera_tools.data.funds import get_persevera_peers
 from persevera_tools.data.sma import get_building_blocks
 from persevera_tools.db.fibery import read_fibery
 from utils.ui import display_logo, load_css
@@ -85,11 +84,11 @@ for i, (label, name, source) in enumerate(cta_sources):
 st.write("##### Fundos de Investimento")
 row_cvm = st.columns(3)
 try:
-    df = read_fibery(table_name="Inv-Taxonomia/Ativos", include_fibery_fields=False)
+    df = read_fibery(
+        table_name="Inv-Taxonomia/Ativos",
+        include_fibery_fields=False
+    )
     cnpjs = df[np.isin(df["Classificação Instrumento"], ["Fundo de Investimento", "Previdência Privada"])]["Name"].drop_duplicates().tolist()
-    # cnpjs_peers = get_persevera_peers().fund_cnpj.drop_duplicates().tolist()
-    # cnpjs_building_blocks = get_building_blocks().query('instrument == "FI"').code.drop_duplicates().tolist()
-    # cnpjs = cnpjs_peers + cnpjs_building_blocks
     cvm_download_func = functools.partial(fds.get_cvm_data, source='cvm', cnpjs=cnpjs, save_to_db=True)
     create_download_button(row_cvm[0], "CVM", "CVM", cvm_download_func)
 
