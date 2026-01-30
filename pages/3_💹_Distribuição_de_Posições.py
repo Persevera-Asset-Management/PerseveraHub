@@ -1,13 +1,10 @@
 import streamlit as st
-import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-from datetime import datetime, date
-from utils.chart_helpers import create_chart
+from datetime import datetime, timedelta
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from persevera_tools.db.fibery import read_fibery
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
 
 st.set_page_config(
@@ -26,15 +23,16 @@ st.title("Distribuição de Posições")
 def load_positions():
   df = pd.DataFrame()
   try:
+    dataRecente = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%dT00:00:00Z')
     df = read_fibery(
-      table_name="Inv-Asset Allocation/Posição",
-        where_filter=[">=", ["fibery/creation-date"], "$cutoffDate"],
-        params={"$cutoffDate": "2026-01-01T00:00:00Z"},
+        table_name="Inv-Asset Allocation/Posição",
+        where_filter=[">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
+        params={"$dataRecente": dataRecente},
         include_fibery_fields=False,
     )
 
     df = df[[
-      "creation-date", "Portfolio",
+      "Data Posição", "Portfolio",
       "Nome Ativo", "Nome Ativo Completo",
       "Classificação do Conjunto", "Classificação Instrumento",
       "Nome Emissor", "Nome Devedor",
@@ -100,7 +98,7 @@ if df is not None:
   try:
     # Composição Completa
     st.markdown("##### Distribuição por Classe")
-    df_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
+    df_positions = df.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Portfolio', 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']).agg(
       **{
         'Quantidade': ('Quantidade', 'sum'),
         'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -109,10 +107,10 @@ if df is not None:
     )
     df_positions_current = df_positions.loc[df_positions.index.get_level_values(level=0).max()].reset_index()
 
-    df_total_positions = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio']).agg(**{'Saldo': ('Saldo', 'sum')})
+    df_total_positions = df.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Portfolio']).agg(**{'Saldo': ('Saldo', 'sum')})
     df_total_positions_current = df_total_positions.loc[df_total_positions.index.get_level_values(level=0).max()]
 
-    df_total_positions_by_asset_class = df.groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Classificação do Conjunto'])['Saldo'].sum()
+    df_total_positions_by_asset_class = df.groupby([pd.Grouper(key='Data Posição', freq='D'), 'Portfolio', 'Classificação do Conjunto'])['Saldo'].sum()
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class.loc[df_total_positions_by_asset_class.index.get_level_values(level=0).max()].reset_index()
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.pivot(index='Classificação do Conjunto', columns='Portfolio', values='Saldo')
     df_total_positions_by_asset_class_current = df_total_positions_by_asset_class_current.reindex(asset_classes)
@@ -142,7 +140,7 @@ if df is not None:
       'Títulos Públicos Federais',
       'Debênture'
     ]
-    df_positions_emissor_devedor = df[df['Classificação Instrumento'].isin(instrumentos_rf)].groupby([pd.Grouper(key='creation-date', freq='D'), 'Portfolio', 'Emissor Geral']).agg(**{'Saldo': ('Saldo', 'sum')})
+    df_positions_emissor_devedor = df[df['Classificação Instrumento'].isin(instrumentos_rf)].groupby([pd.Grouper(key='Data Posição', freq='D'), 'Portfolio', 'Emissor Geral']).agg(**{'Saldo': ('Saldo', 'sum')})
     df_emissor_devedor_current = df_positions_emissor_devedor.loc[df_positions_emissor_devedor.index.get_level_values(level=0).max()].reset_index().sort_values(by='Saldo', ascending=False)
     df_emissor_devedor_current = df_emissor_devedor_current.pivot(index='Emissor Geral', columns='Portfolio', values='Saldo')
     df_emissor_devedor_current = df_emissor_devedor_current.reindex(df_emissor_devedor_current.index.unique())
