@@ -44,6 +44,6 @@ if st.session_state.authentication_status:
     # st.write("This dashboard provides tools and analytics for financial analysis across different asset classes.")
 
     # Footer
-    st.info("© 2025 Persevera Asset Management")
+    st.info("© 2026 Persevera Asset Management")
 else:
     login_form()

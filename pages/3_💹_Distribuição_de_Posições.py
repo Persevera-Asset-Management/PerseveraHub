@@ -38,6 +38,9 @@ def load_positions():
       "Nome Emissor", "Nome Devedor",
       "Quantidade", "Valor Unitário", "Saldo"
     ]]
+
+    df['Data Posição'] = pd.to_datetime(df['Data Posição'])
+    
     return df
   except Exception as e:
     st.error(f"Ocorreu um erro ao carregar os dados: {e}")
