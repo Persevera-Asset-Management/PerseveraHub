@@ -111,21 +111,55 @@ if selected_carteira != "":
 
         row_1 = st.columns(2)
         with row_1[0]:  # Alocação Atual
-            df_portfolio_composition = df.groupby(
-                [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Conjunto']
-            ).agg(**{'Saldo': ('Saldo', 'sum')})
-            df_portfolio_composition_current = get_latest_date_data(df_portfolio_composition)
-            df_portfolio_composition_current = df_portfolio_composition_current.reindex(ASSET_CLASSES_ORDER).dropna()
 
-            chart_portfolio_composition = create_chart(
-                data=df_portfolio_composition_current,
-                columns=['Saldo'],
-                names=['Saldo'],
-                chart_type='donut',
-                title="Alocação Atual",
-                y_axis_title="%",
-            )
-            hct.streamlit_highcharts(chart_portfolio_composition)
+            tabs_alocacao = st.tabs(["Alocação Atual", "Alocação Hierárquica"])
+            with tabs_alocacao[0]:
+                df_portfolio_composition = df.groupby(
+                    [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Conjunto']
+                ).agg(**{'Saldo': ('Saldo', 'sum')})
+                df_portfolio_composition_current = get_latest_date_data(df_portfolio_composition)
+                df_portfolio_composition_current = df_portfolio_composition_current.reindex(ASSET_CLASSES_ORDER).dropna()
+
+                chart_portfolio_composition = create_chart(
+                    data=df_portfolio_composition_current,
+                    columns=['Saldo'],
+                    names=['Saldo'],
+                    chart_type='donut',
+                    title="Alocação Atual",
+                    y_axis_title="%",
+                )
+                hct.streamlit_highcharts(chart_portfolio_composition)
+            with tabs_alocacao[1]:
+                # Gráfico hierárquico: anel interno = classes, anel externo = ativos individuais
+                # Ordenar ambos por Classificação do Conjunto para alinhar as fatias
+                df_inner_chart = df_portfolio_composition_current.reset_index()
+                df_outer_chart = df_portfolio_positions_current.reset_index()
+                # Criar coluna auxiliar para ordenação por categoria
+                category_order = {cat: i for i, cat in enumerate(df_inner_chart['Classificação do Conjunto'])}
+                df_outer_chart['_cat_order'] = df_outer_chart['Classificação do Conjunto'].map(category_order)
+                df_outer_chart = df_outer_chart.sort_values(
+                    by=['_cat_order', 'Saldo'],
+                    ascending=[True, False]  # Categoria na ordem, Saldo decrescente
+                ).drop(columns=['_cat_order'])
+
+                options_nested = create_chart(
+                    data=df_outer_chart,
+                    columns='Saldo',
+                    x_column='Nome Ativo Completo',  # Ativos individuais no anel externo
+                    chart_type='nested_pie',
+                    title='Alocação Hierárquica',
+                    inner_data=df_inner_chart,
+                    inner_y_column='Saldo',
+                    inner_x_column='Classificação do Conjunto',  # Classes no anel interno
+                    inner_series_name='Classes',
+                    names='Ativos',
+                    inner_size="55%",
+                    outer_inner_size="55%",
+                    center_hole_size="30%",
+                    outer_parent_column='Classificação do Conjunto',  # Liga anel externo ao interno
+                )
+
+                hct.streamlit_highcharts(options_nested)
 
         with row_1[1]:  # Alocação Alvo
             if selected_carteira in df_target_allocations.index:

@@ -11,7 +11,7 @@ def create_highcharts_options(
     y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
     instruments: Optional[List[Dict[str, str]]] = None,
     x_column: Optional[str] = None,
-    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'donut', 'pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column', 'heatmap'] = 'line',
+    chart_type: Literal['line', 'bar', 'column', 'area', 'scatter', 'donut', 'pie', 'nested_pie', 'spline', 'areaspline', 'dual_axis_line', 'dual_axis_line_area', 'dual_axis_line_column', 'heatmap'] = 'line',
     stacking: Optional[Literal['normal', 'percent']] = None,
     title: str = "",
     y_axis_title: Union[str, Tuple[str, str]] = "",
@@ -33,7 +33,17 @@ def create_highcharts_options(
     exporting: Optional[Dict[str, Any]] = None,
     legend_layout: Optional[Literal['horizontal', 'vertical']] = None,
     show_legend: bool = True,
-    show_point_name_labels: bool = False
+    show_point_name_labels: bool = False,
+    # Nested pie parameters
+    inner_data: Optional[pd.DataFrame] = None,
+    inner_y_column: Optional[str] = None,
+    inner_x_column: Optional[str] = None,
+    inner_series_name: Optional[str] = None,
+    inner_size: str = "60%",
+    outer_inner_size: str = "60%",
+    center_hole_size: str = "40%",
+    inner_colors: Optional[List[str]] = None,
+    outer_parent_column: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Generate Highcharts options for various chart types.
@@ -130,6 +140,32 @@ def create_highcharts_options(
         When True and `point_name_column` is provided, show each point's `name` inside the chart.
     show_legend : bool, optional
         Whether to display the legend. Defaults to True.
+    inner_data : pd.DataFrame, optional
+        DataFrame containing the data for the inner ring in 'nested_pie' charts.
+        Required when chart_type='nested_pie'.
+    inner_y_column : str, optional
+        Column name in inner_data containing the values for the inner ring.
+        Required when chart_type='nested_pie'.
+    inner_x_column : str, optional
+        Column name in inner_data containing the category names for the inner ring.
+        Required when chart_type='nested_pie'.
+    inner_series_name : str, optional
+        Name of the inner ring series. Defaults to inner_y_column if not provided.
+    inner_size : str, optional
+        Size of the inner ring as a percentage string. Defaults to "60%".
+        This defines the outer boundary of the inner ring.
+    outer_inner_size : str, optional
+        Inner size of the outer ring as a percentage string. Defaults to "60%".
+        This should typically match inner_size to create seamless concentric rings.
+    center_hole_size : str, optional
+        Size of the center hole as a percentage string. Defaults to "40%".
+        Set to "0%" for no hole in the center.
+    inner_colors : List[str], optional
+        List of colors for the inner ring segments. If not provided, uses default chart colors.
+    outer_parent_column : str, optional
+        Column name in the outer data (main data) that links to the inner ring categories.
+        When provided, outer ring segments will inherit colors from their parent category in the inner ring.
+        This column should contain values matching the inner_x_column categories.
         
     Returns:
     --------
@@ -454,7 +490,7 @@ def create_highcharts_options(
         is_datetime = True
         x_label = x_column_effective
     else: # Not datetime
-        if chart_type == 'pie' or chart_type == 'donut':
+        if chart_type in ['pie', 'donut', 'nested_pie']:
             x_label = None
         elif chart_type in ['bar', 'column']: # Category axis type for non-datetime bar/column
             x_label = x_column_effective
@@ -468,7 +504,7 @@ def create_highcharts_options(
     x_axis_type: Optional[str]
     if is_datetime:
         x_axis_type = 'datetime'
-    elif chart_type == 'pie' or chart_type == 'donut':
+    elif chart_type in ['pie', 'donut', 'nested_pie']:
         x_axis_type = None
     elif chart_type in ['bar', 'column']: # Ensure this only applies if not datetime
         x_axis_type = 'category'
@@ -478,8 +514,8 @@ def create_highcharts_options(
     # Create base chart options
     chart_options = {
         "chart": {
-            "type": 'pie' if chart_type in ['pie', 'donut'] else (chart_type if not is_dual_axis else 'line'),
-            "zoomType": zoom_type if chart_type not in ['pie', 'donut'] else None,
+            "type": 'pie' if chart_type in ['pie', 'donut', 'nested_pie'] else (chart_type if not is_dual_axis else 'line'),
+            "zoomType": zoom_type if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
             "resetZoomButton": {
                 "position": {
                     "align": "right",
@@ -487,7 +523,7 @@ def create_highcharts_options(
                     "x": -10,
                     "y": 10
                 }
-            } if chart_type not in ['pie', 'donut'] else None,
+            } if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
             "height": height
         },
         "title": {
@@ -530,7 +566,7 @@ def create_highcharts_options(
         chart_options['colors'] = DEFAULT_CHART_COLORS
     
     # Add chart-type specific options
-    if chart_type not in ['pie', 'donut']:
+    if chart_type not in ['pie', 'donut', 'nested_pie']:
         chart_options["xAxis"] = {
             "type": x_axis_type,
             "title": {
@@ -777,52 +813,144 @@ def create_highcharts_options(
                  chart_options["plotOptions"][effective_chart_type_for_stacking] = {}
 
             chart_options["plotOptions"][effective_chart_type_for_stacking]["stacking"] = stacking
-    else: # Pie chart logic
-        # Pie chart specific options
-        chart_options["plotOptions"]["pie"] = {
-            "allowPointSelect": True,
-            "cursor": "pointer",
-            "innerSize": "65%" if chart_type == 'donut' else "0%",
-            "dataLabels": {
-                "enabled": True,
-                "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}} %"
-            },
-            "tooltip": {
-                "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision}f}}</b>'
+    else: # Pie chart logic (pie, donut, nested_pie)
+        if chart_type == 'nested_pie':
+            # Nested pie chart - two concentric pie rings
+            if inner_data is None or inner_y_column is None or inner_x_column is None:
+                raise ValueError(
+                    "For 'nested_pie' chart_type, you must provide 'inner_data', 'inner_y_column', and 'inner_x_column'."
+                )
+            
+            # Pie plot options for nested pie (no default innerSize, each series defines its own)
+            chart_options["plotOptions"]["pie"] = {
+                "allowPointSelect": True,
+                "cursor": "pointer",
+                "borderWidth": 0.5,  # Remove borders between slices for cleaner nested look
+                "tooltip": {
+                    "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision}f}}</b>'
+                }
             }
-        }
+            
+            # Determine colors to use for inner ring
+            colors_to_use = inner_colors if inner_colors else DEFAULT_CHART_COLORS
+            
+            # Build a mapping from category name to color for the inner ring
+            category_color_map: Dict[str, str] = {}
+            
+            # Prepare INNER ring data (categories/parent level)
+            inner_pie_data = []
+            color_idx = 0
+            for idx, row in inner_data.iterrows():
+                name = str(row[inner_x_column]) if inner_x_column in row and pd.notna(row[inner_x_column]) else str(idx)
+                if pd.notna(row[inner_y_column]):
+                    # Assign color to this category
+                    assigned_color = colors_to_use[color_idx % len(colors_to_use)]
+                    category_color_map[name] = assigned_color
+                    
+                    inner_pie_data.append({
+                        "name": name,
+                        "y": float(row[inner_y_column]),
+                        "color": assigned_color
+                    })
+                    color_idx += 1
+            
+            inner_series_name_final = inner_series_name if inner_series_name else inner_y_column
+            
+            inner_series = {
+                "name": inner_series_name_final,
+                "data": inner_pie_data,
+                "size": inner_size,           # e.g., "60%" - outer boundary of inner ring
+                "innerSize": center_hole_size, # e.g., "40%" - hole in the center
+                "dataLabels": {
+                    "enabled": True,
+                    "distance": -30,  # Labels inside the ring
+                    "format": "<b>{point.name}</b>",
+                    "style": {"fontSize": "11px"}
+                }
+            }
+            
+            # Prepare OUTER ring data (subcategories/child level)
+            outer_pie_data = []
+            y_col_outer = y_cols_for_single_axis[0]
+            
+            # Determine the parent column for color inheritance
+            parent_col = outer_parent_column if outer_parent_column else inner_x_column
+            
+            for idx, row in temp_data.iterrows():
+                name = str(row[x_column_effective]) if x_column_effective in row and pd.notna(row[x_column_effective]) else str(idx)
+                if pd.notna(row[y_col_outer]):
+                    point_data: Dict[str, Any] = {
+                        "name": name,
+                        "y": float(row[y_col_outer])
+                    }
+                    
+                    # Inherit color from parent category if parent column exists
+                    if parent_col and parent_col in row:
+                        parent_category = str(row[parent_col])
+                        if parent_category in category_color_map:
+                            point_data["color"] = category_color_map[parent_category]
+                    
+                    outer_pie_data.append(point_data)
+            
+            outer_series = {
+                "name": s_names_for_single_axis[0],
+                "data": outer_pie_data,
+                "size": "100%",              # Outer boundary (full size)
+                "innerSize": outer_inner_size, # e.g., "60%" - starts where inner ring ends
+                "dataLabels": {
+                    "enabled": True,
+                    "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}}%"
+                }
+            }
+            
+            chart_options["series"] = [inner_series, outer_series]
+            
+        else:
+            # Standard pie/donut chart logic
+            chart_options["plotOptions"]["pie"] = {
+                "allowPointSelect": True,
+                "cursor": "pointer",
+                "innerSize": "65%" if chart_type == 'donut' else "0%",
+                "dataLabels": {
+                    "enabled": True,
+                    "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}} %"
+                },
+                "tooltip": {
+                    "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision}f}}</b>'
+                }
+            }
 
-        # Prepare pie chart data
-        pie_data = []
-        # Use only the first y_column for pie charts (from y_cols_for_single_axis)
-        y_col_pie = y_cols_for_single_axis[0]
-        
-        for idx, row in temp_data.iterrows():
-            name = str(row[x_column_effective]) if x_column_effective in row and pd.notna(row[x_column_effective]) else str(idx)
-            if pd.notna(row[y_col_pie]):
-                pie_data.append({
-                    "name": name,
-                    "y": float(row[y_col_pie])
-                })
-        
-        chart_options["series"] = [{
-            "name": s_names_for_single_axis[0], # Use first series name for pie
-            "colorByPoint": True,
-            "data": pie_data
-        }]
-        
-        # Add color if specified (for pie charts, this is handled differently)
-        # colors_for_single_axis would contain the list of colors if provided for single axis pie.
-        if colors_for_single_axis and any(c is not None for c in colors_for_single_axis):
-            # Use the list of colors if provided. Highcharts pie uses 'colors' array at root.
-            chart_options["colors"] = [c for c in colors_for_single_axis if c is not None]
-            if not chart_options["colors"]: # If all were None, remove empty list
-                del chart_options["colors"]
-        elif isinstance(color, str): # A single color string might have been passed
-             chart_options["colors"] = [color]
+            # Prepare pie chart data
+            pie_data = []
+            # Use only the first y_column for pie charts (from y_cols_for_single_axis)
+            y_col_pie = y_cols_for_single_axis[0]
+            
+            for idx, row in temp_data.iterrows():
+                name = str(row[x_column_effective]) if x_column_effective in row and pd.notna(row[x_column_effective]) else str(idx)
+                if pd.notna(row[y_col_pie]):
+                    pie_data.append({
+                        "name": name,
+                        "y": float(row[y_col_pie])
+                    })
+            
+            chart_options["series"] = [{
+                "name": s_names_for_single_axis[0], # Use first series name for pie
+                "colorByPoint": True,
+                "data": pie_data
+            }]
+            
+            # Add color if specified (for pie charts, this is handled differently)
+            # colors_for_single_axis would contain the list of colors if provided for single axis pie.
+            if colors_for_single_axis and any(c is not None for c in colors_for_single_axis):
+                # Use the list of colors if provided. Highcharts pie uses 'colors' array at root.
+                chart_options["colors"] = [c for c in colors_for_single_axis if c is not None]
+                if not chart_options["colors"]: # If all were None, remove empty list
+                    del chart_options["colors"]
+            elif isinstance(color, str): # A single color string might have been passed
+                 chart_options["colors"] = [color]
 
     # Add additional point marker series if provided (not for pie charts)
-    if point_markers and chart_type not in ['pie', 'donut']:
+    if point_markers and chart_type not in ['pie', 'donut', 'nested_pie']:
         for marker in point_markers:
             chart_options["series"].append(marker)
     
