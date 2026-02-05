@@ -5,7 +5,7 @@ import streamlit_highcharts as hct
 from dateutil.relativedelta import relativedelta
 from persevera_tools.data import get_funds_data, get_persevera_peers, get_series
 from utils.table import style_table
-from utils.chart_helpers import create_chart
+from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 
@@ -334,9 +334,10 @@ if not performance_to_plot.empty:
         names=list(performance_to_plot.columns),
         chart_type='line',
         title="",
-        y_axis_title="%"
+        y_axis_title="%",
+        enable_fullscreen_on_dblclick=True
     )
-    hct.streamlit_highcharts(perf_chart_options, key=f"perf_acumulada_{selected_fund_name}")
+    render_chart(perf_chart_options, key=f"perf_acumulada_{selected_fund_name}")
 else:
     st.info("Não há dados de performance acumulada para exibir com os filtros selecionados.")
 

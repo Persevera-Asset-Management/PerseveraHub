@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
-from utils.chart_helpers import create_chart
+from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
@@ -109,11 +109,12 @@ if selected_carteira != "":
 
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
 
-        row_1 = st.columns(2)
-        with row_1[0]:  # Alocação Atual
+        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos e FGC"])
 
-            tabs_alocacao = st.tabs(["Alocação Atual", "Alocação Hierárquica"])
-            with tabs_alocacao[0]:
+        with tabs[0]: # Alocação Atual
+
+            cols = st.columns(2)
+            with cols[0]:
                 df_portfolio_composition = df.groupby(
                     [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Conjunto']
                 ).agg(**{'Saldo': ('Saldo', 'sum')})
@@ -129,59 +130,57 @@ if selected_carteira != "":
                     y_axis_title="%",
                 )
                 hct.streamlit_highcharts(chart_portfolio_composition)
-            with tabs_alocacao[1]:
-                # Gráfico hierárquico: anel interno = classes, anel externo = ativos individuais
-                # Ordenar ambos por Classificação do Conjunto para alinhar as fatias
-                df_inner_chart = df_portfolio_composition_current.reset_index()
-                df_outer_chart = df_portfolio_positions_current.reset_index()
-                # Criar coluna auxiliar para ordenação por categoria
-                category_order = {cat: i for i, cat in enumerate(df_inner_chart['Classificação do Conjunto'])}
-                df_outer_chart['_cat_order'] = df_outer_chart['Classificação do Conjunto'].map(category_order)
-                df_outer_chart = df_outer_chart.sort_values(
-                    by=['_cat_order', 'Saldo'],
-                    ascending=[True, False]  # Categoria na ordem, Saldo decrescente
-                ).drop(columns=['_cat_order'])
+            
+            with cols[1]:
+                if selected_carteira in df_target_allocations.index:
+                    df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
+                    df_target_allocations_current = get_latest_date_data(df_target_allocations_current)
+                    df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
+                    df_target_allocations_current = df_target_allocations_current.reindex(ASSET_CLASSES_ORDER)
 
-                options_nested = create_chart(
-                    data=df_outer_chart,
-                    columns='Saldo',
-                    x_column='Nome Ativo Completo',  # Ativos individuais no anel externo
-                    chart_type='nested_pie',
-                    title='Alocação Hierárquica',
-                    inner_data=df_inner_chart,
-                    inner_y_column='Saldo',
-                    inner_x_column='Classificação do Conjunto',  # Classes no anel interno
-                    inner_series_name='Classes',
-                    names='Ativos',
-                    inner_size="55%",
-                    outer_inner_size="55%",
-                    center_hole_size="30%",
-                    outer_parent_column='Classificação do Conjunto',  # Liga anel externo ao interno
-                )
+                    chart_portfolio_composition_target = create_chart(
+                        data=df_target_allocations_current,
+                        columns=['Target'],
+                        names=['Target'],
+                        chart_type='donut',
+                        title="Alocação Alvo",
+                        y_axis_title="%",
+                    )
+                    hct.streamlit_highcharts(chart_portfolio_composition_target)
+                else:
+                    st.warning("Alocação alvo não cadastrada")
 
-                hct.streamlit_highcharts(options_nested)
+        with tabs[1]: # Alocação Hierárquica
+            df_inner_chart = df_portfolio_composition_current.reset_index()
+            df_outer_chart = df_portfolio_positions_current.reset_index()
+            category_order = {cat: i for i, cat in enumerate(df_inner_chart['Classificação do Conjunto'])}
+            df_outer_chart['_cat_order'] = df_outer_chart['Classificação do Conjunto'].map(category_order)
+            df_outer_chart = df_outer_chart.sort_values(
+                by=['_cat_order', 'Saldo'],
+                ascending=[True, False]  # Categoria na ordem, Saldo decrescente
+            ).drop(columns=['_cat_order'])
 
-        with row_1[1]:  # Alocação Alvo
-            if selected_carteira in df_target_allocations.index:
-                df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
-                df_target_allocations_current = get_latest_date_data(df_target_allocations_current)
-                df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
-                df_target_allocations_current = df_target_allocations_current.reindex(ASSET_CLASSES_ORDER)
+            options_nested = create_chart(
+                data=df_outer_chart,
+                columns='Saldo',
+                x_column='Nome Ativo Completo',  # Ativos individuais no anel externo
+                chart_type='nested_pie',
+                title='Alocação Hierárquica',
+                inner_data=df_inner_chart,
+                inner_y_column='Saldo',
+                inner_x_column='Classificação do Conjunto',  # Classes no anel interno
+                inner_series_name='Classes',
+                names='Ativos',
+                inner_size="55%",
+                outer_inner_size="55%",
+                center_hole_size="30%",
+                outer_parent_column='Classificação do Conjunto',  # Liga anel externo ao interno
+                enable_fullscreen_on_dblclick=True,
+            )
 
-                chart_portfolio_composition_target = create_chart(
-                    data=df_target_allocations_current,
-                    columns=['Target'],
-                    names=['Target'],
-                    chart_type='donut',
-                    title="Alocação Alvo",
-                    y_axis_title="%",
-                )
-                hct.streamlit_highcharts(chart_portfolio_composition_target)
-            else:
-                st.warning("Alocação alvo não cadastrada")
+            render_chart(options_nested)
 
-        row_2 = st.columns(2)
-        with row_2[0]:  # Distribuição de Emissores
+        with tabs[2]: # Emissores
             df_emissor = get_emissor_column(df)
             df_portfolio_positions_emissores = df_emissor.groupby(
                 [pd.Grouper(key='Data Posição', freq='D'), 'Emissor']
@@ -201,7 +200,7 @@ if selected_carteira != "":
             )
             hct.streamlit_highcharts(chart_portfolio_positions_emissores)
 
-        with row_2[1]:  # Distribuição de Instrumentos
+        with tabs[3]: # Instrumentos
             df_instrument = df.copy()
             df_instrument['Instrumento'] = df_instrument['Classificação Instrumento']
             df_portfolio_positions_instruments = df_instrument.groupby(
@@ -222,8 +221,7 @@ if selected_carteira != "":
             )
             hct.streamlit_highcharts(chart_portfolio_positions_instruments)
 
-        row_3 = st.columns(2)
-        with row_3[0]:  # Distribuição por Custodiante
+        with tabs[4]: # Custodiantes
             df_custodiante = df.copy()
             df_portfolio_positions_custodiante = df_custodiante.groupby(
                 [pd.Grouper(key='Data Posição', freq='D'), 'Custodiante Acronimo']
@@ -243,70 +241,70 @@ if selected_carteira != "":
             )
             hct.streamlit_highcharts(chart_portfolio_positions_custodiante)
 
-        st.markdown("##### Renda Fixa")
-        row_4 = st.columns(2)
-        with row_4[0]:  # Vencimentos
-            st.markdown("##### Vencimentos")
-            df_data_vencimento_rf = df.copy()
-            df_data_vencimento_rf = df_data_vencimento_rf.groupby(
-                [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
-                 'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']
-            ).agg(**{
-                'Quantidade': ('Quantidade', 'sum'),
-                'Valor Unitário': ('Valor Unitário', 'mean'),
-                'Saldo': ('Saldo', 'sum')
-            })
-            df_data_vencimento_rf_current = get_latest_date_data(df_data_vencimento_rf).copy()
-            df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
-            df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(
-                df_data_vencimento_rf_current['Data de Vencimento RF']
-            )
-            df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(
-                by='Data de Vencimento', ascending=True
-            )
-
-            st.dataframe(
-                style_table(
-                    df_data_vencimento_rf_current[[
-                        'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento',
-                        'Data de Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
-                    ]],
-                    date_cols=['Data de Vencimento'],
-                    numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
-                    numeric_cols_format_as_int=['Quantidade'],
+        with tabs[5]: # Vencimentos e FGC
+            cols = st.columns(2)
+            with cols[0]:
+                st.markdown("##### Vencimentos")
+                df_data_vencimento_rf = df.copy()
+                df_data_vencimento_rf = df_data_vencimento_rf.groupby(
+                    [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
+                    'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']
+                ).agg(**{
+                    'Quantidade': ('Quantidade', 'sum'),
+                    'Valor Unitário': ('Valor Unitário', 'mean'),
+                    'Saldo': ('Saldo', 'sum')
+                })
+                df_data_vencimento_rf_current = get_latest_date_data(df_data_vencimento_rf).copy()
+                df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
+                df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(
+                    df_data_vencimento_rf_current['Data de Vencimento RF']
                 )
-            )
-
-        with row_4[1]:  # Cobertura do FGC
-            df_fgc = df.copy()
-            df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
-
-            df_fgc = df_fgc.groupby(
-                [pd.Grouper(key='Data Posição', freq='D'), 'Nome Emissor']
-            ).agg(**{'Saldo': ('Saldo', 'sum')})
-
-            if len(df_fgc) > 0:
-                df_fgc_current = get_latest_date_data(df_fgc).copy()
-
-                chart_portfolio_positions_fgc = create_chart(
-                    data=df_fgc_current.sort_values(by='Saldo', ascending=False),
-                    columns=['Saldo'],
-                    names=['Nome Emissor'],
-                    chart_type='column',
-                    title="Cobertura do FGC",
-                    y_axis_title="Total (R$)",
-                    x_axis_title="Banco Emissor",
-                    show_legend=False,
-                    horizontal_line={
-                        "value": 250000,
-                        "color": "#FF0000",
-                        "width": 2,
-                        "label": {"text": "Limite por Emissor", "align": "left"}
-                    }
+                df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(
+                    by='Data de Vencimento', ascending=True
                 )
-                hct.streamlit_highcharts(chart_portfolio_positions_fgc)
-            else:
-                st.info("Cliente não possui ativos cobertos pelo FGC")
+
+                st.dataframe(
+                    style_table(
+                        df_data_vencimento_rf_current[[
+                            'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento',
+                            'Data de Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
+                        ]],
+                        date_cols=['Data de Vencimento'],
+                        numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
+                        numeric_cols_format_as_int=['Quantidade'],
+                    )
+                )
+
+            with cols[1]:
+                df_fgc = df.copy()
+                df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
+
+                df_fgc = df_fgc.groupby(
+                    [pd.Grouper(key='Data Posição', freq='D'), 'Nome Emissor']
+                ).agg(**{'Saldo': ('Saldo', 'sum')})
+
+                if len(df_fgc) > 0:
+                    df_fgc_current = get_latest_date_data(df_fgc).copy()
+
+                    chart_portfolio_positions_fgc = create_chart(
+                        data=df_fgc_current.sort_values(by='Saldo', ascending=False),
+                        columns=['Saldo'],
+                        names=['Nome Emissor'],
+                        chart_type='column',
+                        title="Cobertura do FGC",
+                        y_axis_title="Total (R$)",
+                        x_axis_title="Banco Emissor",
+                        show_legend=False,
+                        horizontal_line={
+                            "value": 250000,
+                            "color": "#FF0000",
+                            "width": 2,
+                            "label": {"text": "Limite por Emissor", "align": "left"}
+                        }
+                    )
+                    hct.streamlit_highcharts(chart_portfolio_positions_fgc)
+                else:
+                    st.info("Cliente não possui ativos cobertos pelo FGC")
 
     except KeyError as e:
         st.error(f"Erro ao acessar dados: campo {e} não encontrado")

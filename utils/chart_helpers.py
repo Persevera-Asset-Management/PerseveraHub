@@ -2,6 +2,8 @@ import pandas as pd
 from typing import List, Dict, Any, Optional, Union, Tuple
 from utils.charts import create_highcharts_options
 from utils.data_transformers import apply_transformations
+from utils.highcharts_wrapper import render_highcharts_with_fullscreen
+import streamlit_highcharts as hct
 
 def create_chart(data, chart_type, title, y_axis_title=None, x_axis_title=None, columns=None, names=None, color=None, instruments=None, **kwargs):
     """
@@ -45,6 +47,46 @@ def create_chart(data, chart_type, title, y_axis_title=None, x_axis_title=None, 
         color=color,
         **kwargs
     )
+
+def render_chart(chart_options, key=None, use_fullscreen_wrapper=None):
+    """
+    Renders a Highcharts chart using the appropriate method.
+    
+    Parameters:
+    -----------
+    chart_options : dict
+        Highcharts configuration options
+    key : str, optional
+        Unique key for the component
+    use_fullscreen_wrapper : bool, optional
+        If True, uses the custom wrapper with double-click fullscreen support.
+        If None, automatically detects based on chart_options exporting config.
+        
+    Returns:
+    --------
+    None
+        Renders the chart to Streamlit
+    """
+    # Auto-detect if fullscreen wrapper should be used
+    if use_fullscreen_wrapper is None:
+        # Check if the chart was created with enable_fullscreen_on_dblclick=True
+        # We can detect this by checking if exporting.buttons.contextButton.menuItems contains viewFullscreen
+        has_fullscreen_button = False
+        if "exporting" in chart_options:
+            if "buttons" in chart_options["exporting"]:
+                if "contextButton" in chart_options["exporting"]["buttons"]:
+                    menu_items = chart_options["exporting"]["buttons"]["contextButton"].get("menuItems", [])
+                    has_fullscreen_button = "viewFullscreen" in menu_items
+        
+        use_fullscreen_wrapper = has_fullscreen_button
+    
+    if use_fullscreen_wrapper:
+        # Use custom wrapper with double-click support
+        height = chart_options.get("chart", {}).get("height", 400)
+        render_highcharts_with_fullscreen(chart_options, key=key, height=height)
+    else:
+        # Use standard streamlit_highcharts
+        hct.streamlit_highcharts(chart_options, key=key)
 
 def _get_transformed_column_name(original_col_name: str, transformations_list: List[Dict[str, Any]]) -> Union[str, List[str]]:
     """

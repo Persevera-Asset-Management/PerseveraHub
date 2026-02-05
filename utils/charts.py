@@ -34,6 +34,7 @@ def create_highcharts_options(
     legend_layout: Optional[Literal['horizontal', 'vertical']] = None,
     show_legend: bool = True,
     show_point_name_labels: bool = False,
+    enable_fullscreen_on_dblclick: bool = False,
     # Nested pie parameters
     inner_data: Optional[pd.DataFrame] = None,
     inner_y_column: Optional[str] = None,
@@ -140,6 +141,8 @@ def create_highcharts_options(
         When True and `point_name_column` is provided, show each point's `name` inside the chart.
     show_legend : bool, optional
         Whether to display the legend. Defaults to True.
+    enable_fullscreen_on_dblclick : bool, optional
+        When True, enables fullscreen mode by double-clicking on the chart. Defaults to False.
     inner_data : pd.DataFrame, optional
         DataFrame containing the data for the inner ring in 'nested_pie' charts.
         Required when chart_type='nested_pie'.
@@ -954,8 +957,32 @@ def create_highcharts_options(
         for marker in point_markers:
             chart_options["series"].append(marker)
     
-    # Add exporting options if provided
-    if exporting is not None:
+    # Configure exporting options
+    if enable_fullscreen_on_dblclick:
+        # If exporting wasn't provided, create default with fullscreen
+        if exporting is None:
+            chart_options["exporting"] = {
+                "buttons": {
+                    "contextButton": {
+                        "menuItems": ["viewFullscreen", "separator", "downloadPNG", "downloadJPEG", "downloadPDF", "downloadSVG"]
+                    }
+                }
+            }
+        else:
+            # Merge with existing exporting config
+            chart_options["exporting"] = exporting
+            # Ensure viewFullscreen is in menuItems if buttons are configured
+            if "buttons" not in chart_options["exporting"]:
+                chart_options["exporting"]["buttons"] = {
+                    "contextButton": {
+                        "menuItems": ["viewFullscreen", "separator", "downloadPNG", "downloadJPEG", "downloadPDF", "downloadSVG"]
+                    }
+                }
+            elif "contextButton" not in chart_options["exporting"]["buttons"]:
+                chart_options["exporting"]["buttons"]["contextButton"] = {
+                    "menuItems": ["viewFullscreen", "separator", "downloadPNG", "downloadJPEG", "downloadPDF", "downloadSVG"]
+                }
+    elif exporting is not None:
         chart_options["exporting"] = exporting
     
     return chart_options
