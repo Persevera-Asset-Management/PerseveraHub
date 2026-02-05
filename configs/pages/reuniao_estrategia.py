@@ -151,7 +151,7 @@ CHARTS_ESTRATEGIA = {
     "br_focus_selic": {
         "chart_config": {
             "columns": ["br_focus_selic_median_2026R2", "br_focus_selic_median_2026R3", "br_focus_selic_median_2026R4", "br_focus_selic_median_2026R5"],
-            "names": ["R2 (mar/26)", "R3 (mai/26)", "R4 (jun/26)", "R5 (jul/26)"],
+            "names": ["R2 (mar/26)", "R3 (abr/26)", "R4 (jun/26)", "R5 (ago/26)"],
             "chart_type": "line",
             "title": "SELIC Focus (Próximas Reuniões)",
             "y_axis_title": "Taxa (%)",
