@@ -118,15 +118,23 @@ with st.sidebar:
     start_of_month = today.replace(day=1) - relativedelta(days=1)
     start_of_year = date(today.year - 1, 12, 31)
 
-    last_date = st.date_input("Data Final", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=today, format="DD/MM/YYYY")
-    wtd_date = st.date_input("Início da Semana (WTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_week, format="DD/MM/YYYY")
-    mtd_date = st.date_input("Início do Mês (MTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_month, format="DD/MM/YYYY")
-    ytd_date = st.date_input("Início do Ano (YTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_year, format="DD/MM/YYYY")
+    st.markdown("#### Semanal")
+    wtd_date_start = st.date_input("Início da Semana (WTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_week, format="DD/MM/YYYY")
+    wtd_date_end = st.date_input("Fim da Semana (WTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=today, format="DD/MM/YYYY")
+    wtd_date_start_str = wtd_date_start.strftime('%Y-%m-%d')
+    wtd_date_end_str = wtd_date_end.strftime('%Y-%m-%d')
 
-    last_date_str = last_date.strftime('%Y-%m-%d')
-    wtd_date_str = wtd_date.strftime('%Y-%m-%d')
-    mtd_date_str = mtd_date.strftime('%Y-%m-%d')
-    ytd_date_str = ytd_date.strftime('%Y-%m-%d')
+    st.markdown("#### Mensal")
+    mtd_date_start = st.date_input("Início do Mês (MTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_month, format="DD/MM/YYYY")
+    mtd_date_end = st.date_input("Fim do Mês (MTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=today, format="DD/MM/YYYY")
+    mtd_date_start_str = mtd_date_start.strftime('%Y-%m-%d')
+    mtd_date_end_str = mtd_date_end.strftime('%Y-%m-%d')
+
+    st.markdown("#### Anual")
+    ytd_date_start = st.date_input("Início do Ano (YTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=start_of_year, format="DD/MM/YYYY")
+    ytd_date_end = st.date_input("Fim do Ano (YTD)", min_value=datetime(1990, 1, 1), max_value=datetime.today().date(), value=today, format="DD/MM/YYYY")
+    ytd_date_start_str = ytd_date_start.strftime('%Y-%m-%d')
+    ytd_date_end_str = ytd_date_end.strftime('%Y-%m-%d')
 
 def load_data(codes, start_date, field='close'):
     try:
@@ -137,25 +145,26 @@ def load_data(codes, start_date, field='close'):
 
 with st.spinner("Carregando dados...", show_time=True):
     complete_list = [item for sublist in INDICADORES_GRUPOS.values() for item in sublist.keys()]
-    data = load_data(complete_list, start_date=(min(last_date, wtd_date, mtd_date, ytd_date) - relativedelta(days=5)).strftime('%Y-%m-%d'))
+    data = load_data(complete_list, start_date=(min(wtd_date_start, mtd_date_start, ytd_date_start) - relativedelta(days=5)).strftime('%Y-%m-%d'))
     data = data.ffill()
 
 with st.spinner("Calculando variações...", show_time=True):
     df = pd.DataFrame()
-    df['Variação\nna semana'] = data.loc[last_date_str] / data.loc[wtd_date_str] - 1
-    df[f'Variação\nem {(mtd_date + relativedelta(days=1)).strftime("%b/%Y")}'] = data.loc[last_date_str] / data.loc[mtd_date_str] - 1
-    df[f'Variação\nem {(ytd_date + relativedelta(years=1)).strftime("%Y")}'] = data.loc[last_date_str] / data.loc[ytd_date_str] - 1
+    df['Variação\nna semana'] = data.loc[wtd_date_end_str] / data.loc[wtd_date_start_str] - 1
+    df[f'Variação\nem {(mtd_date_start + relativedelta(days=1)).strftime("%b/%Y")}'] = data.loc[mtd_date_end_str] / data.loc[mtd_date_start_str] - 1
+    df[f'Variação\nem {(ytd_date_start + relativedelta(years=1)).strftime("%Y")}'] = data.loc[ytd_date_end_str] / data.loc[ytd_date_start_str] - 1
     df = df.mul(100)
     
     # Unir os dicionários de indicadores para renomear o índice de uma só vez
-    all_indicators = {**INDICADORES_GRUPOS['Mercados Globais'], **INDICADORES_GRUPOS['Mercado Local']}
+    all_indicators = {code: name for group in INDICADORES_GRUPOS.values() for code, name in group.items()}
     df.rename(index=all_indicators, inplace=True)
 
 
 if df.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
-
+    
+    last_date = max(wtd_date_end, mtd_date_end, ytd_date_end)
     with st.expander("Visualizar dados"):
         st.dataframe(data.sort_index(ascending=False))
 
