@@ -14,7 +14,7 @@ INDICADORES_GRUPOS = {
         "br_ibovespa": "Ibovespa",
         "br_smll": "SMLL (Small Caps)",
         "br_idiv": "IDIV (Índice de Dividendos)",
-        "usd_brl": "Dólar/Real",
+        "usd_brl": "Real/Dólar",
         "anbima_irf_m": "IRF-M (títulos públicos pré-fixados)",
         "anbima_ima_b": "IMA-B (títulos públicos IPCA)",
         "anbima_ida_geral": "Índice de Debêntures Anbima",
