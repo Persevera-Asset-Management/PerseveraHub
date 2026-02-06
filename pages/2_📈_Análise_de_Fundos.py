@@ -4,6 +4,7 @@ import numpy as np
 import streamlit_highcharts as hct
 from dateutil.relativedelta import relativedelta
 from persevera_tools.data import get_funds_data, get_persevera_peers, get_series
+from persevera_tools.db.fibery import read_fibery
 from utils.table import style_table
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css
@@ -21,7 +22,17 @@ check_authentication()
 
 st.title("Análise de Fundos")
 
-peers = get_persevera_peers()
+# peers = get_persevera_peers()
+
+@st.cache_data(ttl=3600)
+def get_persevera_peers():
+    df = read_fibery(
+        table_name="Inv-Asset Allocation/Pares de Fundos",
+        include_fibery_fields=False,
+    )
+    df = df[["Ativo", "Name", "Peer Group"]]
+    df.columns = ["fund_cnpj", "short_name", "persevera_group"]
+    return df
 
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date):
