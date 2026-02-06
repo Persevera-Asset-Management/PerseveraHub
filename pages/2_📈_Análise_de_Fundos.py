@@ -22,8 +22,6 @@ check_authentication()
 
 st.title("Análise de Fundos")
 
-# peers = get_persevera_peers()
-
 @st.cache_data(ttl=3600)
 def get_persevera_peers():
     df = read_fibery(
@@ -33,6 +31,8 @@ def get_persevera_peers():
     df = df[["Ativo", "Name", "Peer Group"]]
     df.columns = ["fund_cnpj", "short_name", "persevera_group"]
     return df
+
+peers = get_persevera_peers()
 
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date):
