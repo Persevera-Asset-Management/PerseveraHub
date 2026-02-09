@@ -108,6 +108,7 @@ if selected_carteira != "":
             st.warning("Política de Investimentos não cadastrada")
 
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
+        st.markdown("Data da Posição: **{0:%Y-%m-%d}**".format(df["Data Posição"].max()))
 
         tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos e FGC"])
 

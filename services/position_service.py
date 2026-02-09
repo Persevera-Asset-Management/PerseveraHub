@@ -102,7 +102,8 @@ def load_positions(
         "Nome Ativo", "Nome Ativo Completo",
         "Classificação do Conjunto", "Classificação Instrumento",
         "Nome Emissor", "Nome Devedor",
-        "Quantidade", "Valor Unitário", "Saldo"
+        "Quantidade", "Valor Unitário", "Saldo",
+        "Dias Úteis"
     ]
     
     if include_custodiante:
@@ -113,6 +114,9 @@ def load_positions(
     
     df = df[columns]
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])
+
+    df = df[df['Dias Úteis'].notna()]
+    df.drop(columns=['Dias Úteis'], inplace=True)
     
     return df
 
