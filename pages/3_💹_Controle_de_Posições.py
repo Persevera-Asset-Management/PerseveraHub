@@ -31,13 +31,15 @@ st.title("Controle de Posições")
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteira = st.selectbox(
-        "Carteira selecionada",
-        options=[""] + sorted(CODIGOS_CARTEIRAS_ADM.keys())
+    selected_carteiras = st.multiselect(
+        "Carteiras selecionadas",
+        options=sorted(CODIGOS_CARTEIRAS_ADM.keys()),
+        default=None,
+        placeholder="Selecione uma ou mais carteiras..."
     )
 
 
-def load_data():
+def load_data(carteiras):
     """Carrega todos os dados necessários para a página."""
     with st.spinner("Carregando dados...", show_time=True):
         df_positions = load_positions(include_custodiante=True, include_vencimento_rf=True)
@@ -45,28 +47,36 @@ def load_data():
         st.session_state.instruments_fgc = load_instruments_fgc()
         st.session_state.df_target_allocations = load_target_allocations(include_limits=True)
         st.session_state.df_accounts = load_accounts()
-        st.session_state.df = df_positions[df_positions['Portfolio'] == selected_carteira]
+        st.session_state.df = df_positions[df_positions['Portfolio'].isin(carteiras)]
 
 
-if selected_carteira != "":
-    load_data()
+if selected_carteiras:
+    load_data(selected_carteiras)
 
     df = st.session_state.df
     df_target_allocations = st.session_state.df_target_allocations
     df_accounts = st.session_state.df_accounts
     instruments_fgc = st.session_state.instruments_fgc
+    is_single_carteira = len(selected_carteiras) == 1
 
     try:
-        st.subheader(selected_carteira)
+        if is_single_carteira:
+            st.subheader(selected_carteiras[0])
+        else:
+            st.subheader("Consolidado: " + ", ".join(sorted(selected_carteiras)))
 
         # Informações Gerais
-        account_info = df_accounts[df_accounts['Portfolio'] == selected_carteira]
-        st.code(f"""
-        {account_info['Nome Completo'].values[0]} ({selected_carteira})
-
-        Conta(s): {', '.join(account_info['Nr Conta'].values)}
-        Custodiante(s): {', '.join(account_info['Custodiante'].values)}
-        """, language='markdown')
+        account_info = df_accounts[df_accounts['Portfolio'].isin(selected_carteiras)]
+        account_lines = []
+        for _portfolio in sorted(selected_carteiras):
+            info = account_info[account_info['Portfolio'] == _portfolio]
+            if len(info) > 0:
+                account_lines.append(
+                    f"{info['Nome Completo'].values[0]} ({_portfolio})\n\n"
+                    f"Conta(s): {', '.join(info['Nr Conta'].values)}\n"
+                    f"Custodiante(s): {', '.join(info['Custodiante'].values)}"
+                )
+        st.code("\n\n---\n\n".join(account_lines), language='markdown')
 
         # Composição Completa
         df_portfolio_positions = df.groupby(
@@ -91,8 +101,10 @@ if selected_carteira != "":
             )
 
         # Política de Investimentos
-        if selected_carteira in df_target_allocations.index:
-            df_policy_investments_current = df_target_allocations.loc[selected_carteira].dropna(subset=['PL Min', 'PL Max'])
+        if not is_single_carteira:
+            st.info("Política disponível apenas para carteira única.")
+        elif selected_carteiras[0] in df_target_allocations.index:
+            df_policy_investments_current = df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['PL Min', 'PL Max'])
             df_policy_investments_current = get_latest_date_data(df_policy_investments_current)
             df_policy_investments_current = df_policy_investments_current.mul(100)
             df_policy_investments_current = df_policy_investments_current.reindex(ASSET_CLASSES_ORDER)
@@ -133,8 +145,10 @@ if selected_carteira != "":
                 hct.streamlit_highcharts(chart_portfolio_composition)
             
             with cols[1]:
-                if selected_carteira in df_target_allocations.index:
-                    df_target_allocations_current = df_target_allocations.loc[selected_carteira].dropna(subset=['Target'])
+                if not is_single_carteira:
+                    st.info("Política disponível apenas para carteira única.")
+                elif selected_carteiras[0] in df_target_allocations.index:
+                    df_target_allocations_current = df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['Target'])
                     df_target_allocations_current = get_latest_date_data(df_target_allocations_current)
                     df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
                     df_target_allocations_current = df_target_allocations_current.reindex(ASSET_CLASSES_ORDER)
