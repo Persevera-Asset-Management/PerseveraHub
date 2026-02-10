@@ -117,6 +117,8 @@ def load_positions(
 
     df = df[df['Dias Úteis'].notna()]
     df.drop(columns=['Dias Úteis'], inplace=True)
+
+    df.dropna(subset=['Classificação do Conjunto'], inplace=True)
     
     return df
 
