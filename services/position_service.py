@@ -100,7 +100,7 @@ def load_positions(
     columns = [
         "Data Posição", "Portfolio",
         "Nome Ativo", "Nome Ativo Completo",
-        "Classificação do Conjunto", "Classificação Instrumento",
+        "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
         "Dias Úteis"
@@ -119,6 +119,7 @@ def load_positions(
     df.drop(columns=['Dias Úteis'], inplace=True)
 
     df.dropna(subset=['Classificação do Conjunto'], inplace=True)
+    df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)
     
     return df
 
