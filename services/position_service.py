@@ -52,19 +52,45 @@ INSTRUMENTOS_RF = [
 # Funções Utilitárias
 # =============================================================================
 
-def get_latest_date_data(df: pd.DataFrame, level: int = 0) -> pd.DataFrame:
+def get_latest_date_data(
+    df: pd.DataFrame,
+    level: int | str = 0,
+    group_level: int | str | list | None = None,
+) -> pd.DataFrame:
     """
     Retorna dados da data mais recente de um DataFrame com MultiIndex.
     
     Args:
-        df: DataFrame com MultiIndex onde o primeiro nível é a data.
+        df: DataFrame com MultiIndex onde um dos níveis é a data.
         level: Nível do índice que contém as datas (padrão: 0).
+        group_level: Se informado, obtém a data mais recente **por grupo**.
+            Pode ser um único nível (int/str) ou lista de níveis.
+            Exemplo: group_level='Portfolio' retorna, para cada portfolio,
+            as linhas da sua data mais recente.
     
     Returns:
-        DataFrame filtrado para a data mais recente.
+        DataFrame filtrado para a data mais recente (global ou por grupo).
     """
-    latest_date = df.index.get_level_values(level=level).max()
-    return df.loc[latest_date]
+    if group_level is None:
+        latest_date = df.index.get_level_values(level=level).max()
+        return df.loc[latest_date]
+
+    if not isinstance(group_level, list):
+        group_level = [group_level]
+
+    dates = df.index.get_level_values(level=level)
+    groups = [df.index.get_level_values(level=g) for g in group_level]
+
+    temp = df.copy()
+    temp['__date__'] = dates
+    for i, g in enumerate(groups):
+        temp[f'__grp_{i}__'] = g
+    grp_cols = [f'__grp_{i}__' for i in range(len(groups))]
+
+    latest_per_group = temp.groupby(grp_cols)['__date__'].transform('max')
+    mask = temp['__date__'] == latest_per_group
+    result = df.loc[mask.values]
+    return result
 
 
 # =============================================================================
@@ -103,7 +129,7 @@ def load_positions(
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
-        "Dias Úteis"
+        "Dias Úteis", "creation-date"
     ]
     
     if include_custodiante:
@@ -114,9 +140,13 @@ def load_positions(
     
     df = df[columns]
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])
+    df['creation-date'] = pd.to_datetime(df['creation-date'])
 
     df = df[df['Dias Úteis'].notna()]
     df.drop(columns=['Dias Úteis'], inplace=True)
+    
+    df.drop_duplicates(subset=['Data Posição', 'Portfolio', 'Nome Ativo'], keep='last', inplace=True)
+    df.drop(columns=['creation-date'], inplace=True)
 
     df.dropna(subset=['Classificação do Conjunto'], inplace=True)
     df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)

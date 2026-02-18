@@ -21,6 +21,9 @@ def style_table(
     highlight_color: str = 'lightblue',
     highlight_quartile: Optional[List[str]] = None,
     highlight_min_max_cols: Optional[List[str]] = None,
+    highlight_row_if_value_lower: Optional[Dict[str, float]] = None,
+    highlight_row_if_value_greater: Optional[Dict[str, float]] = None,
+    color_negative_positive_cols: Optional[List[str]] = None,
     quartile_exclude_row_by_column: Optional[str] = None,
     quartile_exclude_row_if_value_is: Optional[List[Any]] = None,
     left_align_cols: Optional[List[str]] = None,
@@ -35,6 +38,7 @@ def style_table(
     and currency-style formatting (integers with thousands separators).
     Allows conditional row highlighting, color-coding of columns by quartile, and custom alignment for specified columns. Quartile calculations can exclude specified rows.
     Optionally highlights lowest and highest values in specified columns.
+    Supports threshold-based row highlighting (lower/greater) and coloring negative/positive values.
     """
     df_styled = df.copy()
 
@@ -161,6 +165,43 @@ def style_table(
         for col in highlight_min_max_cols:
             if col in df_styled.columns:
                 styled_obj = styled_obj.apply(highlight_extrema, subset=[col], axis=0)
+
+    # Highlight rows where a column value is below a threshold
+    if highlight_row_if_value_lower:
+        for col, threshold in highlight_row_if_value_lower.items():
+            if col in df_styled.columns:
+                def _highlight_lower(row, _col=col, _threshold=threshold):
+                    val = pd.to_numeric(row[_col], errors='coerce')
+                    if pd.notna(val) and val < _threshold:
+                        return ['background-color: #ffc7ce'] * len(row)
+                    return [''] * len(row)
+                styled_obj = styled_obj.apply(_highlight_lower, axis=1)
+
+    # Highlight rows where a column value is above a threshold
+    if highlight_row_if_value_greater:
+        for col, threshold in highlight_row_if_value_greater.items():
+            if col in df_styled.columns:
+                def _highlight_greater(row, _col=col, _threshold=threshold):
+                    val = pd.to_numeric(row[_col], errors='coerce')
+                    if pd.notna(val) and val > _threshold:
+                        return ['background-color: #c6efce'] * len(row)
+                    return [''] * len(row)
+                styled_obj = styled_obj.apply(_highlight_greater, axis=1)
+
+    # Color negative values red and positive values green in specified columns
+    if color_negative_positive_cols:
+        def _color_neg_pos(column: pd.Series):
+            numeric_col = pd.to_numeric(column, errors='coerce')
+            return [
+                'color: #d32f2f' if pd.notna(v) and v < 0
+                else 'color: #2e7d32' if pd.notna(v) and v > 0
+                else ''
+                for v in numeric_col
+            ]
+
+        for col in color_negative_positive_cols:
+            if col in df_styled.columns:
+                styled_obj = styled_obj.apply(_color_neg_pos, subset=[col], axis=0)
 
     alignment_styles = []
     
