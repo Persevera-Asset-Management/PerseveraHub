@@ -99,7 +99,6 @@ def get_latest_date_data(
 
 @st.cache_data
 def load_positions(
-    include_custodiante: bool = False,
     include_vencimento_rf: bool = False,
     days_lookback: int = 5
 ) -> pd.DataFrame:
@@ -124,16 +123,13 @@ def load_positions(
     )
     
     columns = [
-        "Data Posição", "Portfolio",
+        "Data Posição", "Portfolio", "Custodiante Acronimo",
         "Nome Ativo", "Nome Ativo Completo",
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
         "Dias Úteis", "creation-date"
     ]
-    
-    if include_custodiante:
-        columns.append("Custodiante Acronimo")
     
     if include_vencimento_rf:
         columns.append("Data de Vencimento RF")
@@ -145,7 +141,7 @@ def load_positions(
     df = df[df['Dias Úteis'].notna()]
     df.drop(columns=['Dias Úteis'], inplace=True)
     
-    df.drop_duplicates(subset=['Data Posição', 'Portfolio', 'Nome Ativo'], keep='last', inplace=True)
+    df.drop_duplicates(subset=['Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo'], keep='last', inplace=True)
     df.drop(columns=['creation-date'], inplace=True)
 
     df.dropna(subset=['Classificação do Conjunto'], inplace=True)

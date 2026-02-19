@@ -42,7 +42,7 @@ with st.sidebar:
 def load_data(carteiras):
     """Carrega todos os dados necessários para a página."""
     with st.spinner("Carregando dados...", show_time=True):
-        df_positions = load_positions(include_custodiante=True, include_vencimento_rf=True)
+        df_positions = load_positions(include_vencimento_rf=True)
         st.session_state.df_positions = df_positions
         st.session_state.instruments_fgc = load_instruments_fgc()
         st.session_state.df_target_allocations = load_target_allocations(include_limits=True)
