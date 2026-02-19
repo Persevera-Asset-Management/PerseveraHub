@@ -12,7 +12,6 @@ from services.position_service import (
     load_instruments_fgc,
     get_latest_date_data,
     get_emissor_column,
-    ASSET_CLASSES_ORDER,
 )
 
 st.set_page_config(
@@ -41,14 +40,36 @@ df.rename(columns={'Emissor': 'Emissor Geral'}, inplace=True)
 
 
 if df is not None:
-    df = st.session_state.df
     instruments_fgc = st.session_state.instruments_fgc
 
     tabs = st.tabs(["Posições Consolidadas", "Vencimentos", "Cobertura do FGC"])
 
     with tabs[0]: # Posições Consolidadas
-        pass
+        df_positions = df.copy()
+        df_positions = df_positions.groupby(
+            ['Portfolio', pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
+            'Emissor Geral', 'Classificação Instrumento']
+        ).agg(**{
+            'Quantidade': ('Quantidade', 'sum'),
+            'Valor Unitário': ('Valor Unitário', 'mean'),
+            'Saldo': ('Saldo', 'sum')
+        })
+        df_positions_current = get_latest_date_data(df_positions, level='Data Posição', group_level='Portfolio')
+        df_positions_current = df_positions_current.reset_index().set_index(['Portfolio', 'Nome Ativo'])
+        df_positions_current = df_positions_current.sort_values(by='Saldo', ascending=False)
+        df_positions_current = df_positions_current[df_positions_current['Saldo'] > 0]
+        df_positions_current.reset_index(inplace=True)
 
+        st.dataframe(
+            style_table(
+                df_positions_current[[
+                    'Portfolio', 'Nome Ativo', 'Nome Ativo Completo', 'Emissor Geral', 'Classificação Instrumento',
+                    'Quantidade', 'Valor Unitário', 'Saldo'
+                ]].set_index(['Portfolio', 'Nome Ativo']),
+                numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
+                numeric_cols_format_as_int=['Quantidade'],
+            )
+        )
         
     with tabs[1]: # Vencimentos
         df_data_vencimento_rf = df.copy()
