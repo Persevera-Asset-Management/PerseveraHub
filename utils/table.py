@@ -297,3 +297,19 @@ def get_performance_table(series):
     df_result = df_result.reset_index()
     
     return df_result
+
+
+def get_monthly_returns_table(returns_series: pd.Series) -> pd.DataFrame:
+    MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    monthly = returns_series.resample('ME').apply(lambda x: (1 + x).prod() - 1) * 100
+    df = monthly.to_frame(name='ret')
+    df['year'] = df.index.year
+    df['month'] = df.index.month
+    pivot = df.pivot(index='year', columns='month', values='ret')
+    pivot.columns = [MONTH_NAMES[m - 1] for m in pivot.columns]
+
+    annual = returns_series.resample('YE').apply(lambda x: (1 + x).prod() - 1) * 100
+    annual.index = annual.index.year
+    pivot['Ano'] = annual
+    pivot.index.name = None
+    return pivot
