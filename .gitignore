@@ -123,3 +123,6 @@ config.local.py
 
 #Ignore cursor AI rules
 .cursor\rules\codacy.mdc
+
+# Temp
+pages/3_💹_Modelo_de_Alocação.py

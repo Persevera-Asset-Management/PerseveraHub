@@ -3,9 +3,7 @@ from pandas.io.formats.style import Styler
 from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 from dateutil.relativedelta import relativedelta
 import numpy as np
-import io
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+
 
 def style_table(
     df: pd.DataFrame,

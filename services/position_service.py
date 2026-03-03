@@ -300,3 +300,21 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df['Emissor'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
     return df
+
+
+# =============================================================================
+# Funções de Carregamento de Dados
+# =============================================================================
+
+def load_equities_portfolio() -> pd.DataFrame:
+    """
+    Carrega portfólio de ações do Fibery.
+    
+    Returns:
+        DataFrame com o portfólio de ações.
+    """
+    df = read_fibery(table_name="Inv-Asset Allocation/Carteira RVQM", include_fibery_fields=False)
+    df = df[["Data de Implementação", "Ativo", "Peso"]]
+    df['Data de Implementação'] = pd.to_datetime(df['Data de Implementação'])
+    df.rename(columns={'Ativo': 'code', 'Data de Implementação': 'date', 'Peso': 'weight'}, inplace=True)
+    return df
