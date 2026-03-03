@@ -131,17 +131,15 @@ else:
         st.warning("Data inicial deve ser anterior à data final.")
         st.stop()
 
-    performance_table = get_performance_table(
-        series=cumulative_returns.add(1)
-    )
+    performance_table = get_performance_table(cumulative_returns.add(1))
+    performance_table.set_index('index', inplace=True)
 
     if not performance_table.empty:
         st.dataframe(
             style_table(
-                performance_table.set_index('index'),
-                numeric_cols_format_as_float=['mtd', 'ytd', '3m', '6m', '12m', '24m', '36m'],
-                highlight_quartile=['mtd', 'ytd', '3m', '6m', '12m', '24m', '36m'],
-                highlight_color='lightblue'
+                performance_table,
+                numeric_cols_format_as_float=list(performance_table.columns),
+                highlight_quartile=list(performance_table.columns),
             ),
             use_container_width=True
         )
