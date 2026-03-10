@@ -100,7 +100,7 @@ def get_latest_date_data(
 @st.cache_data
 def load_positions(
     include_vencimento_rf: bool = False,
-    days_lookback: int = 5
+    days_lookback: int = 4
 ) -> pd.DataFrame:
     """
     Carrega posições do Fibery.
