@@ -1,4 +1,3 @@
-streamlit==1.45.1
 pandas==2.2.3
 numpy==2.2.5
 plotly==5.18.0
@@ -26,6 +25,7 @@ gspread==6.2.1
 undetected-chromedriver==3.5.5
 setuptools==80.9.0
 Markdown==3.6
+streamlit
 streamlit-aggrid
 streamlit-autorefresh
 streamlit_highcharts

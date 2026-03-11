@@ -99,16 +99,13 @@ def get_latest_date_data(
 
 @st.cache_data
 def load_positions(
-    include_vencimento_rf: bool = False,
     days_lookback: int = 4
 ) -> pd.DataFrame:
     """
     Carrega posições do Fibery.
     
     Args:
-        include_custodiante: Se True, inclui coluna 'Custodiante Acronimo'.
-        include_vencimento_rf: Se True, inclui coluna 'Data de Vencimento RF'.
-        days_lookback: Número de dias para buscar posições (padrão: 5).
+        days_lookback: Número de dias para buscar posições (padrão: 4).
     
     Returns:
         DataFrame com as posições.
@@ -128,11 +125,9 @@ def load_positions(
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
-        "Dias Úteis", "creation-date"
+        "Dias Úteis", "creation-date",
+        "Data de Vencimento RF",
     ]
-    
-    if include_vencimento_rf:
-        columns.append("Data de Vencimento RF")
     
     df = df[columns]
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])

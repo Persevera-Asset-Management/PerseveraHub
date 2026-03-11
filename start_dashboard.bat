@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: Set the dashboard paths (original and alternative)
 set "DASHBOARD_PATH_PT=G:\Drives compartilhados\INVESTIMENTOS\Quant\PerseveraHub"
-set "DASHBOARD_PATH_EN=G:\Shared drives\INVESTIMENTOS\Quant\PerseveraHub"
+set "DASHBOARD_PATH_EN=H:\Shared drives\INVESTIMENTOS\Quant\PerseveraHub"
 
 :: First try with the Portuguese path
 set "DASHBOARD_PATH=%DASHBOARD_PATH_PT%"

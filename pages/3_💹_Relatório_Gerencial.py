@@ -28,7 +28,7 @@ st.title("Relatório Gerencial")
 
 
 with st.spinner("Carregando dados...", show_time=True):
-    st.session_state.df = load_positions(include_vencimento_rf=True)
+    st.session_state.df = load_positions()
     st.session_state.instruments_fgc = load_instruments_fgc()
 
 df_raw = st.session_state.df
