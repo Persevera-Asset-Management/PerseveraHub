@@ -146,6 +146,54 @@ def load_positions(
 
 
 @st.cache_data
+def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
+    """
+    Carrega todo o histórico disponível de posições para um único portfolio.
+
+    Args:
+        portfolio: Código do portfolio (ex: 'ABC123').
+
+    Returns:
+        DataFrame com todas as posições históricas do portfolio.
+    """
+    df = read_fibery(
+        table_name="Inv-Asset Allocation/Posição",
+        where_filter=["=", ["Inv-Asset Allocation/Portfolio", "Ops-Portfolios/Name"], "$portfolio"],
+        params={"$portfolio": portfolio},
+        include_fibery_fields=False,
+    )
+
+    columns = [
+        "Data Posição", "Portfolio", "Custodiante Acronimo",
+        "Nome Ativo", "Nome Ativo Completo",
+        "Classificação do Conjunto", "Classificação Instrumento-Relation",
+        "Nome Emissor", "Nome Devedor",
+        "Quantidade", "Valor Unitário", "Saldo",
+        "Dias Úteis", "creation-date",
+        "Data de Vencimento RF",
+    ]
+
+    df = df[columns]
+    df['Data Posição'] = pd.to_datetime(df['Data Posição'])
+    df['creation-date'] = pd.to_datetime(df['creation-date'])
+
+    df = df[df['Dias Úteis'].notna()]
+    df.drop(columns=['Dias Úteis'], inplace=True)
+
+    df.drop_duplicates(
+        subset=['Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo'],
+        keep='last',
+        inplace=True,
+    )
+    df.drop(columns=['creation-date'], inplace=True)
+
+    df.dropna(subset=['Classificação do Conjunto'], inplace=True)
+    df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)
+
+    return df
+
+
+@st.cache_data
 def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     """
     Carrega alocações target do Fibery.
