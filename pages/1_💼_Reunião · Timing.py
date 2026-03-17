@@ -16,4 +16,4 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title('Reunião Timing & Awareness')
+st.title('Reunião · Timing & Awareness')

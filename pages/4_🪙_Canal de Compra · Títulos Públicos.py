@@ -122,7 +122,7 @@ def chart_custos_acumulados(df: pd.DataFrame, bk_prazo: float) -> dict:
         y_axis_title="Bps acumulados",
         x_axis_title="Tempo (anos)",
         x_column="t",
-        height=320,
+        # height=320,
         decimal_precision=1,
         vertical_line=_breakeven_vline(bk_prazo, df["t"].max()),
     )
@@ -139,7 +139,7 @@ def chart_vantagem_liquida(df: pd.DataFrame, bk_prazo: float) -> dict:
         y_axis_title="Bps",
         x_axis_title="Tempo (anos)",
         x_column="t",
-        height=280,
+        # height=280,
         decimal_precision=1,
         horizontal_line={"value": 0, "color": COLORS["zero"], "width": 1},
         vertical_line=_breakeven_vline(bk_prazo, df["t"].max()),
@@ -171,7 +171,7 @@ def chart_sensibilidade_spread(
         y_axis_title="Prazo mínimo de hold (anos)",
         x_axis_title="Spread de saída na Mesa (bps)",
         x_column="spread",
-        height=280,
+        # height=280,
         decimal_precision=2,
         horizontal_line={
             "value": prazo_titulo,

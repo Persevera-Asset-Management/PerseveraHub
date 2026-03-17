@@ -17,7 +17,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title('Reunião Economia')
+st.title('Reunião · Economia')
 
 @st.cache_data(ttl=7200)
 def load_data(codes, start_date):

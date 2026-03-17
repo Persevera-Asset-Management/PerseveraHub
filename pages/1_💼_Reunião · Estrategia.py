@@ -18,7 +18,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title('Reunião Estratégia')
+st.title('Reunião · Estratégia')
 
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date, field='close'):
