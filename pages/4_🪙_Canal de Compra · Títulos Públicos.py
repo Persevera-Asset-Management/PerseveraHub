@@ -33,17 +33,50 @@ COLORS = {
 }
 
 
-def calc_net_annual_bps(yield_mesa: float, yield_td: float, custodia: float) -> float:
-    """Vantagem anual da Mesa sobre o TD em bps. Positivo → Mesa melhor."""
-    dy = yield_td - yield_mesa
-    return (custodia - dy) * 100
+def _mesa_advantage(yield_mesa: float, yield_td: float, custodia: float, t) -> np.ndarray:
+    """
+    Vantagem acumulada da Mesa sobre o TD em bps (relativa ao PU inicial).
+
+    Para LTN (zero coupon), o PU acresce continuamente ao yield_td, então
+    a custódia incide sobre uma base crescente:
+
+        custódia_acum(t) = cust_bps × [(1 + y_TD)^t − 1] / ln(1 + y_TD)
+
+    A vantagem de yield do TD também é calculada sobre o valor terminal real:
+
+        Δy_acum(t) = [(1 + y_TD)^t − (1 + y_Mesa)^t] × 10 000
+
+    Vantagem líquida da Mesa = custódia_acum − Δy_acum
+    """
+    cust_bps = custodia * 100
+    custody = cust_bps * ((1 + yield_td) ** t - 1) / np.log(1 + yield_td)
+    dy      = ((1 + yield_td) ** t - (1 + yield_mesa) ** t) * 10_000
+    return custody - dy
 
 
-def calc_breakeven_prazo(net_annual_bps: float, spread_saida_bps: float) -> float:
-    """Tempo mínimo de hold (anos) para a Mesa superar o TD em venda antecipada."""
-    if net_annual_bps <= 0:
+def calc_net_annual_bps(
+    yield_mesa: float, yield_td: float, custodia: float, prazo_titulo: float
+) -> float:
+    """Vantagem média anual efetiva da Mesa (bps/ano) no vencimento."""
+    if prazo_titulo <= 0:
+        return 0.0
+    return float(_mesa_advantage(yield_mesa, yield_td, custodia, prazo_titulo) / prazo_titulo)
+
+
+def calc_breakeven_prazo(
+    yield_mesa: float,
+    yield_td: float,
+    custodia: float,
+    spread_saida_bps: float,
+    prazo_titulo: float,
+) -> float:
+    """T* via busca numérica: primeiro instante em que Mesa supera TD na saída antecipada."""
+    t = np.linspace(0, max(prazo_titulo * 2, 20), 50_000)
+    vant = _mesa_advantage(yield_mesa, yield_td, custodia, t)
+    mask = vant >= spread_saida_bps
+    if not mask.any():
         return np.inf
-    return spread_saida_bps / net_annual_bps
+    return float(t[np.argmax(mask)])
 
 
 def build_timeseries(
@@ -55,19 +88,20 @@ def build_timeseries(
     steps: int = 200,
 ) -> pd.DataFrame:
     t = np.linspace(0, prazo_titulo, steps + 1)
-    dy_bps = (yield_td - yield_mesa) * 100
-    cust_bps = custodia * 100
-    net_annual = cust_bps - dy_bps
+    cust_bps    = custodia * 100
+    td_custodia = cust_bps * ((1 + yield_td) ** t - 1) / np.log(1 + yield_td)
+    td_dy_bruto = ((1 + yield_td) ** t - (1 + yield_mesa) ** t) * 10_000
+    td_net      = td_custodia - td_dy_bruto
 
     return pd.DataFrame({
-        "t":            t,
-        "td_custodia":  t * cust_bps,
-        "td_dy_bruto":  t * dy_bps,
-        "td_net":       t * (cust_bps - dy_bps),
-        "mesa_hold":    np.zeros(len(t)),
-        "mesa_saida":   np.full(len(t), spread_saida_bps),
-        "vant_mesa_htm": t * net_annual,
-        "vant_mesa_ant": t * net_annual - spread_saida_bps,
+        "t":             t,
+        "td_custodia":   td_custodia,
+        "td_dy_bruto":   td_dy_bruto,
+        "td_net":        td_net,
+        "mesa_hold":     np.zeros(len(t)),
+        "mesa_saida":    np.full(len(t), spread_saida_bps),
+        "vant_mesa_htm": td_net,
+        "vant_mesa_ant": td_net - spread_saida_bps,
     })
 
 
@@ -77,16 +111,17 @@ def build_cenarios(
     custodia: float,
     prazo_titulo: float,
 ) -> pd.DataFrame:
-    spreads = [5, 10, 15, 20, 25, 30, 40, 50]
-    net = calc_net_annual_bps(yield_mesa, yield_td, custodia)
+    spreads  = [5, 10, 15, 20, 25, 30, 40, 50]
+    net      = calc_net_annual_bps(yield_mesa, yield_td, custodia, prazo_titulo)
+    htm_acum = net * prazo_titulo
     rows = []
     for sp in spreads:
-        bk = calc_breakeven_prazo(net, sp)
+        bk = calc_breakeven_prazo(yield_mesa, yield_td, custodia, sp, prazo_titulo)
         rows.append({
             "Spread saída (bps)": sp,
-            "Breakeven (anos)": round(bk, 2) if bk < 99 else "> prazo",
+            "Breakeven (anos)": round(float(bk), 2) if np.isfinite(bk) and bk < 99 else "> prazo",
             "Mesa vence no venc.?": "Sim" if net > 0 else "Não",
-            "Vantagem Mesa no venc. (bps)": round(net * prazo_titulo, 1),
+            "Vantagem Mesa no venc. (bps)": round(htm_acum, 1),
         })
     return pd.DataFrame(rows)
 
@@ -153,13 +188,18 @@ def chart_sensibilidade_spread(
     custodia: float,
     prazo_titulo: float,
 ) -> dict:
-    net = calc_net_annual_bps(yield_mesa, yield_td, custodia)
+    # Pré-calcula a curva de vantagem da Mesa numa grade fina
+    t_grid   = np.linspace(0, max(prazo_titulo * 2, 20), 20_000)
+    vant_grid = _mesa_advantage(yield_mesa, yield_td, custodia, t_grid)
+
+    # Para cada spread de saída, encontra o T* por busca vetorizada
     spreads = np.linspace(0, 60, 300)
-    bks = (
-        np.full(len(spreads), np.nan)
-        if net <= 0
-        else np.minimum(spreads / net, prazo_titulo * 1.5)
-    )
+    bks = []
+    for sp in spreads:
+        mask = vant_grid >= sp
+        bks.append(float(t_grid[np.argmax(mask)]) if mask.any() else np.nan)
+    bks = np.minimum(np.array(bks), prazo_titulo * 1.5)
+
     df_sens = pd.DataFrame({"spread": spreads, "breakeven": bks})
 
     return create_chart(
@@ -202,7 +242,6 @@ with st.sidebar:
         "Custódia TD (% a.a.)",
         min_value=0.0, max_value=1.0, value=0.20, step=0.01, format="%.2f",
     )
-    st.markdown("---")
     spread_saida = st.slider(
         "Spread de saída antecipada — Mesa (bps)",
         min_value=0, max_value=80, value=15, step=1,
@@ -219,8 +258,8 @@ with st.sidebar:
 # CÁLCULOS
 # =============================================================================
 
-net_annual = calc_net_annual_bps(yield_mesa, yield_td, custodia)
-bk_prazo   = calc_breakeven_prazo(net_annual, spread_saida)
+net_annual = calc_net_annual_bps(yield_mesa, yield_td, custodia, prazo_titulo)
+bk_prazo   = calc_breakeven_prazo(yield_mesa, yield_td, custodia, spread_saida, prazo_titulo)
 td_liq     = yield_td - custodia
 dy_bps     = (yield_td - yield_mesa) * 100
 cust_bps   = custodia * 100
@@ -246,10 +285,15 @@ with st.expander("Premissa do modelo", expanded=False):
         Nacional sem spread. A mesa exige negociação no mercado secundário,
         onde um bid-ask é pago pontualmente no momento da saída.
 
-        O breakeven de prazo é:
+        O breakeven de prazo T* é resolvido numericamente sobre:
         ```
-        T* = spread_saida_bps / (custódia_bps − Δy_bruto_bps)
+        custódia_acum(T*) − Δy_acum(T*) = spread_saida_bps
+
+        custódia_acum(t) = cust_bps × [(1 + y_TD)^t − 1] / ln(1 + y_TD)
+        Δy_acum(t)       = [(1 + y_TD)^t − (1 + y_Mesa)^t] × 10 000
         ```
+        A fórmula da custódia corrige o fato de que o PU de uma LTN (zero
+        cupom) acresce continuamente, aumentando a base de cálculo da taxa B3.
         """
     )
 
@@ -384,7 +428,7 @@ st.table(pd.DataFrame({
         f"{yield_mesa:.2f}% a.a.",
         f"{yield_td:.2f}% a.a.",
         f"{dy_bps:+.1f} bps",
-        f"−{cust_bps * prazo_titulo:.1f} bps",
+        f"−{cust_bps * ((1 + yield_td)**prazo_titulo - 1) / np.log(1 + yield_td):.1f} bps",
         f"{htm_acum:+.1f} bps acum.",
     ],
 }))
