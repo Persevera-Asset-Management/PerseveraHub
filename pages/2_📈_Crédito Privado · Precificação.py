@@ -10,7 +10,7 @@ import streamlit_highcharts as hct
 import numpy as np
 
 st.set_page_config(
-    page_title="Crédito Privado (Pricing) | Persevera",
+    page_title="Crédito Privado · Precificação | Persevera",
     page_icon="📈",
     layout="wide"
 )
@@ -20,7 +20,7 @@ load_css()
 check_authentication()
 
 # Common meetings header with navigation links
-st.title("Crédito Privado (Pricing)")
+st.title("Crédito Privado · Precificação")
 
 def load_data(code):
     try:

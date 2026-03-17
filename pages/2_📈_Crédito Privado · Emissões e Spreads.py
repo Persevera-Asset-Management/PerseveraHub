@@ -10,7 +10,7 @@ import streamlit_highcharts as hct
 import numpy as np
 
 st.set_page_config(
-    page_title="Crédito Privado | Persevera",
+    page_title="Crédito Privado · Emissões e Spreads | Persevera",
     page_icon="📈",
     layout="wide"
 )
@@ -20,7 +20,7 @@ load_css()
 check_authentication()
 
 # Common meetings header with navigation links
-st.title("Crédito Privado")
+st.title("Crédito Privado · Emissões e Spreads")
 
 @st.cache_data(ttl=3600)
 def load_emissions(start_date):

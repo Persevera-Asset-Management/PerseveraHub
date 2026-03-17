@@ -715,8 +715,8 @@ def create_highcharts_options(
                     _x_val = int(_row[x_column_effective].timestamp() * 1000)
                 elif x_axis_type == 'category': # For category axis, x_value should be the category name
                     _x_val = str(_row[x_column_effective]) if x_column_effective in _row else str(_idx)
-                else: # Linear axis
-                    _x_val = _row[x_column_effective]
+                else: # Linear axis — convert to Python float to ensure JSON serialization
+                    _x_val = float(_row[x_column_effective])
                 
                 point_name_val = None
                 if point_name_column and point_name_column in _row and pd.notna(_row[point_name_column]):
