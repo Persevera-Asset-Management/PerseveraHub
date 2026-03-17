@@ -16,7 +16,7 @@ from utils.auth import check_authentication
 from configs.pages.hda import INDICADORES_GRUPOS
 
 st.set_page_config(
-    page_title="HDA | Persevera",
+    page_title="Hora 360 | Persevera",
     page_icon="🔨",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -25,7 +25,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("HDA")
+st.title("Hora 360")
 
 def create_hda_image(df: pd.DataFrame, groups: Dict[str, Dict[str, str]], report_date: str) -> Figure:
     """

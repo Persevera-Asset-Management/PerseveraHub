@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+from datetime import date
 import streamlit_highcharts as hct
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css
@@ -116,7 +117,7 @@ def chart_custos_acumulados(df: pd.DataFrame, bk_prazo: float) -> dict:
             "TD — custódia acumulada",
             "TD — custo líq. (custódia − Δy bruto)",
         ],
-        color=[COLORS["mesa"], COLORS["td"], COLORS["cust"], COLORS["neutro"]],
+        # color=[COLORS["mesa"], COLORS["td"], COLORS["cust"], COLORS["neutro"]],
         chart_type="spline",
         title="Custo acumulado por canal (bps)",
         y_axis_title="Bps acumulados",
@@ -133,7 +134,7 @@ def chart_vantagem_liquida(df: pd.DataFrame, bk_prazo: float) -> dict:
         data=df,
         columns=["vant_mesa_htm", "vant_mesa_ant"],
         names=["Hold to maturity", "Venda antecipada"],
-        color=[COLORS["mesa"], COLORS["neutro"]],
+        # color=[COLORS["mesa"], COLORS["neutro"]],
         chart_type="areaspline",
         title="Vantagem líquida da Mesa (bps) — positivo = Mesa melhor",
         y_axis_title="Bps",
@@ -165,7 +166,7 @@ def chart_sensibilidade_spread(
         data=df_sens,
         columns=["breakeven"],
         names=["Breakeven T*"],
-        color=[COLORS["amber"]],
+        # color=[COLORS["amber"]],
         chart_type="spline",
         title="Sensibilidade do breakeven ao spread de saída",
         y_axis_title="Prazo mínimo de hold (anos)",
@@ -175,7 +176,7 @@ def chart_sensibilidade_spread(
         decimal_precision=2,
         horizontal_line={
             "value": prazo_titulo,
-            "color": COLORS["neutro"],
+            # "color": COLORS["neutro"],
             "width": 1,
             "dashStyle": "Dot",
             "label": {"text": f"Vencimento ({prazo_titulo:.1f}a)", "align": "right"},
@@ -206,10 +207,13 @@ with st.sidebar:
         "Spread de saída antecipada — Mesa (bps)",
         min_value=0, max_value=80, value=15, step=1,
     )
-    prazo_titulo = st.slider(
-        "Prazo total do título (anos)",
-        min_value=0.5, max_value=15.0, value=5.8, step=0.25,
+    vencimento = st.date_input(
+        "Vencimento do título",
+        value=date(2032, 1, 1),
+        min_value=date.today(),
+        format="DD/MM/YYYY",
     )
+    prazo_titulo = (vencimento - date.today()).days / 365.25
 
 # =============================================================================
 # CÁLCULOS
