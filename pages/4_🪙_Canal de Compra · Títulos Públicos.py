@@ -47,10 +47,16 @@ def _mesa_advantage(yield_mesa: float, yield_td: float, custodia: float, t) -> n
         Δy_acum(t) = [(1 + y_TD)^t − (1 + y_Mesa)^t] × 10 000
 
     Vantagem líquida da Mesa = custódia_acum − Δy_acum
+
+    Nota: yield_mesa e yield_td são recebidos em % a.a. (ex: 13.89) e
+    convertidos para decimal (0.1389) antes de entrar nas fórmulas de
+    juros compostos.
     """
+    yt       = yield_td   / 100
+    ym       = yield_mesa / 100
     cust_bps = custodia * 100
-    custody = cust_bps * ((1 + yield_td) ** t - 1) / np.log(1 + yield_td)
-    dy      = ((1 + yield_td) ** t - (1 + yield_mesa) ** t) * 10_000
+    custody  = cust_bps * ((1 + yt) ** t - 1) / np.log(1 + yt)
+    dy       = ((1 + yt) ** t - (1 + ym) ** t) * 10_000
     return custody - dy
 
 
@@ -87,10 +93,12 @@ def build_timeseries(
     prazo_titulo: float,
     steps: int = 200,
 ) -> pd.DataFrame:
-    t = np.linspace(0, prazo_titulo, steps + 1)
-    cust_bps    = custodia * 100
-    td_custodia = cust_bps * ((1 + yield_td) ** t - 1) / np.log(1 + yield_td)
-    td_dy_bruto = ((1 + yield_td) ** t - (1 + yield_mesa) ** t) * 10_000
+    t        = np.linspace(0, prazo_titulo, steps + 1)
+    yt       = yield_td   / 100
+    ym       = yield_mesa / 100
+    cust_bps = custodia * 100
+    td_custodia = cust_bps * ((1 + yt) ** t - 1) / np.log(1 + yt)
+    td_dy_bruto = ((1 + yt) ** t - (1 + ym) ** t) * 10_000
     td_net      = td_custodia - td_dy_bruto
 
     return pd.DataFrame({
@@ -428,7 +436,7 @@ st.table(pd.DataFrame({
         f"{yield_mesa:.2f}% a.a.",
         f"{yield_td:.2f}% a.a.",
         f"{dy_bps:+.1f} bps",
-        f"−{cust_bps * ((1 + yield_td)**prazo_titulo - 1) / np.log(1 + yield_td):.1f} bps",
+        f"−{cust_bps * ((1 + yield_td/100)**prazo_titulo - 1) / np.log(1 + yield_td/100):.1f} bps",
         f"{htm_acum:+.1f} bps acum.",
     ],
 }))
