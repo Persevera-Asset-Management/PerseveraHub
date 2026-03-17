@@ -11,7 +11,7 @@ from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
 
 st.set_page_config(
-    page_title="Performance das Carteiras | Persevera",
+    page_title="Performance · Carteiras | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -20,7 +20,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Performance das Carteiras")
+st.title("Performance · Carteiras")
 
 @st.cache_data(ttl=3600)
 def load_indicators(codes, start_date):

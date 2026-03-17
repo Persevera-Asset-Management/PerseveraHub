@@ -7,7 +7,7 @@ from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 
 st.set_page_config(
-    page_title="Tesouro Direto vs Mesa | Persevera",
+    page_title="Canal de Compra · Títulos Públicos | Persevera",
     page_icon="🪙",
     layout="wide",
 )
@@ -16,8 +16,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("NTN-F · Mesa vs. Tesouro Direto")
-st.caption("Tesouro Prefixado com Juros Semestrais · Venc. 01/01/2032")
+st.title("Canal de Compra · Títulos Públicos")
 
 # =============================================================================
 # FUNÇÕES DE CÁLCULO

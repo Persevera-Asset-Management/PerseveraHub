@@ -7,7 +7,7 @@ from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 
 st.set_page_config(
-    page_title="Reunião Timing & Awareness | Persevera",
+    page_title="Reunião · Timing & Awareness | Persevera",
     page_icon="🗓️",
     layout="wide"
 )

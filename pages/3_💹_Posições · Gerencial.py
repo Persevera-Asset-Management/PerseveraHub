@@ -15,7 +15,7 @@ from services.position_service import (
 )
 
 st.set_page_config(
-    page_title="Relatório Gerencial | Persevera",
+    page_title="Posições · Gerencial | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -24,7 +24,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Relatório Gerencial")
+st.title("Posições · Gerencial")
 
 
 with st.spinner("Carregando dados...", show_time=True):

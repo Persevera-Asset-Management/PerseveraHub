@@ -10,7 +10,7 @@ from utils.auth import check_authentication
 import streamlit_highcharts as hct
 
 st.set_page_config(
-    page_title="Brasil Asset III | Persevera",
+    page_title="Reunião · Brasil Asset III | Persevera",
     page_icon="🗓️",
     layout="wide"
 )
@@ -20,7 +20,7 @@ load_css()
 check_authentication()
 
 # Common meetings header with navigation links
-st.title("Brasil Asset III")
+st.title("Reunião · Brasil Asset III")
 
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date):

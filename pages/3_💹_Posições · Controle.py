@@ -17,7 +17,7 @@ from services.position_service import (
 )
 
 st.set_page_config(
-    page_title="Controle de Posições | Persevera",
+    page_title="Posições · Controle | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -26,7 +26,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Controle de Posições")
+st.title("Posições · Controle")
 
 # Definição dos parâmetros
 with st.sidebar:

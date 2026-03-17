@@ -15,7 +15,7 @@ from services.position_service import (
 from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 
 st.set_page_config(
-    page_title="Comparador de Carteiras | Persevera",
+    page_title="Posições · Comparador | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -24,7 +24,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Comparador de Carteiras")
+st.title("Posições · Comparador")
 
 # =============================================================================
 # Sidebar — seleção de portfolio

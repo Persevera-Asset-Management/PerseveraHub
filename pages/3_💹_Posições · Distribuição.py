@@ -14,7 +14,7 @@ from services.position_service import (
 )
 
 st.set_page_config(
-    page_title="Distribuição de Posições | Persevera",
+    page_title="Posições · Distribuição | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -23,7 +23,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Distribuição de Posições")
+st.title("Posições · Distribuição")
 
 with st.spinner("Carregando dados...", show_time=True):
     st.session_state.df = load_positions()

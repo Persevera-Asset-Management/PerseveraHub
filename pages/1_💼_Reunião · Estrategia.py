@@ -9,7 +9,7 @@ from persevera_tools.data import get_series
 from utils.table import get_performance_table, style_table
 
 st.set_page_config(
-    page_title="Reunião Estratégia | Persevera",
+    page_title="Reunião · Estratégia | Persevera",
     page_icon="🗓️",
     layout="wide"
 )
