@@ -95,7 +95,8 @@ try:
     n_pos_d1 = df_d1['Nome Ativo'].nunique()
     n_pos_d2 = df_d2['Nome Ativo'].nunique()
 
-    st.subheader(f"{selected_portfolio} — {d1_label}  →  {d2_label}")
+    st.subheader(f"{selected_portfolio}")
+    st.caption(f"{d1_label}  →  {d2_label}")
 
     kpi_cols = st.columns(4)
     with kpi_cols[0]:
