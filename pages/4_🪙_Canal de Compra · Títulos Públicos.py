@@ -339,7 +339,7 @@ rows_1[3].metric(
 # SEÇÃO 3 — Veredito por cenário
 # =============================================================================
 
-st.subheader("Veredito")
+st.subheader("Comparativo")
 
 rows_2 = st.columns(2)
 

@@ -65,16 +65,8 @@ if len(available_dates) < 2:
 # =============================================================================
 with st.sidebar:
     st.markdown("---")
-    d2_label = st.selectbox(
-        "Data 2 (mais recente)",
-        options=available_dates_fmt,
-        index=0,
-    )
-    d1_label = st.selectbox(
-        "Data 1 (base)",
-        options=available_dates_fmt,
-        index=min(1, len(available_dates_fmt) - 1),
-    )
+    d2_label = st.selectbox("Data Final", options=available_dates_fmt, index=0)
+    d1_label = st.selectbox("Data Inicial", options=available_dates_fmt, index=min(1, len(available_dates_fmt) - 1))
 
 if d1_label == d2_label:
     st.warning("Selecione datas diferentes para comparar.")
@@ -123,8 +115,6 @@ try:
             delta=int(n_pos_d2 - n_pos_d1),
         )
 
-    st.divider()
-
     # =========================================================================
     # SEÇÃO 2 — Alocação por Classe de Ativo
     # =========================================================================
@@ -172,8 +162,6 @@ try:
         )
         hct.streamlit_highcharts(chart_alloc)
 
-    st.divider()
-
     # =========================================================================
     # SEÇÃO 3 — Movimentações
     # =========================================================================
@@ -194,6 +182,15 @@ try:
     threshold_abs = max(aum_d1, aum_d2) * 0.005
     df_changed = df_common[df_common['Δ (R$)'].abs() > threshold_abs].sort_values('Δ (R$)')
 
+    alias_map = (
+        pd.concat([
+            df_d1[['Nome Ativo', 'Nome Ativo Completo']].drop_duplicates(),
+            df_d2[['Nome Ativo', 'Nome Ativo Completo']].drop_duplicates(),
+        ])
+        .drop_duplicates('Nome Ativo')
+        .set_index('Nome Ativo')['Nome Ativo Completo']
+    )
+
     mv_cols = st.columns(3)
 
     with mv_cols[0]:
@@ -201,7 +198,7 @@ try:
         if added:
             df_added = (
                 df_d2[df_d2['Nome Ativo'].isin(added)]
-                .groupby(['Nome Ativo', 'Classificação do Conjunto'])['Saldo']
+                .groupby(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])['Saldo']
                 .sum()
                 .reset_index()
                 .sort_values('Saldo', ascending=False)
@@ -209,7 +206,7 @@ try:
             df_added['% Portfolio'] = df_added['Saldo'] / aum_d2 * 100
             st.dataframe(
                 style_table(
-                    df_added.set_index('Nome Ativo'),
+                    df_added.set_index(['Nome Ativo', 'Nome Ativo Completo']),
                     numeric_cols_format_as_float=['Saldo'],
                     percent_cols=['% Portfolio'],
                 ),
@@ -223,7 +220,7 @@ try:
         if removed:
             df_removed = (
                 df_d1[df_d1['Nome Ativo'].isin(removed)]
-                .groupby(['Nome Ativo', 'Classificação do Conjunto'])['Saldo']
+                .groupby(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])['Saldo']
                 .sum()
                 .reset_index()
                 .sort_values('Saldo', ascending=False)
@@ -231,7 +228,7 @@ try:
             df_removed['% Portfolio'] = df_removed['Saldo'] / aum_d1 * 100
             st.dataframe(
                 style_table(
-                    df_removed.set_index('Nome Ativo'),
+                    df_removed.set_index(['Nome Ativo', 'Nome Ativo Completo']),
                     numeric_cols_format_as_float=['Saldo'],
                     percent_cols=['% Portfolio'],
                 ),
@@ -243,9 +240,12 @@ try:
     with mv_cols[2]:
         st.markdown(f"**Alteradas significativamente** ({len(df_changed)})")
         if not df_changed.empty:
+            df_changed_display = df_changed.copy().reset_index()
+            df_changed_display.insert(1, 'Nome Ativo Completo', df_changed_display['Nome Ativo'].map(alias_map))
+            df_changed_display = df_changed_display.set_index(['Nome Ativo', 'Nome Ativo Completo'])
             st.dataframe(
                 style_table(
-                    df_changed,
+                    df_changed_display,
                     numeric_cols_format_as_float=['D1 (R$)', 'D2 (R$)', 'Δ (R$)'],
                     percent_cols=['Δ (%)'],
                     color_negative_positive_cols=['Δ (R$)', 'Δ (%)'],
@@ -254,8 +254,6 @@ try:
             )
         else:
             st.info("Nenhuma alteração significativa (> 0,5% do portfolio).")
-
-    st.divider()
 
     # =========================================================================
     # SEÇÃO 4 — Tabela completa de posições
@@ -304,7 +302,6 @@ try:
     df_rf_d2 = df_d2[df_d2['Classificação Instrumento'].isin(INSTRUMENTOS_RF)]
 
     if len(df_rf_d1) > 0 or len(df_rf_d2) > 0:
-        st.divider()
         st.markdown("#### Emissores de Renda Fixa")
 
         em_d1 = (
