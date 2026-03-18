@@ -213,13 +213,34 @@ def load_benchmark_data(fund_name, _nav_index):
 
 with st.sidebar:
     fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus', 'Marujo']
-    selected_fund_name = st.selectbox("Selecione o grupo de fundos:", fund_names_list, index=5)
+    selected_fund_names = st.multiselect(
+        "Selecione o(s) grupo(s) de fundos:",
+        fund_names_list,
+        default=['Nemesis']
+    )
 
+if not selected_fund_names:
+    st.info("Selecione pelo menos um grupo de fundos na barra lateral.")
+    st.stop()
+
+selected_fund_name = " | ".join(selected_fund_names)
 st.header(selected_fund_name)
 
-# Load data for the selected fund
+# Load and combine data for all selected fund groups
 with st.spinner(f"Carregando dados de {selected_fund_name}...", show_time=True):
-    nav_data, total_equity_data = load_fund_data(selected_fund_name)
+    nav_list, equity_list = [], []
+    for fname in selected_fund_names:
+        _nav, _eq = load_fund_data(fname)
+        if not _nav.empty:
+            nav_list.append(_nav)
+        if not _eq.empty:
+            equity_list.append(_eq)
+
+    nav_data = pd.concat(nav_list, axis=1) if nav_list else pd.DataFrame()
+    # Drop duplicate columns that appear in multiple groups
+    nav_data = nav_data.loc[:, ~nav_data.columns.duplicated()]
+    total_equity_data = pd.concat(equity_list, axis=1) if equity_list else pd.DataFrame()
+    total_equity_data = total_equity_data.loc[:, ~total_equity_data.columns.duplicated()]
 
 if nav_data.empty:
     st.warning(f"Não foi possível carregar dados de NAV para o fundo {selected_fund_name}.")
@@ -232,8 +253,10 @@ persevera_fund_col_name = next((col for col in nav_data.columns if 'Persevera' i
 if not persevera_fund_col_name:
     st.error("Não foi possível identificar a coluna do fundo Persevera principal nos dados carregados.")
     
-# Load benchmark data
-benchmark_df = load_benchmark_data(selected_fund_name, nav_data.index)
+# Load benchmark data — union of all benchmarks across selected groups
+benchmark_df_list = [load_benchmark_data(fname, nav_data.index) for fname in selected_fund_names]
+benchmark_df = pd.concat(benchmark_df_list, axis=1)
+benchmark_df = benchmark_df.loc[:, ~benchmark_df.columns.duplicated()]
 
 # Merge NAV data with benchmark data
 if not isinstance(benchmark_df.index, pd.DatetimeIndex):
@@ -457,11 +480,9 @@ if not stats_data_filtered.empty:
             st.info("Não há dados de volatilidade para exibir com os filtros selecionados.")
 
     with tabs[2]:   # Patrimônio Líquido
-        persevera_pl_col_names = [col for col in total_equity_data.columns if persevera_fund_col_name in col]
-        
-        if persevera_pl_col_names:
-            actual_persevera_pl_col = persevera_pl_col_names[0]
-            pl_to_display = total_equity_data[[actual_persevera_pl_col]].copy()
+        persevera_pl_cols = [col for col in total_equity_data.columns if 'Persevera' in col]
+        if persevera_pl_cols:
+            pl_to_display = total_equity_data[persevera_pl_cols].copy()
             pl_to_display = pl_to_display.loc[st.session_state.start_date : st.session_state.end_date]
             if not pl_to_display.empty:
                 pl_chart_options = create_chart(
@@ -474,12 +495,13 @@ if not stats_data_filtered.empty:
                 )
                 hct.streamlit_highcharts(pl_chart_options, key=f"pl_{selected_fund_name}")
             else:
-                st.info(f"Dados de Patrimônio Líquido não disponíveis para {actual_persevera_pl_col} no período selecionado.")
+                st.info("Dados de Patrimônio Líquido não disponíveis para o período selecionado.")
         else:
-            st.info(f"Coluna de Patrimônio Líquido para {persevera_fund_col_name} não encontrada nos dados de PL total.")
+            st.info("Colunas de Patrimônio Líquido para os fundos Persevera não encontradas nos dados.")
 
     with tabs[3]:   # Correlação (Janela de 21 dias úteis)
-        if selected_fund_name in ["Nemesis", "Proteus", "Marujo"]:
+        equity_groups = {"Nemesis", "Proteus", "Marujo"}
+        if any(fname in equity_groups for fname in selected_fund_names):
             correlation_data = stats_data_filtered.iloc[:,0].pct_change().rolling(window=21).corr(stats_data_filtered.iloc[:,1:].pct_change())
             if not correlation_data.empty:
                 correlation_chart_options = create_chart(
