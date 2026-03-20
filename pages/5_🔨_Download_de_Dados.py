@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta, date
 from persevera_tools.data import FinancialDataService
-from persevera_tools.data.sma import get_building_blocks
 from persevera_tools.db.fibery import read_fibery
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication

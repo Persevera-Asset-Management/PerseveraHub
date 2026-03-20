@@ -11,7 +11,7 @@ from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 
 st.set_page_config(
-    page_title="Análise de Fundos | Persevera",
+    page_title="Fundos · Peer Group | Persevera",
     page_icon="📈",
     layout="wide"
 )
@@ -20,7 +20,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Análise de Fundos")
+st.title("Fundos · Peer Group")
 
 @st.cache_data(ttl=3600)
 def get_persevera_peers():
