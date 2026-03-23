@@ -29,6 +29,7 @@ ASSET_CLASSES_ORDER = [
     'Investimentos Alternativos',
     'Criptomoedas',
     'Commodities',
+    'Reserva de Valor',
 ]
 
 INSTRUMENTOS_RF = [
