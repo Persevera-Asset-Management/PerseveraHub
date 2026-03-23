@@ -1,5 +1,4 @@
 from persevera_tools.db.fibery import read_fibery
-import streamlit as st
 
 # st.cache_data()
 def get_carteiras_adm():
@@ -7,6 +6,7 @@ def get_carteiras_adm():
         table_name="Estr-CartAdm/Carteira Administrada",
         include_fibery_fields=False
     )
+    df = df[df["state"] == "Ativa"]
     df = df[["Name", "Data Início Gestão", "Data Fim Gestão"]]
     df = df.dropna(subset=["Data Início Gestão"])
     df = df[df["Data Fim Gestão"].isna()]
