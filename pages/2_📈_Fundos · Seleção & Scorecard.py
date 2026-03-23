@@ -37,65 +37,75 @@ st.title("Fundos · Seleção & Scorecard")
 
 METRICS = {
     "Retorno": {
+        "default_active": True,
         "key": "retorno",
+        "group": "retorno",
+        "default_weight": 1.0,
         "higher_is_better": True,
         "default_window": 12,
         "is_pct": True,
         "description": "Retorno acumulado no período selecionado",
     },
     "Consistência": {
+        "default_active": True,
         "key": "consistencia",
+        "group": "consistencia",
+        "default_weight": 1.0,
         "higher_is_better": True,
         "default_window": 24,
         "is_pct": True,
-        "description": "% de meses com retorno positivo",
+        "description": "% de meses com retorno acima do CDI",
     },
     "Volatilidade": {
+        "default_active": True,
         "key": "volatilidade",
+        "group": "risco",
+        "default_weight": 1.0,
         "higher_is_better": False,
         "default_window": 12,
         "is_pct": True,
         "description": "Volatilidade anualizada dos retornos diários",
     },
     "Max Drawdown": {
+        "default_active": True,
         "key": "max_dd",
+        "group": "risco",
+        "default_weight": 1.0,
         "higher_is_better": False,
         "default_window": 24,
         "is_pct": True,
         "description": "Maior queda do pico ao vale no período",
     },
     "Sharpe": {
+        "default_active": True,
         "key": "sharpe",
+        "group": "risco_retorno",
+        "default_weight": 1.0,
         "higher_is_better": True,
         "default_window": 12,
         "is_pct": False,
         "description": "Retorno excedente ao CDI / Volatilidade (anualizado)",
     },
     "Sortino": {
+        "default_active": True,
         "key": "sortino",
+        "group": "risco_retorno",
+        "default_weight": 1.0,
         "higher_is_better": True,
         "default_window": 12,
         "is_pct": False,
         "description": "Retorno excedente ao CDI / Desvio negativo (anualizado)",
     },
     "Calmar": {
+        "default_active": True,
         "key": "calmar",
+        "group": "risco_retorno",
+        "default_weight": 1.0,
         "higher_is_better": True,
         "default_window": 24,
         "is_pct": False,
         "description": "Retorno anualizado / |Max Drawdown|",
     },
-}
-
-DEFAULT_ACTIVE = {"Retorno", "Volatilidade", "Max Drawdown", "Sharpe"}
-DEFAULT_WEIGHTS = {
-    "Retorno": 1.5,
-    "Consistência": 1.0,
-    "Volatilidade": 1.0,
-    "Max Drawdown": 1.5,
-    "Sharpe": 2.0,
-    "Sortino": 1.0,
-    "Calmar": 1.0,
 }
 
 # ── Data loading ──────────────────────────────────────────────────────────────
@@ -178,7 +188,7 @@ def compute_metrics(nav_series: pd.Series, cdi_series: pd.Series, metric_params:
                 result[mname] = float(pnav.iloc[-1] / pnav.iloc[0] - 1)
 
             elif key == "consistencia":
-                result[mname] = get_consistency(pnav, cdi_series)
+                result[mname] = get_consistency(pnav, cdi_series.loc[start_dt:end_dt].dropna())
 
             elif key == "volatilidade":
                 result[mname] = get_annualized_volatility(pnav, frequency="daily")
@@ -207,21 +217,39 @@ def compute_metrics(nav_series: pd.Series, cdi_series: pd.Series, metric_params:
 
 
 def compute_scores(raw: pd.DataFrame, metric_params: dict) -> pd.Series:
-    """Percentile-rank weighted score, normalized to 0–100."""
-    total_w = sum(p["weight"] for p in metric_params.values() if p["weight"] > 0)
-    score = pd.Series(0.0, index=raw.index)
-    if total_w == 0:
-        return score
+    """Percentile-rank weighted score with equal-weight-by-group normalization.
 
+    Each metric is ranked percentile within its peers. Within a group, the
+    contribution is the average of the ranked metrics weighted by their
+    individual weights. Groups themselves each contribute equally to the
+    final score (25% each for 4 groups), regardless of how many metrics
+    are active per group.
+    """
+    score = pd.Series(0.0, index=raw.index)
+
+    # Build group → {mname: weight} mapping for active metrics only
+    groups: dict[str, dict[str, float]] = {}
     for mname, params in metric_params.items():
         w = params["weight"]
         if w == 0 or mname not in raw.columns:
             continue
-        col = pd.to_numeric(raw[mname], errors="coerce")
-        ranked = col.rank(pct=True, na_option="keep")
-        if not METRICS[mname]["higher_is_better"]:
-            ranked = 1 - ranked
-        score += ranked.fillna(0.5) * (w / total_w)
+        group = METRICS[mname]["group"]
+        groups.setdefault(group, {})[mname] = w
+
+    n_groups = len(groups)
+    if n_groups == 0:
+        return score
+
+    for group_metrics in groups.values():
+        group_w = sum(group_metrics.values())
+        group_score = pd.Series(0.0, index=raw.index)
+        for mname, w in group_metrics.items():
+            col = pd.to_numeric(raw[mname], errors="coerce")
+            ranked = col.rank(pct=True, na_option="keep")
+            if not METRICS[mname]["higher_is_better"]:
+                ranked = 1 - ranked
+            group_score += ranked.fillna(0.5) * (w / group_w)
+        score += group_score / n_groups
 
     return (score * 100).round(1)
 
@@ -266,7 +294,7 @@ with st.sidebar:
 
     active_params: dict = {}
     for mname, meta in METRICS.items():
-        is_default = mname in DEFAULT_ACTIVE
+        is_default = meta["default_active"]
         with st.expander(f"{'✅' if is_default else '◻️'} {mname}", expanded=is_default):
             enabled = st.checkbox(
                 "Incluir no score", value=is_default, key=f"en_{meta['key']}"
@@ -277,7 +305,7 @@ with st.sidebar:
                     "Peso",
                     min_value=0.0,
                     max_value=10.0,
-                    value=float(DEFAULT_WEIGHTS.get(mname, 1.0)),
+                    value=float(meta["default_weight"]),
                     step=0.5,
                     key=f"w_{meta['key']}",
                 )
