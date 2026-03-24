@@ -138,7 +138,7 @@ with cols[1]:
         x_axis_title="Curtose",
         show_legend=False,
         zoom_type='xy',
-        horizontal_line={'value': 0, 'color': '#FF0000', 'width': 2, 'zIndex': 5, 'label': {'text': '0', 'align': 'right'}},
+        horizontal_line={'value': 0, 'color': '#FF0000', 'width': 2, 'zIndex': 5},
         show_point_name_labels=True,
         tooltip_point_format=(
             '<b>{point.name}</b><br/>'
