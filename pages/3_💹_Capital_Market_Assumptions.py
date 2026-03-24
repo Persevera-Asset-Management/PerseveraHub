@@ -119,6 +119,12 @@ with cols[0]:
         ),
     )
     hct.streamlit_highcharts(chart_stats)
+    st.info("""
+    - **Retorno**: média dos retornos do ativo no período. Um valor positivo indica ganho médio; 
+    um valor negativo indica perda média.
+    - **Volatilidade**: desvio padrão dos retornos, medindo a dispersão em torno da média. 
+    Valores altos indicam maior variabilidade e, portanto, maior risco.
+    """)
 
 with cols[1]:
     chart_stats = create_chart(
@@ -132,6 +138,7 @@ with cols[1]:
         x_axis_title="Curtose",
         show_legend=False,
         zoom_type='xy',
+        horizontal_line={'value': 0, 'color': '#FF0000', 'width': 2, 'zIndex': 5, 'label': {'text': '0', 'align': 'right'}},
         show_point_name_labels=True,
         tooltip_point_format=(
             '<b>{point.name}</b><br/>'
@@ -140,3 +147,13 @@ with cols[1]:
         ),
     )
     hct.streamlit_highcharts(chart_stats)
+    st.info("""
+    - **Assimetria**: mede a simetria da distribuição dos retornos em relação à distribuição 
+    normal (referência = 0). Um valor positivo indica cauda longa à direita (retornos extremos 
+    positivos mais frequentes que o esperado); um valor negativo indica cauda longa à esquerda 
+    (retornos extremos negativos mais frequentes que o esperado).
+    - **Curtose**: mede o peso das caudas em relação à distribuição normal (referência = 0, 
+    usando curtose em excesso). Um valor positivo (leptocúrtica) indica caudas mais pesadas 
+    que a normal — maior probabilidade de eventos extremos. Um valor negativo (platicúrtica) 
+    indica caudas mais leves que a normal.
+    """)
