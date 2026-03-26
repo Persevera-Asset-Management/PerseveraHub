@@ -1,11 +1,3 @@
-"""
-Serviço centralizado para carregamento e processamento de posições de carteiras.
-
-Este módulo contém funções compartilhadas entre as páginas:
-- Controle de Posições
-- Distribuição de Posições
-"""
-
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -99,6 +91,23 @@ def get_latest_date_data(
 # =============================================================================
 
 @st.cache_data
+def load_assets() -> pd.DataFrame:
+    """
+    Carrega ativos do Fibery.
+
+    Returns:
+        DataFrame com as ativos.
+    """
+    
+    df = read_fibery(
+        table_name="Inv-Taxonomia/Ativos",
+        include_fibery_fields=False,
+    )
+    
+    return df
+
+
+@st.cache_data
 def load_positions(
     days_lookback: int = 4
 ) -> pd.DataFrame:
@@ -124,7 +133,7 @@ def load_positions(
         "Data Posição", "Portfolio", "Custodiante Acronimo",
         "Nome Ativo", "Nome Ativo Completo",
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
-        "Nome Emissor", "Nome Devedor",
+        "Nome do Emissor", "Nome do Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
         "Dias Úteis", "creation-date",
         "Data de Vencimento RF",
@@ -168,7 +177,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
         "Data Posição", "Portfolio", "Custodiante Acronimo",
         "Nome Ativo", "Nome Ativo Completo",
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
-        "Nome Emissor", "Nome Devedor",
+        "Nome do Emissor", "Nome do Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
         "Dias Úteis", "creation-date",
         "Data de Vencimento RF",
@@ -342,7 +351,7 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame com coluna 'Emissor' adicionada.
     """
     df = df.copy()
-    df['Emissor'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
+    df['Emissor'] = df['Nome do Devedor'].fillna(df['Nome do Emissor'])
     return df
 
 

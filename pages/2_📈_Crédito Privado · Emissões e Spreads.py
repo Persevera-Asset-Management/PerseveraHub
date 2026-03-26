@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta, date
-from persevera_tools.data.private_credit import get_emissions, calculate_spread
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from utils.auth import check_authentication
 import streamlit_highcharts as hct
-import numpy as np
+from persevera_tools.fixed_income import get_emissions, calculate_spread
+
 
 st.set_page_config(
     page_title="Crédito Privado · Emissões e Spreads | Persevera",
@@ -19,7 +20,6 @@ display_logo()
 load_css()
 check_authentication()
 
-# Common meetings header with navigation links
 st.title("Crédito Privado · Emissões e Spreads")
 
 @st.cache_data(ttl=3600)

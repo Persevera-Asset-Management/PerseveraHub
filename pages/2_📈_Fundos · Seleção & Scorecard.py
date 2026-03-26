@@ -433,8 +433,6 @@ disp.insert(0, "Rank", range(1, len(disp) + 1))
 
 # ── Scorecard table ───────────────────────────────────────────────────────────
 
-st.subheader("Scorecard e Ranking")
-
 pct_cols = [m for m in active_params if METRICS[m]["is_pct"] and m in disp.columns]
 float_cols = [m for m in active_params if not METRICS[m]["is_pct"] and m in disp.columns]
 
