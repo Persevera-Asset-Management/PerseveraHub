@@ -351,7 +351,7 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame com coluna 'Emissor' adicionada.
     """
     df = df.copy()
-    df['Emissor'] = df['Nome do Devedor'].fillna(df['Nome do Emissor'])
+    df['Emissor'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
     return df
 
 
