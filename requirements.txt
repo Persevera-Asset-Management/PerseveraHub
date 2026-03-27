@@ -28,6 +28,4 @@ Markdown==3.6
 streamlit
 streamlit-aggrid
 streamlit-autorefresh
-streamlit_highcharts
 pyarrow
-matplotlib
