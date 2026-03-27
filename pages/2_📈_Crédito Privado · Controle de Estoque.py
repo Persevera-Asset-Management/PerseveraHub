@@ -32,6 +32,9 @@ with st.sidebar:
 if 'df' not in st.session_state:
     st.session_state.df = None
 
+if 'df_assets' not in st.session_state:
+    st.session_state.df_assets = None
+
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
         # ComDinheiro
