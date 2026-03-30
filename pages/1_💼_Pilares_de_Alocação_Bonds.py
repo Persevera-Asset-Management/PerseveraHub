@@ -1,16 +1,18 @@
-import streamlit as st
-import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-import os
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
-from persevera_tools.data import get_series
+
+import streamlit as st
+import streamlit_highcharts as hct
+
 from utils.table import style_table
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 from configs.pages.pilares_de_alocacao_bonds import INDICADORES
+
+from persevera_tools.data import get_series
 
 st.set_page_config(
     page_title="Pilares de Alocação (Bonds) | Persevera",

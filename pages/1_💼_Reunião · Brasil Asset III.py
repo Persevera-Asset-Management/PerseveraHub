@@ -1,13 +1,16 @@
-import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta, date
-from persevera_tools.data import get_series
-from persevera_tools.data.private_credit import calculate_spread
+
+import streamlit as st
+import streamlit_highcharts as hct
+
 from utils.chart_helpers import create_chart, extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.reuniao_brasil_asset import CHARTS_BRASIL_ASSET
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
-import streamlit_highcharts as hct
+
+from persevera_tools.data import get_series
+from persevera_tools.fixed_income import calculate_spread
 
 st.set_page_config(
     page_title="Reunião · Brasil Asset III | Persevera",

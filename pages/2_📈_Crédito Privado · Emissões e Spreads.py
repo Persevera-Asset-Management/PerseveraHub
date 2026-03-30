@@ -1,12 +1,15 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, date
+
+import streamlit as st
+import streamlit_highcharts as hct
+
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from utils.auth import check_authentication
-import streamlit_highcharts as hct
+
 from persevera_tools.fixed_income import get_emissions, calculate_spread
 
 

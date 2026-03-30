@@ -1,13 +1,17 @@
-import streamlit as st
+import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, date
-from persevera_tools.data.private_credit import get_series
+
+import streamlit as st
+import streamlit_highcharts as hct
+
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from utils.auth import check_authentication
-import streamlit_highcharts as hct
-import numpy as np
+
+from persevera_tools.fixed_income import get_series
+
 
 st.set_page_config(
     page_title="Crédito Privado · Precificação | Persevera",
