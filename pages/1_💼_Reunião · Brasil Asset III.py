@@ -22,7 +22,6 @@ display_logo()
 load_css()
 check_authentication()
 
-# Common meetings header with navigation links
 st.title("Reunião · Brasil Asset III")
 
 @st.cache_data(ttl=3600)

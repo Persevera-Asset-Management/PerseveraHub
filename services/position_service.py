@@ -3,6 +3,8 @@ import numpy as np
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Optional
+
+from persevera_tools.data.providers import ComdinheiroProvider
 from persevera_tools.db.fibery import read_fibery
 
 
@@ -91,6 +93,22 @@ def get_latest_date_data(
 # =============================================================================
 
 @st.cache_data
+def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.DataFrame:
+    """
+    Carrega posições de um portfolio do Comdinheiro.
+
+    Args:
+        portfolios: Tuple de portfolios.
+        date_report: Data de report.
+
+    Returns:
+        DataFrame com as posições do portfolio.
+    """
+    provider = ComdinheiroProvider()
+    df = provider.get_data(category='comdinheiro', data_type='portfolio_positions', portfolios=list(portfolios), date_report=date_report)
+    return df
+
+@st.cache_data
 def load_assets() -> pd.DataFrame:
     """
     Carrega ativos do Fibery.
@@ -104,6 +122,24 @@ def load_assets() -> pd.DataFrame:
         include_fibery_fields=False,
     )
     
+    return df
+
+
+@st.cache_data
+def load_issuers() -> pd.DataFrame:
+    """
+    Carrega emissores e devedores do Fibery.
+
+    Returns:
+        DataFrame com os emissores e devedores.
+    """
+    
+    df = read_fibery(
+        table_name="Inv-Taxonomia/Emissores e Devedores",
+        include_fibery_fields=False,
+    )
+
+    df = df[["Nome Emissor", "Status do Emissor"]]
     return df
 
 

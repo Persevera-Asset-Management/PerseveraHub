@@ -38,11 +38,8 @@ with st.sidebar:
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
     btn_run = st.button("Executar")
 
-if 'nav_data' not in st.session_state:
-    st.session_state.nav_data = None
-
-if 'indicators' not in st.session_state:
-    st.session_state.indicators = None
+for key in ('nav_data', 'indicators'):
+    st.session_state.setdefault(key, None)
 
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):

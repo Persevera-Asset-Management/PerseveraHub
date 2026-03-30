@@ -7,8 +7,14 @@ from utils.ui import display_logo, load_css
 from utils.table import style_table
 from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
-from persevera_tools.data.providers import ComdinheiroProvider
-from services.position_service import load_assets, get_emissor_column
+
+from services.position_service import (
+    load_assets,
+    load_issuers,
+    get_emissor_column,
+    load_portfolio_from_comdinheiro,
+)
+
 
 st.set_page_config(
     page_title="Crédito Privado · Controle de Estoque | Persevera",
@@ -29,33 +35,33 @@ with st.sidebar:
     selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
     btn_run = st.button("Executar")
 
-if 'df' not in st.session_state:
-    st.session_state.df = None
+    selected_status = []
+    if st.session_state.get('df_issuers') is not None:
+        st.divider()
+        st.subheader("Filtros")
+        status_options = sorted(st.session_state.df_issuers['Status do Emissor'].dropna().unique())
+        selected_status = st.multiselect("Status do Emissor", options=status_options, default=status_options)
 
-if 'df_assets' not in st.session_state:
-    st.session_state.df_assets = None
+for key in ('df', 'df_assets', 'df_issuers'):
+    st.session_state.setdefault(key, None)
 
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
-        # ComDinheiro
-        provider = ComdinheiroProvider()
-        st.session_state.df = provider.get_data(
-            category='comdinheiro',
-            data_type='portfolio_positions',
-            portfolios=selected_carteiras,
+        st.session_state.df = load_portfolio_from_comdinheiro(
+            portfolios=tuple(sorted(selected_carteiras)),
             date_report=selected_date.strftime('%Y-%m-%d')
         )
-
-        # Fibery
         st.session_state.df_assets = load_assets()
+        st.session_state.df_issuers = load_issuers()
         
         if "selected_asset" in st.session_state:
             st.session_state.selected_asset = ""
 
 df_cd = st.session_state.df
 df_assets = st.session_state.df_assets
+df_issuers = st.session_state.df_issuers
 
-if df_cd is not None and df_assets is not None:
+if df_cd is not None and df_assets is not None and df_issuers is not None:
     try:
         # Transformações dos dados
         df_cd = df_cd.rename(columns={'date': 'Data', 'carteira': 'Carteira', 'ativo': 'Ativo', 'descricao': 'Descrição', 'quantidade': 'Quantidade', 'preco_unitario': 'Preço Unitário', 'saldo_bruto': 'Saldo Bruto', 'instituicao_financeira': 'Custodiante', 'tipo_ativo': 'Tipo de Ativo', 'ticker': 'Ticker'})
@@ -66,10 +72,16 @@ if df_cd is not None and df_assets is not None:
         df_assets = get_emissor_column(df_assets)
         df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Emissor']], left_on='Ticker', right_on='Name', how='left')
 
+        df_issuers['Status do Emissor'] = df_issuers['Status do Emissor'].fillna('Sem Classificação')
+        df = df.merge(df_issuers, left_on='Emissor', right_on='Nome Emissor', how='left')
+
         saldo_carteiras = df.groupby('Carteira').agg({'Saldo Bruto': 'sum'}).rename(columns={'Saldo Bruto': 'Saldo Total'})
         df = df.merge(saldo_carteiras, right_index=True, left_on='Carteira', how='left')
         df['Percentual'] = df['Saldo Bruto'] / df['Saldo Total'] * 100
         df = df[df['Tipo de Ativo'].isin(['cri', 'cra', 'debenture'])]
+
+        if selected_status:
+            df = df[df['Status do Emissor'].isin(selected_status)]
 
         st.dataframe(style_table(
             df[['Carteira', 'Ticker', 'Ativo', 'Indexador', 'Data Vencimento', 'Emissor', 'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante']],
