@@ -1,7 +1,10 @@
-import json
-import streamlit as st
 import pandas as pd
 import numpy as np
+from datetime import datetime
+import json
+
+import streamlit as st
+
 from utils.ui import display_logo, load_css
 from utils.table import style_table
 from utils.auth import check_authentication
@@ -285,11 +288,10 @@ if df is not None:
             df_total_positions_by_asset_class_current=df_total_positions_by_asset_class_current,
             df_target_allocations=df_target_allocations,
         )
-        snapshot_date = df_positions_current['Data Posição'].max().strftime('%Y-%m-%d')
         st.download_button(
             label="⬇️ Download snapshot (JSON)",
             data=json.dumps(snapshot, ensure_ascii=False, indent=2),
-            file_name=f"snapshot_portfolios_{snapshot_date}.json",
+            file_name=f"snapshot_portfolios_{datetime.now().strftime('%Y-%m-%d')}.json",
             mime="application/json",
         )
 
