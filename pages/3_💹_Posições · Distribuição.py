@@ -279,14 +279,19 @@ if df is not None:
         # Snapshot JSON para IA
         st.markdown("---")
         st.markdown("##### Snapshot para IA")
-        with st.expander("Ver JSON agregado de posições e targets", expanded=False):
-            snapshot = build_portfolio_snapshot(
-                df_positions_current=df_positions_current,
-                df_total_positions_current=df_total_positions_current,
-                df_total_positions_by_asset_class_current=df_total_positions_by_asset_class_current,
-                df_target_allocations=df_target_allocations,
-            )
-            st.write(snapshot)
+        snapshot = build_portfolio_snapshot(
+            df_positions_current=df_positions_current,
+            df_total_positions_current=df_total_positions_current,
+            df_total_positions_by_asset_class_current=df_total_positions_by_asset_class_current,
+            df_target_allocations=df_target_allocations,
+        )
+        snapshot_date = df_positions_current['Data Posição'].max().strftime('%Y-%m-%d')
+        st.download_button(
+            label="⬇️ Download snapshot (JSON)",
+            data=json.dumps(snapshot, ensure_ascii=False, indent=2),
+            file_name=f"snapshot_portfolios_{snapshot_date}.json",
+            mime="application/json",
+        )
 
     except KeyError as e:
         st.error(f"Erro ao acessar dados: campo {e} não encontrado")

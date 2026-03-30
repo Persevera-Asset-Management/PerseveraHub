@@ -139,6 +139,7 @@ def load_issuers() -> pd.DataFrame:
         include_fibery_fields=False,
     )
 
+    df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
     df = df[["Nome Emissor", "Status do Emissor"]]
     return df
 

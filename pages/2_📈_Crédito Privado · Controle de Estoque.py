@@ -73,7 +73,6 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         df_assets = get_emissor_column(df_assets)
         df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Emissor']], left_on='Ticker', right_on='Name', how='left')
 
-        df_issuers['Status do Emissor'] = df_issuers['Status do Emissor'].fillna('Sem Classificação')
         df = df.merge(df_issuers, left_on='Emissor', right_on='Nome Emissor', how='left')
 
         saldo_carteiras = df.groupby('Carteira').agg({'Saldo Bruto': 'sum'}).rename(columns={'Saldo Bruto': 'Saldo Total'})
