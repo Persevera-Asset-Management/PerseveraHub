@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -24,6 +25,83 @@ load_css()
 check_authentication()
 
 st.title("Posições · Distribuição")
+
+
+def build_portfolio_snapshot(
+    df_positions_current: pd.DataFrame,
+    df_total_positions_current: pd.DataFrame,
+    df_total_positions_by_asset_class_current: pd.DataFrame,
+    df_target_allocations: pd.DataFrame,
+) -> dict:
+    """
+    Constrói um snapshot JSON estruturado por portfolio com posições e targets,
+    pronto para ser consumido por um modelo de IA para suporte a alocações.
+    """
+    portfolios = df_positions_current['Portfolio'].unique().tolist()
+
+    # Obtém alocações target mais recentes por portfolio/classe
+    df_targets = df_target_allocations.reset_index()
+    idx = df_targets.groupby(['Portfolio', 'Name'])['Data Documento'].idxmax()
+    df_targets_latest = df_targets.loc[idx].reset_index(drop=True)
+
+    snapshot = {}
+
+    for portfolio in sorted(portfolios):
+        patrimonio = float(df_total_positions_current.loc[portfolio, 'Saldo']) \
+            if portfolio in df_total_positions_current.index else 0.0
+
+        # Posições detalhadas agrupadas por classe
+        df_port = df_positions_current[df_positions_current['Portfolio'] == portfolio].copy()
+        posicoes_por_classe: dict = {}
+        for _, row in df_port.iterrows():
+            asset_class = row['Classificação do Conjunto']
+            pct_total = (row['Saldo'] / patrimonio * 100) if patrimonio else 0.0
+            entry = {
+                'nome': row['Nome Ativo'],
+                'nome_completo': row['Nome Ativo Completo'],
+                'saldo_brl': round(float(row['Saldo']), 2),
+                'pct_total': round(pct_total, 4),
+            }
+            posicoes_por_classe.setdefault(asset_class, []).append(entry)
+
+        # Distribuição atual por classe
+        dist_por_classe: dict = {}
+        if portfolio in df_total_positions_by_asset_class_current.columns:
+            for asset_class in ASSET_CLASSES_ORDER:
+                saldo_classe = df_total_positions_by_asset_class_current.get(portfolio, pd.Series()).get(asset_class, np.nan)
+                if pd.notna(saldo_classe) and saldo_classe > 0:
+                    pct_classe = float(saldo_classe) / patrimonio * 100 if patrimonio else 0.0
+                    dist_por_classe[asset_class] = {
+                        'saldo_brl': round(float(saldo_classe), 2),
+                        'pct_total': round(pct_classe, 4),
+                    }
+
+        # Targets e gaps por classe
+        df_port_targets = df_targets_latest[df_targets_latest['Portfolio'] == portfolio]
+        targets: dict = {}
+        for _, trow in df_port_targets.iterrows():
+            classe = trow['Name']
+            target_pct = float(trow['Target']) * 100 if pd.notna(trow['Target']) else None
+            atual_info = dist_por_classe.get(classe)
+            atual_pct = atual_info['pct_total'] if atual_info else 0.0
+            gap_pp = round(target_pct - atual_pct, 4) if target_pct is not None else None
+            gap_brl = round((target_pct - atual_pct) / 100 * patrimonio, 2) \
+                if target_pct is not None and patrimonio else None
+            targets[classe] = {
+                'target_pct': round(target_pct, 4) if target_pct is not None else None,
+                'atual_pct': round(atual_pct, 4),
+                'gap_pp': gap_pp,
+                'gap_brl': gap_brl,
+            }
+
+        snapshot[portfolio] = {
+            'patrimonio_brl': round(patrimonio, 2),
+            'distribuicao_por_classe': dist_por_classe,
+            'targets_e_gaps': targets,
+            'posicoes_por_classe': posicoes_por_classe,
+        }
+
+    return snapshot
 
 with st.spinner("Carregando dados...", show_time=True):
     st.session_state.df = load_positions()
@@ -197,6 +275,18 @@ if df is not None:
                         ),
                     )
                 )
+
+        # Snapshot JSON para IA
+        st.markdown("---")
+        st.markdown("##### Snapshot para IA")
+        with st.expander("Ver JSON agregado de posições e targets", expanded=False):
+            snapshot = build_portfolio_snapshot(
+                df_positions_current=df_positions_current,
+                df_total_positions_current=df_total_positions_current,
+                df_total_positions_by_asset_class_current=df_total_positions_by_asset_class_current,
+                df_target_allocations=df_target_allocations,
+            )
+            st.write(snapshot)
 
     except KeyError as e:
         st.error(f"Erro ao acessar dados: campo {e} não encontrado")

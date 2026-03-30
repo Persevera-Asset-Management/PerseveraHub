@@ -56,6 +56,7 @@ if btn_run:
         
         if "selected_asset" in st.session_state:
             st.session_state.selected_asset = ""
+        st.rerun()
 
 df_cd = st.session_state.df
 df_assets = st.session_state.df_assets
