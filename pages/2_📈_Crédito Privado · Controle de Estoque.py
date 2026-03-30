@@ -28,6 +28,9 @@ check_authentication()
 
 st.title("Crédito Privado · Controle de Estoque")
 
+for key in ('df', 'df_assets', 'df_issuers'):
+    st.session_state.setdefault(key, None)
+
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
@@ -36,14 +39,11 @@ with st.sidebar:
     btn_run = st.button("Executar")
 
     selected_status = []
-    if st.session_state.get('df_issuers') is not None:
+    if st.session_state.df_issuers is not None:
         st.divider()
         st.subheader("Filtros")
         status_options = sorted(st.session_state.df_issuers['Status do Emissor'].dropna().unique())
         selected_status = st.multiselect("Status do Emissor", options=status_options, default=status_options)
-
-for key in ('df', 'df_assets', 'df_issuers'):
-    st.session_state.setdefault(key, None)
 
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
