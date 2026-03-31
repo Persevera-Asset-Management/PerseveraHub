@@ -148,9 +148,7 @@ def load_issuers() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=3600)
-def load_positions(
-    days_lookback: int = 4
-) -> pd.DataFrame:
+def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     """
     Carrega posições do Fibery.
     
@@ -330,6 +328,22 @@ def load_instruments_fgc() -> list:
     instruments_list = df[df["Cobertura FGC"]]["Name"].tolist()
     return instruments_list
 
+@st.cache_data(ttl=3600)
+def load_portfolio_info() -> pd.DataFrame:
+    """
+    Carrega informações do portfolio do Fibery.
+
+    Returns:
+        DataFrame com os emissores e devedores.
+    """
+    
+    df = read_fibery(
+        table_name="Ops-Portfolios/Portfolio",
+        include_fibery_fields=False,
+    )
+
+    track_data_load("portfolio_info")
+    return df
 
 # =============================================================================
 # Funções de Agregação de Dados
