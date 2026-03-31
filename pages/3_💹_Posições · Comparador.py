@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import streamlit_highcharts as hct
-from utils.ui import display_logo, load_css
+from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
 from utils.auth import check_authentication
 from utils.chart_helpers import create_chart
@@ -47,6 +47,8 @@ if not selected_portfolio:
 # =============================================================================
 with st.spinner("Carregando histórico do portfolio...", show_time=True):
     df_raw = load_positions_for_portfolio(selected_portfolio)
+
+show_data_freshness("positions_portfolio", label="Posições", ttl_minutes=60)
 
 df = df_raw.copy()
 df.replace(' ', np.nan, inplace=True)

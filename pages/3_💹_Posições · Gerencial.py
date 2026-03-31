@@ -3,7 +3,7 @@ import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
 from utils.chart_helpers import create_chart, render_chart
-from utils.ui import display_logo, load_css
+from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
 from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
@@ -30,6 +30,8 @@ st.title("Posições · Gerencial")
 with st.spinner("Carregando dados...", show_time=True):
     st.session_state.df = load_positions()
     st.session_state.instruments_fgc = load_instruments_fgc()
+
+show_data_freshness("positions", label="Posições", ttl_minutes=60)
 
 df_raw = st.session_state.df
 df = df_raw.copy()

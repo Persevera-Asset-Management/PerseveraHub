@@ -5,7 +5,7 @@ import json
 
 import streamlit as st
 
-from utils.ui import display_logo, load_css
+from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
 from utils.auth import check_authentication
 from services.position_service import (
@@ -109,6 +109,8 @@ def build_portfolio_snapshot(
 with st.spinner("Carregando dados...", show_time=True):
     st.session_state.df = load_positions()
     st.session_state.df_target_allocations = load_target_allocations(include_limits=False)
+
+show_data_freshness("positions", label="Posições", ttl_minutes=60)
 
 df_raw = st.session_state.df
 df = df_raw.copy()

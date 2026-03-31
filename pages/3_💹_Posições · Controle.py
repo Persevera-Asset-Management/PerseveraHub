@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 from utils.chart_helpers import create_chart, render_chart
-from utils.ui import display_logo, load_css
+from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
 from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
@@ -52,6 +52,7 @@ def load_data(carteiras):
 
 if selected_carteiras:
     load_data(selected_carteiras)
+    show_data_freshness("positions", label="Posições", ttl_minutes=60)
 
     df = st.session_state.df
     df_target_allocations = st.session_state.df_target_allocations
