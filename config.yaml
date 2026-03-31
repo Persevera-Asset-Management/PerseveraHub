@@ -1,14 +1,2 @@
-credentials:
-  usernames:
-    turandot:
-      email: turandot@persevera.com.br
-      name: Turandot
-      password: 'Compass20' # To be replaced with a hashed password
-    admin:
-      email: persevera@persevera.com.br
-      name: Admin
-      password: 'Compass20' # To be replaced with a hashed password
-cookie:
-  expiry_days: 30
-  key: some_signature_key # Must be changed
-  name: some_cookie_name
+# Credentials and cookie configuration have been moved to .streamlit/secrets.toml
+# which is excluded from version control via .gitignore.

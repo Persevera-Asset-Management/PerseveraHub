@@ -323,11 +323,12 @@ def render_chart_group(data, chart_configs, group_name, charts_by_group):
                 current_chart_config = config.get("chart_config", config).copy()
                 
                 # Prepare data for this specific chart
-                chart_data_for_this_chart = data.copy() 
                 transformations_to_apply = config.get("transformations")
 
                 if transformations_to_apply:
-                    chart_data_for_this_chart = apply_transformations(chart_data_for_this_chart, transformations_to_apply)
+                    chart_data_for_this_chart = apply_transformations(data, transformations_to_apply)
+                else:
+                    chart_data_for_this_chart = data
                     
                     original_columns_structure = current_chart_config.get("columns")
                     if original_columns_structure is not None:
@@ -444,11 +445,12 @@ def render_chart_group_with_context(data, chart_configs_original, context, group
                     
                     current_chart_config_dict = full_config_entry_for_chart.get("chart_config", full_config_entry_for_chart).copy()
                     
-                    chart_data_for_this_specific_chart = data.copy()
                     transformations_to_apply_list = full_config_entry_for_chart.get("transformations")
 
                     if transformations_to_apply_list:
-                        chart_data_for_this_specific_chart = apply_transformations(chart_data_for_this_specific_chart, transformations_to_apply_list)
+                        chart_data_for_this_specific_chart = apply_transformations(data, transformations_to_apply_list)
+                    else:
+                        chart_data_for_this_specific_chart = data
                         
                         original_cols_structure = current_chart_config_dict.get("columns")
                         if original_cols_structure is not None:

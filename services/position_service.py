@@ -6,6 +6,7 @@ from typing import Optional
 
 from persevera_tools.data.providers import ComdinheiroProvider
 from persevera_tools.db.fibery import read_fibery
+from utils.ui import track_data_load
 
 
 # =============================================================================
@@ -92,7 +93,7 @@ def get_latest_date_data(
 # Funções de Carregamento de Dados
 # =============================================================================
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.DataFrame:
     """
     Carrega posições de um portfolio do Comdinheiro.
@@ -106,9 +107,10 @@ def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.D
     """
     provider = ComdinheiroProvider()
     df = provider.get_data(category='comdinheiro', data_type='portfolio_positions', portfolios=list(portfolios), date_report=date_report)
+    track_data_load("portfolio_comdinheiro")
     return df
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_assets() -> pd.DataFrame:
     """
     Carrega ativos do Fibery.
@@ -121,11 +123,11 @@ def load_assets() -> pd.DataFrame:
         table_name="Inv-Taxonomia/Ativos",
         include_fibery_fields=False,
     )
-    
+    track_data_load("assets")
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_issuers() -> pd.DataFrame:
     """
     Carrega emissores e devedores do Fibery.
@@ -141,10 +143,11 @@ def load_issuers() -> pd.DataFrame:
 
     df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
     df = df[["Nome Emissor", "Status do Emissor"]]
+    track_data_load("issuers")
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_positions(
     days_lookback: int = 4
 ) -> pd.DataFrame:
@@ -188,11 +191,11 @@ def load_positions(
 
     df.dropna(subset=['Classificação do Conjunto'], inplace=True)
     df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)
-    
+    track_data_load("positions")
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     """
     Carrega todo o histórico disponível de posições para um único portfolio.
@@ -236,11 +239,11 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
 
     df.dropna(subset=['Classificação do Conjunto'], inplace=True)
     df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)
-
+    track_data_load("positions_portfolio")
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     """
     Carrega alocações target do Fibery.
@@ -295,7 +298,7 @@ def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_accounts() -> pd.DataFrame:
     """
     Carrega contas do Fibery (apenas contas sob gestão).
@@ -311,7 +314,7 @@ def load_accounts() -> pd.DataFrame:
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_instruments_fgc() -> list:
     """
     Carrega lista de instrumentos com cobertura do FGC.

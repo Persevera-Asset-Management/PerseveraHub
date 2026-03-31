@@ -20,7 +20,7 @@ class YearlyVariationTransformer(DataTransformer):
         # If frequency is not provided or column doesn't exist, return original data
         # This maintains backward compatibility for daily data or cases where freq isn't set
         if not column or column not in data.columns:
-             print(f"Warning: Column '{column}' not found for yearly variation. Skipping.")
+             st.warning(f"Warning: Column '{column}' not found for yearly variation. Skipping.")
              return data
 
         result = data.copy()
@@ -28,7 +28,7 @@ class YearlyVariationTransformer(DataTransformer):
 
         if not freq:
             # Original behavior: Assume daily data (252 periods) if frequency not specified
-            print(f"Warning: Frequency not specified for {column}. Assuming daily data for yearly variation.")
+            st.warning(f"Warning: Frequency not specified for {column}. Assuming daily data for yearly variation.")
             result[new_column_name] = result[column].pct_change(periods=252) * 100
             return result
 
@@ -37,7 +37,7 @@ class YearlyVariationTransformer(DataTransformer):
 
         # Ensure index is DatetimeIndex
         if not isinstance(col_data.index, pd.DatetimeIndex):
-            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation.")
+            st.error(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation.")
             return data # Return original data to avoid errors
 
         try:
@@ -52,7 +52,7 @@ class YearlyVariationTransformer(DataTransformer):
             periods = periods_map.get(clean_freq)
 
             if periods is None:
-                 print(f"Warning: Unsupported frequency '{freq}' for yearly variation on {column}. Skipping transformation.")
+                 st.warning(f"Warning: Unsupported frequency '{freq}' for yearly variation on {column}. Skipping transformation.")
                  return result # Return original data
 
             variation = resampled_data[column].pct_change(periods=periods) * 100
@@ -78,7 +78,7 @@ class MonthlyVariationTransformer(DataTransformer):
         freq = config.get('frequency') # Get the target frequency, e.g., 'M', 'W', 'D'
 
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for monthly variation. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for monthly variation. Skipping.")
             return data
 
         result = data.copy()
@@ -86,7 +86,7 @@ class MonthlyVariationTransformer(DataTransformer):
 
         if not freq:
             # Original behavior: Assume daily-like data (21 periods) if frequency not specified
-            print(f"Warning: Frequency not specified for {column}. Assuming daily-like data for monthly variation (21 periods).")
+            st.warning(f"Warning: Frequency not specified for {column}. Assuming daily-like data for monthly variation (21 periods).")
             result[new_column_name] = result[column].pct_change(periods=21) * 100
             return result
 
@@ -95,7 +95,7 @@ class MonthlyVariationTransformer(DataTransformer):
 
         # Ensure index is DatetimeIndex
         if not isinstance(col_data.index, pd.DatetimeIndex):
-            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware monthly transformation.")
+            st.error(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware monthly transformation.")
             return data # Return original data to avoid errors
 
         try:
@@ -117,7 +117,7 @@ class MonthlyVariationTransformer(DataTransformer):
             periods = periods_map_for_mom.get(cleaned_base_freq)
 
             if periods is None:
-                print(f"Warning: Unsupported frequency '{freq}' for monthly variation on {column}. Skipping transformation.")
+                st.warning(f"Warning: Unsupported frequency '{freq}' for monthly variation on {column}. Skipping transformation.")
                 return data # Return original data, similar to YearlyVariationTransformer
 
             # Resample to the target frequency, taking the last available value in the period
@@ -144,7 +144,7 @@ class QuarterlyVariationTransformer(DataTransformer):
         freq = config.get('frequency') # Get the target frequency, e.g., 'Q', 'M', 'D'
 
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for quarterly variation. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for quarterly variation. Skipping.")
             return data
 
         result = data.copy()
@@ -153,7 +153,7 @@ class QuarterlyVariationTransformer(DataTransformer):
         if not freq:
             # Default behavior: Assume daily-like data (63 periods) if frequency not specified
             # (approx. 21 days/month * 3 months/quarter)
-            print(f"Warning: Frequency not specified for {column}. Assuming daily-like data for quarterly variation (63 periods).")
+            st.warning(f"Warning: Frequency not specified for {column}. Assuming daily-like data for quarterly variation (63 periods).")
             result[new_column_name] = result[column].pct_change(periods=63) * 100
             return result
 
@@ -162,7 +162,7 @@ class QuarterlyVariationTransformer(DataTransformer):
 
         # Ensure index is DatetimeIndex
         if not isinstance(col_data.index, pd.DatetimeIndex):
-            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware quarterly transformation.")
+            st.error(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware quarterly transformation.")
             return data # Return original data to avoid errors
 
         try:
@@ -198,7 +198,7 @@ class QuarterlyVariationTransformer(DataTransformer):
             result[new_column_name] = aligned_variation
 
             if periods is None:
-                print(f"Warning: Unsupported frequency '{freq}' for monthly variation on {column}. Skipping transformation.")
+                st.warning(f"Warning: Unsupported frequency '{freq}' for monthly variation on {column}. Skipping transformation.")
                 return data # Return original data, similar to YearlyVariationTransformer
 
             # Resample to the target frequency, taking the last available value in the period
@@ -226,7 +226,7 @@ class MonthlyDifferenceTransformer(DataTransformer):
         freq = config.get('frequency') # Get the target frequency, e.g., 'M', 'W', 'D'
 
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for monthly difference. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for monthly difference. Skipping.")
             return data
 
         result = data.copy()
@@ -234,7 +234,7 @@ class MonthlyDifferenceTransformer(DataTransformer):
 
         if not freq:
             # Original behavior: Assume daily-like data (21 periods) if frequency not specified
-            print(f"Warning: Frequency not specified for {column}. Assuming daily-like data for monthly difference (21 periods).")
+            st.warning(f"Warning: Frequency not specified for {column}. Assuming daily-like data for monthly difference (21 periods).")
             result[new_column_name] = result[column].diff(periods=21)
             return result
 
@@ -243,7 +243,7 @@ class MonthlyDifferenceTransformer(DataTransformer):
 
         # Ensure index is DatetimeIndex
         if not isinstance(col_data.index, pd.DatetimeIndex):
-            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware monthly difference transformation.")
+            st.error(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware monthly difference transformation.")
             return data # Return original data to avoid errors
 
         try:
@@ -265,7 +265,7 @@ class MonthlyDifferenceTransformer(DataTransformer):
             periods = periods_map_for_monthly_calc.get(cleaned_base_freq)
 
             if periods is None:
-                print(f"Warning: Unsupported frequency '{freq}' for monthly difference on {column}. Skipping transformation.")
+                st.warning(f"Warning: Unsupported frequency '{freq}' for monthly difference on {column}. Skipping transformation.")
                 return data # Return original data
 
             # Resample to the target frequency, taking the last available value in the period
@@ -292,7 +292,7 @@ class MovingAverageTransformer(DataTransformer):
         window = config.get('window', 21)  # Default to 21 days (approx. 1 month)
         
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for moving average. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for moving average. Skipping.")
             return data
             
         result = data.copy()
@@ -311,7 +311,7 @@ class RollingSumTransformer(DataTransformer):
         freq = config.get('frequency') # Get the target frequency ('M', 'Q', 'A', etc.)
 
         if not column or column not in data.columns:
-             print(f"Warning: Column '{column}' not found for rolling sum. Skipping.")
+             st.warning(f"Warning: Column '{column}' not found for rolling sum. Skipping.")
              return data
 
         result = data.copy()
@@ -319,7 +319,7 @@ class RollingSumTransformer(DataTransformer):
 
         if not freq:
             # Original behavior: Assume daily data if frequency not specified
-            print(f"Warning: Frequency not specified for {column}. Assuming original data frequency for rolling sum.")
+            st.warning(f"Warning: Frequency not specified for {column}. Assuming original data frequency for rolling sum.")
             result[new_column_name] = result[column].rolling(window=window).sum()
             return result
 
@@ -328,7 +328,7 @@ class RollingSumTransformer(DataTransformer):
 
         # Ensure index is DatetimeIndex
         if not isinstance(col_data.index, pd.DatetimeIndex):
-            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation for rolling sum.")
+            st.error(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation for rolling sum.")
             return data # Return original data to avoid errors
 
         try:
@@ -359,7 +359,7 @@ class RollingSumPlusYearlyVariationTransformer(DataTransformer):
         # If frequency is not provided or column doesn't exist, return original data
         # This maintains backward compatibility for daily data or cases where freq isn't set
         if not column or column not in data.columns:
-             print(f"Warning: Column '{column}' not found for yearly variation. Skipping.")
+             st.warning(f"Warning: Column '{column}' not found for yearly variation. Skipping.")
              return data
 
         result = data.copy()
@@ -367,7 +367,7 @@ class RollingSumPlusYearlyVariationTransformer(DataTransformer):
 
         if not freq:
             # Original behavior: Assume daily data (252 periods) if frequency not specified
-            print(f"Warning: Frequency not specified for {column}. Assuming daily data for yearly variation.")
+            st.warning(f"Warning: Frequency not specified for {column}. Assuming daily data for yearly variation.")
             result[new_column_name] = result[column].rolling(window=window).sum().pct_change(periods=252) * 100
             return result
 
@@ -376,7 +376,7 @@ class RollingSumPlusYearlyVariationTransformer(DataTransformer):
 
         # Ensure index is DatetimeIndex
         if not isinstance(col_data.index, pd.DatetimeIndex):
-            print(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation.")
+            st.error(f"Error: Index for {column} is not DatetimeIndex. Cannot perform frequency-aware transformation.")
             return data # Return original data to avoid errors
 
         try:
@@ -391,7 +391,7 @@ class RollingSumPlusYearlyVariationTransformer(DataTransformer):
             periods = periods_map.get(clean_freq)
 
             if periods is None:
-                 print(f"Warning: Unsupported frequency '{freq}' for yearly variation on {column}. Skipping transformation.")
+                 st.warning(f"Warning: Unsupported frequency '{freq}' for yearly variation on {column}. Skipping transformation.")
                  return result # Return original data
 
             variation = resampled_data[column].rolling(window=window).sum().pct_change(periods=periods) * 100
@@ -454,11 +454,11 @@ class RollingVolatilityTransformer(DataTransformer):
         calculate_on_returns = config.get('calculate_on_returns', True) # New: control return calculation
 
         if not column: # Check if column name itself is missing or empty
-            print(f"Warning: 'column' parameter is missing or invalid in the configuration for RollingVolatilityTransformer. Skipping.")
+            st.warning(f"Warning: 'column' parameter is missing or invalid in the configuration for RollingVolatilityTransformer. Skipping.")
             return data
 
         if column not in data.columns: # Check if the specified column exists in the DataFrame
-            print(f"Warning: Column '{column}' not found in DataFrame for rolling volatility. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found in DataFrame for rolling volatility. Skipping.")
             return data
             
         result = data.copy()
@@ -492,15 +492,15 @@ class MultiplyTransformer(DataTransformer):
         scalar = config.get('scalar')
 
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for multiplication. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for multiplication. Skipping.")
             return data
 
         if scalar is None:
-            print(f"Warning: Scalar not provided for multiplication on column '{column}'. Skipping.")
+            st.warning(f"Warning: Scalar not provided for multiplication on column '{column}'. Skipping.")
             return data
         
         if not isinstance(scalar, (int, float)):
-            print(f"Warning: Scalar '{scalar}' is not a number. Skipping multiplication for column '{column}'.")
+            st.warning(f"Warning: Scalar '{scalar}' is not a number. Skipping multiplication for column '{column}'.")
             return data
 
         result = data.copy()
@@ -517,15 +517,15 @@ class SubtractTransformer(DataTransformer):
         scalar = config.get('scalar')
 
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for subtraction. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for subtraction. Skipping.")
             return data
 
         if scalar is None:
-            print(f"Warning: Scalar not provided for subtraction on column '{column}'. Skipping.")
+            st.warning(f"Warning: Scalar not provided for subtraction on column '{column}'. Skipping.")
             return data
         
         if not isinstance(scalar, (int, float)):
-            print(f"Warning: Scalar '{scalar}' is not a number. Skipping subtraction for column '{column}'.")
+            st.warning(f"Warning: Scalar '{scalar}' is not a number. Skipping subtraction for column '{column}'.")
             return data
 
         result = data.copy()
@@ -542,19 +542,19 @@ class DivideTransformer(DataTransformer):
         scalar = config.get('scalar')
 
         if not column or column not in data.columns:
-            print(f"Warning: Column '{column}' not found for division. Skipping.")
+            st.warning(f"Warning: Column '{column}' not found for division. Skipping.")
             return data
 
         if scalar is None:
-            print(f"Warning: Scalar not provided for division on column '{column}'. Skipping.")
+            st.warning(f"Warning: Scalar not provided for division on column '{column}'. Skipping.")
             return data
         
         if not isinstance(scalar, (int, float)):
-            print(f"Warning: Scalar '{scalar}' is not a number. Skipping division for column '{column}'.")
+            st.warning(f"Warning: Scalar '{scalar}' is not a number. Skipping division for column '{column}'.")
             return data
 
         if scalar == 0:
-            print(f"Warning: Scalar is zero. Division by zero is not allowed for column '{column}'. Skipping.")
+            st.warning(f"Warning: Scalar is zero. Division by zero is not allowed for column '{column}'. Skipping.")
             return data
 
         result = data.copy()
@@ -577,11 +577,11 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
 
         # Validate essential config for forming the new column name and core logic
         if not isinstance(column, str) or not column:
-            print(f"Warning: SAAR transformer requires a valid 'column' name string in config. Skipping.")
+            st.warning(f"Warning: SAAR transformer requires a valid 'column' name string in config. Skipping.")
             return data # Cannot form new_column_name or proceed
 
         if not isinstance(period_months, int) or period_months <= 0:
-            print(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
+            st.warning(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
             return data # Cannot proceed with logic
 
         result = pd.DataFrame(data.copy())
@@ -590,19 +590,19 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
         result[new_column_name] = np.nan # Ensure column exists
 
         if column not in result.columns:
-            print(f"Warning: Column '{column}' not found in DataFrame for SAAR. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Column '{column}' not found in DataFrame for SAAR. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
         if not isinstance(result.index, pd.DatetimeIndex):
-            print(f"Error: DataFrame index is not a DatetimeIndex for SAAR on column '{column}'. Adding NaN column '{new_column_name}'.")
+            st.error(f"Error: DataFrame index is not a DatetimeIndex for SAAR on column '{column}'. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
         col_data_series = result[column].dropna()
         
         if col_data_series.empty:
-            print(f"Warning: Column '{column}' has no non-NaN data for SAAR. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Column '{column}' has no non-NaN data for SAAR. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
@@ -615,12 +615,12 @@ class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
             return result
         
         if monthly_series.empty or monthly_series.isnull().all():
-            print(f"Warning: Column '{column}' is empty or all NaN after resampling to 'MS' for SAAR. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Column '{column}' is empty or all NaN after resampling to 'MS' for SAAR. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
         if len(monthly_series) < period_months + 1:
-            print(f"Warning: Not enough data points in monthly series for column '{column}' ({len(monthly_series)} points) to calculate SAAR with period {period_months} months. At least {period_months + 1} points needed. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Not enough data points in monthly series for column '{column}' ({len(monthly_series)} points) to calculate SAAR with period {period_months} months. At least {period_months + 1} points needed. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
             
@@ -659,11 +659,11 @@ class SeasonallyAdjustedAnnualRateMovingAverageTransformer(DataTransformer):
 
         # Validate essential config for forming the new column name and core logic
         if not isinstance(column, str) or not column:
-            print(f"Warning: SAAR transformer requires a valid 'column' name string in config. Skipping.")
+            st.warning(f"Warning: SAAR transformer requires a valid 'column' name string in config. Skipping.")
             return data # Cannot form new_column_name or proceed
 
         if not isinstance(period_months, int) or period_months <= 0:
-            print(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
+            st.warning(f"Warning: SAAR transformer 'period_months' ({period_months}) for column '{column}' must be a positive integer. Skipping.")
             return data # Cannot proceed with logic
 
         result = pd.DataFrame(data.copy())
@@ -672,19 +672,19 @@ class SeasonallyAdjustedAnnualRateMovingAverageTransformer(DataTransformer):
         result[new_column_name] = np.nan # Ensure column exists
 
         if column not in result.columns:
-            print(f"Warning: Column '{column}' not found in DataFrame for SAAR. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Column '{column}' not found in DataFrame for SAAR. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
         if not isinstance(result.index, pd.DatetimeIndex):
-            print(f"Error: DataFrame index is not a DatetimeIndex for SAAR on column '{column}'. Adding NaN column '{new_column_name}'.")
+            st.error(f"Error: DataFrame index is not a DatetimeIndex for SAAR on column '{column}'. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
         col_data_series = result[column].dropna()
         
         if col_data_series.empty:
-            print(f"Warning: Column '{column}' has no non-NaN data for SAAR. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Column '{column}' has no non-NaN data for SAAR. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
@@ -697,12 +697,12 @@ class SeasonallyAdjustedAnnualRateMovingAverageTransformer(DataTransformer):
             return result
         
         if monthly_series.empty or monthly_series.isnull().all():
-            print(f"Warning: Column '{column}' is empty or all NaN after resampling to 'MS' for SAAR. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Column '{column}' is empty or all NaN after resampling to 'MS' for SAAR. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
 
         if len(monthly_series) < period_months + 1:
-            print(f"Warning: Not enough data points in monthly series for column '{column}' ({len(monthly_series)} points) to calculate SAAR with period {period_months} months. At least {period_months + 1} points needed. Adding NaN column '{new_column_name}'.")
+            st.warning(f"Warning: Not enough data points in monthly series for column '{column}' ({len(monthly_series)} points) to calculate SAAR with period {period_months} months. At least {period_months + 1} points needed. Adding NaN column '{new_column_name}'.")
             result[new_column_name] = np.nan
             return result
             
@@ -736,17 +736,17 @@ class RollingBetaTransformer(DataTransformer):
         window = config.get('window', 252)  # Default to 252 periods
 
         if not dependent_col_name:
-            print(f"Warning: 'dependent_column' parameter is missing in the configuration for RollingBetaTransformer. Skipping.")
+            st.warning(f"Warning: 'dependent_column' parameter is missing in the configuration for RollingBetaTransformer. Skipping.")
             return data
         if not independent_col_name:
-            print(f"Warning: 'independent_column' parameter is missing in the configuration for RollingBetaTransformer. Skipping.")
+            st.warning(f"Warning: 'independent_column' parameter is missing in the configuration for RollingBetaTransformer. Skipping.")
             return data
 
         if dependent_col_name not in data.columns:
-            print(f"Warning: Dependent column '{dependent_col_name}' not found in DataFrame for rolling beta. Skipping.")
+            st.warning(f"Warning: Dependent column '{dependent_col_name}' not found in DataFrame for rolling beta. Skipping.")
             return data
         if independent_col_name not in data.columns:
-            print(f"Warning: Independent column '{independent_col_name}' not found in DataFrame for rolling beta. Skipping.")
+            st.warning(f"Warning: Independent column '{independent_col_name}' not found in DataFrame for rolling beta. Skipping.")
             return data
             
         result = data.copy()
