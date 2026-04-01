@@ -81,6 +81,8 @@ stats.index, performance_table.index = list(CAPITAL_MARKET_ASSUMPTIONS.values())
 stats.index.name, performance_table.index.name = 'Classe de Ativos', 'Classe de Ativos'
 performance_table.drop(columns=['code'], inplace=True)
 
+st.markdown("Data mais recente: **{0:%Y-%m-%d}**".format(data.index.max().date()))
+
 st.markdown("##### Performance Acumulada")
 st.dataframe(
     style_table(
