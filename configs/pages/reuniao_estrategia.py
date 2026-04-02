@@ -264,8 +264,8 @@ CHARTS_ESTRATEGIA = {
     },
     "currency_performance_em_vs_brl": {
         "chart_config": {
-            "columns": ["brl_usd", "jpm_em_currency_index"],
-            "names": ["BRL/USD", "EM"],
+            "columns": ["usd_brl", "jpm_em_currency_index"],
+            "names": ["USD/BRL", "EM"],
             "chart_type": "dual_axis_line",
             "title": "BRL vs EM",
             "y_axis_title": ["Taxa", "Índice"],
