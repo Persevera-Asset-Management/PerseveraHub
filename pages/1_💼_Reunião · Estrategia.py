@@ -82,7 +82,7 @@ else:
     charts_by_context = organize_charts_by_context(chart_configs)
         
     # Create tabs for different regions
-    tabs = st.tabs(["Renda Fixa", "Moedas", "Commodities", "Equities", "Crédito Privado"])
+    tabs = st.tabs(["Renda Fixa", "Moedas", "Commodities", "Renda Variável"])
     
     # Tab 1: Renda Fixa
     with tabs[0]:
@@ -131,10 +131,10 @@ else:
         )
         st.dataframe(styled_performance_table, width='stretch', hide_index=True)
 
-    # Tab 4: Equities
+    # Tab 4: Renda Variável
     with tabs[3]:
-        equities_context = charts_by_context.get("Equities", {})
+        renda_variavel_context = charts_by_context.get("Renda Variável", {})
         
-        render_chart_group_with_context(data_valuation, chart_configs, "Equities", "Valuation", charts_by_context)
+        render_chart_group_with_context(data_valuation, chart_configs, "Renda Variável", "Valuation", charts_by_context)
 
         

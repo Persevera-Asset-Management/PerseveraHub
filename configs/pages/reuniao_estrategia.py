@@ -1,6 +1,6 @@
 CHARTS_ESTRATEGIA = {
     # === Juros ===
-    # Taxas de Juros (US)
+    # Títulos Públicos (US)
     "us_treasuries": {
         "chart_config": {
             "columns": ["us_generic_2y", "us_generic_5y", "us_generic_10y", "us_generic_30y"],
@@ -10,9 +10,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (US)",
-        "block_title": "Taxas de Juros (US)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (US)",
+        "block_title": "Títulos Públicos (US)"
     },
     "us_inflation": {
         "chart_config": {
@@ -23,9 +23,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (US)",
-        "block_title": "Taxas de Juros (US)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (US)",
+        "block_title": "Títulos Públicos (US)"
     },
     "us_breakeven": {
         "chart_config": {
@@ -36,9 +36,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (US)",
-        "block_title": "Taxas de Juros (US)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (US)",
+        "block_title": "Títulos Públicos (US)"
     },
     "us_steepness": {
         "chart_config": {
@@ -49,9 +49,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Valor",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (US)",
-        "block_title": "Taxas de Juros (US)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (US)",
+        "block_title": "Títulos Públicos (US)"
     },
 
     # Taxas Corporativas (US)
@@ -64,9 +64,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "bps",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas Corporativas (US)",
-        "block_title": "Taxas Corporativas (US)"
+        "context": "Renda Fixa",
+        "group": "Crédito Privado (US)",
+        "block_title": "Crédito Privado (US)"
     },
     "us_corporate_ig_yield": {
         "chart_config": {
@@ -77,9 +77,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas Corporativas (US)",
-        "block_title": "Taxas Corporativas (US)"
+        "context": "Renda Fixa",
+        "group": "Crédito Privado (US)",
+        "block_title": "Crédito Privado (US)"
     },
     "us_corporate_hy_spread": {
         "chart_config": {
@@ -90,9 +90,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "bps",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas Corporativas (US)",
-        "block_title": "Taxas Corporativas (US)"
+        "context": "Renda Fixa",
+        "group": "Crédito Privado (US)",
+        "block_title": "Crédito Privado (US)"
     },
     "us_corporate_hy_yield": {
         "chart_config": {
@@ -103,12 +103,12 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas Corporativas (US)",
-        "block_title": "Taxas Corporativas (US)"
+        "context": "Renda Fixa",
+        "group": "Crédito Privado (US)",
+        "block_title": "Crédito Privado (US)"
     },
 
-    # Taxas de Juros (BR)
+    # Títulos Públicos (BR)
     "br_treasuries": {
         "chart_config": {
             "columns": ["br_pre_1y", "br_pre_2y", "br_pre_5y", "br_generic_10y"],
@@ -118,9 +118,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (BR)",
-        "block_title": "Taxas de Juros (BR)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (BR)",
+        "block_title": "Títulos Públicos (BR)"
     },
     "br_inflation": {
         "chart_config": {
@@ -131,9 +131,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (BR)",
-        "block_title": "Taxas de Juros (BR)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (BR)",
+        "block_title": "Títulos Públicos (BR)"
     },
     "br_breakeven": {
         "chart_config": {
@@ -144,9 +144,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (BR)",
-        "block_title": "Taxas de Juros (BR)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (BR)",
+        "block_title": "Títulos Públicos (BR)"
     },
     "br_focus_selic": {
         "chart_config": {
@@ -157,9 +157,9 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "Taxa (%)",
         },
         "width": 6,
-        "context": "Juros",
-        "group": "Taxas de Juros (BR)",
-        "block_title": "Taxas de Juros (BR)"
+        "context": "Renda Fixa",
+        "group": "Títulos Públicos (BR)",
+        "block_title": "Títulos Públicos (BR)"
     },
 
     # === Moedas ===
@@ -279,7 +279,7 @@ CHARTS_ESTRATEGIA = {
         "block_title": "Performance"
     },
 
-    # === Equities ===
+    # === Renda Variável ===
     # Valuation
     "valuation_dm_equities": {
         "chart_config": {
@@ -290,7 +290,7 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "P/E",
         },
         "width": 6,
-        "context": "Equities",
+        "context": "Renda Variável",
         "group": "Valuation",
         "block_title": "Valuation"
     },
@@ -303,7 +303,7 @@ CHARTS_ESTRATEGIA = {
             "y_axis_title": "P/E",
         },
         "width": 6,
-        "context": "Equities",
+        "context": "Renda Variável",
         "group": "Valuation",
         "block_title": "Valuation"
     },
