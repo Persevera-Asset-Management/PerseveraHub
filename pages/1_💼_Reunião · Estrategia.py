@@ -82,71 +82,59 @@ else:
     charts_by_context = organize_charts_by_context(chart_configs)
         
     # Create tabs for different regions
-    tabs = st.tabs(["Juros", "Moedas", "Commodities", "Equities", "Crédito Privado"])
+    tabs = st.tabs(["Renda Fixa", "Moedas", "Commodities", "Equities", "Crédito Privado"])
     
-    # Tab 1: Juros
+    # Tab 1: Renda Fixa
     with tabs[0]:
-        juros_context = charts_by_context.get("Juros", {})        
-        juros_tabs = st.tabs(["Taxas de Juros (US)", "Taxas Corporativas (US)", "Taxas de Juros (BR)"])
+        renda_fixa_context = charts_by_context.get("Renda Fixa", {})        
+        renda_fixa_tabs = st.tabs(["Títulos Públicos (US)", "Crédito Privado (US)", "Títulos Públicos (BR)", "Crédito Privado (BR)"])
         
-        # Taxas de Juros (US)
-        with juros_tabs[0]:
-            if "Taxas de Juros (US)" in juros_context:
-                render_chart_group_with_context(data, chart_configs, "Juros", "Taxas de Juros (US)", charts_by_context)
+        # Títulos Públicos (US)
+        with renda_fixa_tabs[0]:
+            render_chart_group_with_context(data, chart_configs, "Renda Fixa", "Títulos Públicos (US)", charts_by_context)
 
-        # Taxas Corporativas (US)
-        with juros_tabs[1]:
-            if "Taxas Corporativas (US)" in juros_context:
-                render_chart_group_with_context(data, chart_configs, "Juros", "Taxas Corporativas (US)", charts_by_context)
+        # Crédito Privado (US)
+        with renda_fixa_tabs[1]:
+            render_chart_group_with_context(data, chart_configs, "Renda Fixa", "Crédito Privado (US)", charts_by_context)
 
-        # Taxas de Juros (BR)
-        with juros_tabs[2]:
-            if "Taxas de Juros (BR)" in juros_context:
-                render_chart_group_with_context(data, chart_configs, "Juros", "Taxas de Juros (BR)", charts_by_context)
+        # Títulos Públicos (BR)
+        with renda_fixa_tabs[2]:
+            render_chart_group_with_context(data, chart_configs, "Renda Fixa", "Títulos Públicos (BR)", charts_by_context)
 
     # Tab 2: Moedas
     with tabs[1]:
         moedas_context = charts_by_context.get("Moedas", {})
 
-        if "Performance" in moedas_context:
-            render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
+        render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
 
-            # Tabela comparativa
-            styled_performance_table = style_table(
-                get_performance_table(data_currencies),
-                numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
-                highlight_row_by_column='code',
-                highlight_row_if_value_equals='BRL',
-                highlight_color='lightblue'
-            )
-            st.dataframe(styled_performance_table, use_container_width=True, hide_index=True)
+        styled_performance_table = style_table(
+            get_performance_table(data_currencies),
+            numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
+            highlight_row_by_column='code',
+            highlight_row_if_value_equals='BRL',
+            highlight_color='lightblue'
+        )
+        st.dataframe(styled_performance_table, width='stretch', hide_index=True)
 
-        if "Reservas Internacionais" in moedas_context:
-            render_chart_group_with_context(data, chart_configs, "Moedas", "Reservas Internacionais", charts_by_context)
+        render_chart_group_with_context(data, chart_configs, "Moedas", "Reservas Internacionais", charts_by_context)
 
     # Tab 3: Commodities
     with tabs[2]:
         commodities_context = charts_by_context.get("Commodities", {})
         commodities_codes = {col: name for entry in commodities_context['Commodities'] for col, name in zip(entry[1]['chart_config']['columns'], entry[1]['chart_config']['names'])}
         data_commodities = data[list(commodities_codes.keys())].rename(columns=commodities_codes)
-        if "Commodities" in commodities_context:
-            render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
+        render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
 
-            # Tabela comparativa
-            styled_performance_table = style_table(
-                get_performance_table(data_commodities),
-                numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
-            )
-            st.dataframe(styled_performance_table, use_container_width=True, hide_index=True)
+        styled_performance_table = style_table(
+            get_performance_table(data_commodities),
+            numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
+        )
+        st.dataframe(styled_performance_table, width='stretch', hide_index=True)
 
     # Tab 4: Equities
     with tabs[3]:
         equities_context = charts_by_context.get("Equities", {})
         
-        if "Valuation" in equities_context:
-            render_chart_group_with_context(data_valuation, chart_configs, "Equities", "Valuation", charts_by_context)
+        render_chart_group_with_context(data_valuation, chart_configs, "Equities", "Valuation", charts_by_context)
 
-    # Tab 5: Crédito Privado
-    with tabs[4]:
-        credito_privado_context = charts_by_context.get("Crédito Privado", {})
         
