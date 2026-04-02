@@ -20,9 +20,9 @@ ASSET_CLASSES_ORDER = [
     'Renda Fixa Atrelada à Inflação',
     'Renda Variável',
     'Retorno Total',
-    'Fundos Imobiliários',
+    # 'Fundos Imobiliários',
     'Investimentos Alternativos',
-    'Criptomoedas',
+    # 'Criptomoedas',
     'Commodities',
     'Reserva de Valor',
 ]
