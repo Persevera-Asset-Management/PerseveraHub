@@ -47,7 +47,7 @@ ASSET_CONFIG = {
     "Indicador": {
         "form_name": "form_indicador",
         "table_name": "indicadores_definicoes",
-        "primary_keys": None,
+        "primary_keys": ["code"],
         "update": False,
         "fields": [
             {
