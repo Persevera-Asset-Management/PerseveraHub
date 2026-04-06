@@ -22,6 +22,7 @@ ASSET_CLASSES_ORDER = [
     'Retorno Total',
     # 'Fundos Imobiliários',
     'Investimentos Alternativos',
+    'Ativos Reais',
     # 'Criptomoedas',
     'Commodities',
     'Reserva de Valor',
