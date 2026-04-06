@@ -22,6 +22,7 @@ def create_highcharts_options(
     color: Optional[Union[str, List[str], Tuple[Optional[Union[str, List[Optional[str]]]], Optional[Union[str, List[Optional[str]]]]]]] = None,
     point_markers: Optional[List[Dict[str, Any]]] = None,
     height: int = 400,
+    width: Optional[int] = None,
     line_width: int = 3,
     zoom_type: str = "x",
     animation: bool = False,
@@ -96,6 +97,8 @@ def create_highcharts_options(
         Additional point markers to overlay on the chart (e.g., for meetings)
     height : int, optional
         Chart height in pixels
+    width : int, optional
+        Chart width in pixels. If None, Highcharts uses responsive width (container).
     line_width : int, optional
         Width of the line in the main series (applies to line charts)
     zoom_type : str, optional
@@ -515,20 +518,24 @@ def create_highcharts_options(
         x_axis_type = 'linear'
     
     # Create base chart options
+    _chart_block: Dict[str, Any] = {
+        "type": 'pie' if chart_type in ['pie', 'donut', 'nested_pie'] else (chart_type if not is_dual_axis else 'line'),
+        "zoomType": zoom_type if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
+        "resetZoomButton": {
+            "position": {
+                "align": "right",
+                "verticalAlign": "top",
+                "x": -10,
+                "y": 10
+            }
+        } if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
+        "height": height,
+    }
+    if width is not None:
+        _chart_block["width"] = width
+
     chart_options = {
-        "chart": {
-            "type": 'pie' if chart_type in ['pie', 'donut', 'nested_pie'] else (chart_type if not is_dual_axis else 'line'),
-            "zoomType": zoom_type if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
-            "resetZoomButton": {
-                "position": {
-                    "align": "right",
-                    "verticalAlign": "top",
-                    "x": -10,
-                    "y": 10
-                }
-            } if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
-            "height": height
-        },
+        "chart": _chart_block,
         "title": {
             "text": title
         },

@@ -144,22 +144,58 @@ decimal_precision_input = st.sidebar.number_input("Precisão Decimal", min_value
 y_axis_max_input = st.sidebar.number_input("Valor Máximo do Eixo Y", min_value=-1000000000, max_value=1000000000, value=None, step=1, key="y_axis_max_input")
 y_axis_min_input = st.sidebar.number_input("Valor Mínimo do Eixo Y", min_value=-1000000000, max_value=1000000000, value=None, step=1, key="y_axis_min_input")
 
-# Pré-seleção de altura e largura do gráfico
-chart_size_selection = st.sidebar.radio("Disposição do Gráfico", ["Linha Completa", "Lado a Lado"], horizontal=True, index=0, key="chart_size_radio")
+# Pré-seleção de altura e largura do gráfico (presets sincronizados ao trocar o rádio; ver callback abaixo)
 
-# Definir valores padrão de altura e largura com base na seleção
+
+def _chart_size_presets_callback() -> None:
+    """Atualiza largura/altura quando o usuário muda a disposição (widgets com key não seguem default_* sozinhos)."""
+    if "chart_size_radio" not in st.session_state:
+        return
+    sel = st.session_state.chart_size_radio
+    if sel == "Linha Completa":
+        st.session_state.height_num_input = 500
+        st.session_state.width_num_input = 1200
+    elif sel == "Lado a Lado":
+        st.session_state.height_num_input = 500
+        st.session_state.width_num_input = 600
+
+
+chart_size_selection = st.sidebar.radio(
+    "Disposição do Gráfico",
+    ["Linha Completa", "Lado a Lado"],
+    horizontal=True,
+    index=0,
+    key="chart_size_radio",
+    on_change=_chart_size_presets_callback,
+)
+
+# Definir valores padrão de altura e largura com base na seleção (primeira carga / antes de existir estado)
 if chart_size_selection == "Linha Completa":
     default_width = 1200
     default_height = 500
 elif chart_size_selection == "Lado a Lado":
     default_width = 600
     default_height = 500
-else: # Fallback, embora não deva acontecer com st.radio
+else:  # Fallback, embora não deva acontecer com st.radio
     default_width = 600
     default_height = 400
 
-height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=default_height, step=50, key="height_num_input")
-width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=default_width, step=50, key="width_num_input")
+height_input = st.sidebar.number_input(
+    "Altura do Gráfico",
+    min_value=200,
+    max_value=1200,
+    value=default_height,
+    step=50,
+    key="height_num_input",
+)
+width_input = st.sidebar.number_input(
+    "Largura do Gráfico",
+    min_value=200,
+    max_value=1200,
+    value=default_width,
+    step=50,
+    key="width_num_input",
+)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Linha vertical")
@@ -393,6 +429,7 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             decimal_precision=decimal_precision_input,
             stacking=selected_stacking,
             height=height_input,
+            width=int(width_input),
             exporting={"enabled": True},
             **chart_extra,
         )
