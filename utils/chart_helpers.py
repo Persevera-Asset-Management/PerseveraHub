@@ -329,12 +329,14 @@ def render_chart_group(data, chart_configs, group_name, charts_by_group):
                     chart_data_for_this_chart = apply_transformations(data, transformations_to_apply)
                 else:
                     chart_data_for_this_chart = data
-                    
-                    original_columns_structure = current_chart_config.get("columns")
-                    if original_columns_structure is not None:
-                        updated_columns_structure = _update_column_names_recursively(original_columns_structure, transformations_to_apply)
-                        current_chart_config["columns"] = updated_columns_structure
-                
+
+                original_columns_structure = current_chart_config.get("columns")
+                if original_columns_structure is not None and transformations_to_apply:
+                    updated_columns_structure = _update_column_names_recursively(
+                        original_columns_structure, transformations_to_apply
+                    )
+                    current_chart_config["columns"] = updated_columns_structure
+
                 with cols[col_idx_in_row]:                    
                     chart_obj = create_chart(chart_data_for_this_chart, **current_chart_config) # Renamed to chart_obj
                     key = f"{group_name}_{chart_id}_{row}_{col_idx_in_row}"
@@ -451,12 +453,14 @@ def render_chart_group_with_context(data, chart_configs_original, context, group
                         chart_data_for_this_specific_chart = apply_transformations(data, transformations_to_apply_list)
                     else:
                         chart_data_for_this_specific_chart = data
-                        
-                        original_cols_structure = current_chart_config_dict.get("columns")
-                        if original_cols_structure is not None:
-                            updated_cols_structure = _update_column_names_recursively(original_cols_structure, transformations_to_apply_list)
-                            current_chart_config_dict["columns"] = updated_cols_structure
-                    
+
+                    original_cols_structure = current_chart_config_dict.get("columns")
+                    if original_cols_structure is not None and transformations_to_apply_list:
+                        updated_cols_structure = _update_column_names_recursively(
+                            original_cols_structure, transformations_to_apply_list
+                        )
+                        current_chart_config_dict["columns"] = updated_cols_structure
+
                     with cols[col_idx_in_row]:                    
                         chart_object_to_render = create_chart(chart_data_for_this_specific_chart, **current_chart_config_dict)
                         unique_key = f"{context}_{group}_{block_key}_{chart_id}_{row}_{col_idx_in_row}"

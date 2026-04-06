@@ -187,6 +187,12 @@ class QuarterlyVariationTransformer(DataTransformer):
             periods_map_for_qoq = {'Q': 1, 'M': 3, 'W': 13, 'D': 63, 'B': 63} # Approx for W, D, B
             periods = periods_map_for_qoq.get(cleaned_base_freq)
 
+            if periods is None:
+                st.warning(
+                    f"Warning: Unsupported frequency '{freq}' for quarterly variation on {column}. Skipping transformation."
+                )
+                return data
+
             # Resample to the target frequency (from config), taking the last available value
             resampled_data = col_data.resample(freq).last()
 
@@ -196,21 +202,6 @@ class QuarterlyVariationTransformer(DataTransformer):
             # Reindex back to the original DataFrame's index
             aligned_variation = variation.reindex(result.index)
             result[new_column_name] = aligned_variation
-
-            if periods is None:
-                st.warning(f"Warning: Unsupported frequency '{freq}' for monthly variation on {column}. Skipping transformation.")
-                return data # Return original data, similar to YearlyVariationTransformer
-
-            # Resample to the target frequency, taking the last available value in the period
-            resampled_data = col_data.resample(freq).last() # Use the original `freq` from config
-
-            # Calculate monthly variation on the resampled data
-            variation = resampled_data[column].pct_change(periods=periods) * 100
-
-            # Reindex back to the original DataFrame's index
-            aligned_variation = variation.reindex(result.index)
-            result[new_column_name] = aligned_variation
-
 
         except Exception as e:
             print(f"Error during quarterly variation transformation for {column} with freq {freq}: {e}")
