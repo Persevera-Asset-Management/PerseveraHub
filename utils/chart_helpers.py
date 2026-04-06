@@ -134,6 +134,8 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
             elif transform_type == "divide":
                 scalar = t_conf.get("scalar", 1)
                 generated_name_this_iteration = f"{original_col_name}_divided_by_{scalar}"
+            elif transform_type == "base_100":
+                generated_name_this_iteration = f"{original_col_name}_base100"
             elif transform_type == "saar":
                 period_months = t_conf.get("period_months", 12)
                 generated_name_this_iteration = f"{original_col_name}_saar_{period_months}m"

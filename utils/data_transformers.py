@@ -554,6 +554,63 @@ class DivideTransformer(DataTransformer):
         
         return result
 
+class Base100Transformer(DataTransformer):
+    """
+    Rebase a series so the reference observation equals 100: x_t * (100 / x_ref).
+
+    Config:
+        column: column name (required)
+        base_date: optional date-like string or datetime; uses the last non-NaN value
+            on or before this timestamp (requires DatetimeIndex). If omitted, uses
+            the first non-NaN value in chronological order.
+    """
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get("column")
+        base_date = config.get("base_date")
+
+        if not column or column not in data.columns:
+            st.warning(f"Warning: Column '{column}' not found for base 100. Skipping.")
+            return data
+
+        result = data.copy()
+        series = result[column]
+        new_column_name = f"{column}_base100"
+
+        non_na = series.dropna()
+        if non_na.empty:
+            st.warning(f"Warning: Column '{column}' has no data for base 100. Skipping.")
+            return data
+
+        base_val = None
+        if base_date is not None and str(base_date).strip() != "":
+            if not isinstance(result.index, pd.DatetimeIndex):
+                st.error(
+                    f"Error: Index is not DatetimeIndex; cannot use base_date for base 100 on '{column}'."
+                )
+                return data
+            try:
+                ts = pd.Timestamp(base_date)
+            except (ValueError, TypeError):
+                st.warning(f"Warning: Invalid base_date '{base_date}' for base 100. Skipping.")
+                return data
+            sub = result.loc[:ts, column].dropna()
+            if sub.empty:
+                st.warning(
+                    f"Warning: No non-NaN values on or before {ts.date()} for base 100 on '{column}'. Skipping."
+                )
+                return data
+            base_val = sub.iloc[-1]
+        else:
+            base_val = non_na.iloc[0]
+
+        if base_val == 0 or pd.isna(base_val):
+            st.warning(f"Warning: Base value for '{column}' is zero or NaN. Skipping base 100.")
+            return data
+
+        result[new_column_name] = series * (100.0 / float(base_val))
+        return result
+
 class SeasonallyAdjustedAnnualRateTransformer(DataTransformer):
     """
     Calculates the Seasonally Adjusted Annual Rate (SAAR) for a given column.
@@ -779,6 +836,7 @@ TRANSFORMERS = {
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,
     "subtract": SubtractTransformer,
+    "base_100": Base100Transformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
     "saar_ma": SeasonallyAdjustedAnnualRateMovingAverageTransformer,
 }

@@ -161,6 +161,30 @@ else: # Fallback, embora não deva acontecer com st.radio
 height_input = st.sidebar.number_input("Altura do Gráfico", min_value=200, max_value=1200, value=default_height, step=50, key="height_num_input")
 width_input = st.sidebar.number_input("Largura do Gráfico", min_value=200, max_value=1200, value=default_width, step=50, key="width_num_input")
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("Linha vertical")
+vline_enable = st.sidebar.checkbox(
+    "Incluir linha vertical na data selecionada",
+    value=False,
+    key="vline_enable",
+    help="Desenha uma linha vertical no eixo X (eixo de datas). Não se aplica a gráficos de pizza.",
+)
+vline_date = None
+vline_label = ""
+if vline_enable:
+    vline_date = st.sidebar.date_input(
+        "Data da linha vertical",
+        value=date.today(),
+        format="DD/MM/YYYY",
+        key="vline_date",
+    )
+    vline_label = st.sidebar.text_input(
+        "Rótulo da linha (opcional)",
+        value="",
+        key="vline_label",
+        placeholder="Ex.: Marco",
+    )
+
 # Inputs Condicionais
 if data_source == "Buscar por Códigos":
     codes_input_series = st.sidebar.multiselect("Códigos das Séries", options=indicators_codes, key="codes_series")
@@ -231,6 +255,14 @@ for i, trans in enumerate(st.session_state.transformations):
         params['scalar'] = st.sidebar.number_input("Dividir por", value=trans.get('params',{}).get('scalar', 1.0), format="%.4f", key=f"param_div_scalar_{i}")
     elif trans['type'] == "subtract":
         params['scalar'] = st.sidebar.number_input("Subtrair por", value=trans.get('params',{}).get('scalar', 1.0), format="%.4f", key=f"param_sub_scalar_{i}")
+    elif trans['type'] == "base_100":
+        _bd = trans.get("params", {}).get("base_date", "") or ""
+        params["base_date"] = st.sidebar.text_input(
+            "Data base (YYYY-MM-DD), vazio = primeira observação",
+            value=_bd,
+            key=f"param_base100_date_{i}",
+            help="Índice DatetimeIndex: usa o último valor não nulo até esta data. Vazio: primeiro valor não nulo da série.",
+        )
     elif trans['type'] == "saar":
         params['period_months'] = st.sidebar.number_input("Meses no período", min_value=1, value=trans.get('params',{}).get('period_months', 1), key=f"param_saar_months_{i}")
     elif trans['type'] == "saar_ma":
@@ -329,6 +361,25 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
         # Criar configuração do gráfico
         data_to_plot = chart_data[y_columns_for_chart]
 
+        chart_extra = {}
+        if vline_enable and vline_date is not None and selected_chart_type not in ("pie", "donut"):
+            vline_conf: dict = {
+                "value": vline_date,
+                "color": "#666666",
+                "width": 2,
+                "dashStyle": "Dash",
+                "zIndex": 5,
+            }
+            if vline_label and vline_label.strip():
+                vline_conf["label"] = {
+                    "text": vline_label.strip(),
+                    "rotation": 0,
+                    "style": {"color": "#666666"},
+                }
+            chart_extra["vertical_line"] = vline_conf
+        elif vline_enable and selected_chart_type in ("pie", "donut"):
+            st.warning("Linha vertical não está disponível para gráficos do tipo pizza ou donut.")
+
         chart_options = create_chart(
             data=data_to_plot,
             columns=y_columns_for_chart,
@@ -342,7 +393,8 @@ if st.sidebar.button("Gerar Gráfico", key="generate_chart_button"):
             decimal_precision=decimal_precision_input,
             stacking=selected_stacking,
             height=height_input,
-            exporting={"enabled": True}
+            exporting={"enabled": True},
+            **chart_extra,
         )
         st.session_state.chart_options_for_download = chart_options
         st.session_state.png_payload = None
