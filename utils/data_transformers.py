@@ -339,6 +339,48 @@ class RollingSumTransformer(DataTransformer):
 
         return result
 
+class CumulativeSumTransformer(DataTransformer):
+    """Calculates cumulative sum for a given column."""
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get("column")
+        freq = config.get("frequency")
+
+        if not column or column not in data.columns:
+            st.warning(
+                f"Warning: Column '{column}' not found for cumulative sum. Skipping."
+            )
+            return data
+
+        result = data.copy()
+        new_column_name = f"{column}_cumsum"
+
+        if not freq:
+            result[new_column_name] = result[column].cumsum()
+            return result
+
+        col_data = result[[column]].dropna()
+
+        if not isinstance(col_data.index, pd.DatetimeIndex):
+            st.error(
+                f"Error: Index for {column} is not DatetimeIndex. "
+                "Cannot perform frequency-aware cumulative sum."
+            )
+            return data
+
+        try:
+            resampled_data = col_data.resample(freq).last()
+            cumsum_series = resampled_data[column].cumsum()
+            aligned = cumsum_series.reindex(result.index)
+            result[new_column_name] = aligned
+        except Exception as e:
+            print(
+                f"Error during cumulative sum transformation for {column} with freq {freq}: {e}"
+            )
+            return data
+
+        return result
+
 class RollingSumPlusYearlyVariationTransformer(DataTransformer):
     """Calculates rolling sum and yearly variation for a given column"""
     @staticmethod
@@ -832,6 +874,7 @@ TRANSFORMERS = {
     "rolling_volatility": RollingVolatilityTransformer,
     "rolling_beta": RollingBetaTransformer,
     "rolling_sum": RollingSumTransformer,
+    "cumulative_sum": CumulativeSumTransformer,
     "rolling_sum_plus_yearly_variation": RollingSumPlusYearlyVariationTransformer,
     "multiply": MultiplyTransformer,
     "divide": DivideTransformer,

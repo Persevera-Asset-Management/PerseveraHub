@@ -125,6 +125,8 @@ def _get_transformed_column_name(original_col_name: str, transformations_list: L
             elif transform_type == "rolling_sum":
                 window = t_conf.get("window", 12)
                 generated_name_this_iteration = f"{original_col_name}_rolling_sum_{window}"
+            elif transform_type == "cumulative_sum":
+                generated_name_this_iteration = f"{original_col_name}_cumsum"
             elif transform_type == "rolling_sum_plus_yearly_variation":
                 window = t_conf.get("window", 12)
                 generated_name_this_iteration = f"{original_col_name}_rolling_sum_yoy"

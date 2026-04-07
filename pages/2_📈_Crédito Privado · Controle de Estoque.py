@@ -5,8 +5,8 @@ from datetime import datetime, date
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
+from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 
 from services.position_service import (
     load_assets,
@@ -70,8 +70,8 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         df_cd['Ticker'] = df_cd['Ticker'].str.replace(r'|'.join(strip_str), '', regex=True)
         df_cd['Ticker'] = df_cd['Ticker'].str.replace(r'_@.*$', '', regex=True)
 
-        df_assets = get_emissor_column(df_assets)
-        df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Emissor']], left_on='Ticker', right_on='Name', how='left')
+        # df_assets = get_emissor_column(df_assets)
+        df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor']], left_on='Ticker', right_on='Name', how='left')
 
         df = df.merge(df_issuers, left_on='Emissor', right_on='Nome Emissor', how='left')
 

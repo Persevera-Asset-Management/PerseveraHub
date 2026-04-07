@@ -280,6 +280,13 @@ for i, trans in enumerate(st.session_state.transformations):
         params['calculate_on_returns'] = st.sidebar.checkbox("Calcular sobre retornos?", value=trans.get('params',{}).get('calculate_on_returns', True), key=f"param_vol_returns_{i}")
     elif trans['type'] == "rolling_sum":
         params['window'] = st.sidebar.number_input("Janela (períodos)", min_value=1, value=trans.get('params',{}).get('window', 12), key=f"param_rs_window_{i}")
+    elif trans['type'] == "cumulative_sum":
+        params['frequency'] = st.sidebar.text_input(
+            "Frequência (opcional, ex: MS)",
+            value=trans.get("params", {}).get("frequency", ""),
+            key=f"param_cumsum_freq_{i}",
+            help="Vazio: cumsum na série original. Com frequência: reamostra (último do período) e depois soma acumulada.",
+        )
     elif trans['type'] == "rolling_sum_plus_yearly_variation":
         params['window'] = st.sidebar.number_input("Janela da soma (períodos)", min_value=1, value=trans.get('params',{}).get('window', 12), key=f"param_rsyv_window_{i}")
         params['frequency'] = st.sidebar.text_input("Frequência (ex: 'MS', 'QS')", value=trans.get('params',{}).get('frequency', 'MS'), key=f"param_rsyv_freq_{i}")
