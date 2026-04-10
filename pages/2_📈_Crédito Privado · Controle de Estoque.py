@@ -70,10 +70,10 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         df_cd['Ticker'] = df_cd['Ticker'].str.replace(r'|'.join(strip_str), '', regex=True)
         df_cd['Ticker'] = df_cd['Ticker'].str.replace(r'_@.*$', '', regex=True)
 
-        # df_assets = get_emissor_column(df_assets)
-        df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor']], left_on='Ticker', right_on='Name', how='left')
+        df_assets = get_emissor_column(df_assets)
+        df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Emissor']], left_on='Ticker', right_on='Name', how='left')
 
-        df = df.merge(df_issuers, left_on='Emissor', right_on='Nome Emissor', how='left')
+        df = df.merge(df_issuers.set_index('Nome Emissor'), left_on='Emissor', right_index=True, how='left')
 
         saldo_carteiras = df.groupby('Carteira').agg({'Saldo Bruto': 'sum'}).rename(columns={'Saldo Bruto': 'Saldo Total'})
         df = df.merge(saldo_carteiras, right_index=True, left_on='Carteira', how='left')
@@ -84,7 +84,7 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
             df = df[df['Status do Emissor'].isin(selected_status)]
 
         st.dataframe(style_table(
-            df[['Carteira', 'Ticker', 'Ativo', 'Indexador', 'Data Vencimento', 'Emissor', 'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante']],
+            df[['Carteira', 'Ticker', 'Ativo', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Status do Emissor', 'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante']],
             date_cols=['Data Vencimento'],
             currency_cols=['Saldo Bruto', 'Preço Unitário'],
             numeric_cols_format_as_float=['Quantidade'],
