@@ -5,9 +5,11 @@ import os
 from datetime import datetime, timedelta, date
 from configs.pages.screener import FACTOR_OPTIONS_SCREENER, FACTOR_MOMENTUM_COMPONENTS, FACTOR_VALUE_COMPONENTS, FACTOR_LIQUIDITY_COMPONENTS, FACTOR_RISK_COMPONENTS, FACTOR_QUALITY_COMPONENTS
 from utils.table import style_table
-from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
+
+from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
+from persevera_tools.db.fibery import read_fibery
 
 st.set_page_config(
     page_title="Screener | Persevera",
@@ -20,7 +22,19 @@ load_css()
 check_authentication()
 
 @st.cache_data(ttl=3600)
-def load_data(start_date, descriptors_list):
+def load_factor_definitions() -> pd.DataFrame:
+    try:
+        df = read_fibery(
+            table_name="Inv-Rsrch-Quant/Definições dos Fatores",
+            include_fibery_fields=False,
+        )
+        return df[["Name", "Alias", "Descrição", "Maior Melhor"]]
+    except Exception as e:
+        st.error(f"Error loading factor definitions: {str(e)}")
+        return pd.DataFrame(columns=["Name", "Alias", "Descrição", "Maior Melhor"])
+
+@st.cache_data(ttl=3600)
+def load_data(start_date, descriptors_list) -> pd.DataFrame:
     try:
         codes = get_securities_by_exchange(exchange='BZ').values()
         return get_descriptors(list(codes), start_date=start_date, descriptors=descriptors_list)
@@ -131,6 +145,8 @@ all_cols = selected_descriptors_list + selected_descriptors_list_momentum + sele
 all_cols = list(dict.fromkeys(all_cols))
 
 # Load data
+factor_definitions = load_factor_definitions()
+
 with st.spinner("Carregando dados das empresas...", show_time=True):
     data_load_date = (pd.to_datetime(date.today()) - timedelta(days=360)).strftime('%Y-%m-%d')
     raw_data = load_data(start_date=data_load_date, descriptors_list=all_cols)

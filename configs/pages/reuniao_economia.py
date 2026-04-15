@@ -1540,8 +1540,8 @@ CHARTS_ECONOMIA = {
     },
     "br_focus_ipca_median": {
         "chart_config": {
-            "columns": ["br_focus_ipca_median_2025", "br_focus_ipca_median_2026", "br_focus_ipca_median_2027"],
-            "names": ["2025", "2026", "2027"],
+            "columns": ["br_focus_ipca_median_2026", "br_focus_ipca_median_2027", "br_focus_ipca_median_2028"],
+            "names": ["2026", "2027", "2028"],
             "chart_type": "line",
             "title": "IPCA (Mediana)",
             "y_axis_title": "Taxa (%)",

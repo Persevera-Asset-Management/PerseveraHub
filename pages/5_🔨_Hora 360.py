@@ -2,7 +2,6 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
-import os
 import io
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -10,10 +9,12 @@ import matplotlib.font_manager as fm
 from typing import Dict
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
-from persevera_tools.data import get_series
+
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
-from configs.pages.hda import INDICADORES_GRUPOS
+from configs.pages.hora360 import INDICADORES_GRUPOS
+
+from persevera_tools.data import get_series
 
 st.set_page_config(
     page_title="Hora 360 | Persevera",
