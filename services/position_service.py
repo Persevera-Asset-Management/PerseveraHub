@@ -111,6 +111,7 @@ def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.D
     track_data_load("portfolio_comdinheiro")
     return df
 
+
 @st.cache_data(ttl=3600)
 def load_assets() -> pd.DataFrame:
     """
@@ -170,7 +171,7 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     
     columns = [
         "Data Posição", "Portfolio", "Custodiante Acronimo",
-        "Nome Ativo", "Nome Ativo Completo",
+        "Nome Ativo", "Nome Ativo Completo", "Alias",
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
@@ -214,7 +215,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
 
     columns = [
         "Data Posição", "Portfolio", "Custodiante Acronimo",
-        "Nome Ativo", "Nome Ativo Completo",
+        "Nome Ativo", "Nome Ativo Completo", "Alias",
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",

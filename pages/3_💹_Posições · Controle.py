@@ -81,7 +81,7 @@ if selected_carteiras:
 
         # Composição Completa
         df_portfolio_positions = df.groupby(
-            [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto']
+            [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias', 'Classificação do Conjunto']
         ).agg(**{
             'Quantidade': ('Quantidade', 'sum'),
             'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -179,7 +179,7 @@ if selected_carteiras:
             options_nested = create_chart(
                 data=df_outer_chart,
                 columns='Saldo',
-                x_column='Nome Ativo Completo',  # Ativos individuais no anel externo
+                x_column='Alias',  # Ativos individuais no anel externo
                 chart_type='nested_pie',
                 title='Alocação Hierárquica',
                 inner_data=df_inner_chart,
@@ -263,7 +263,7 @@ if selected_carteiras:
                 st.markdown("##### Vencimentos")
                 df_data_vencimento_rf = df.copy()
                 df_data_vencimento_rf = df_data_vencimento_rf.groupby(
-                    [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
+                    [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
                     'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']
                 ).agg(**{
                     'Quantidade': ('Quantidade', 'sum'),
@@ -282,7 +282,7 @@ if selected_carteiras:
                 st.dataframe(
                     style_table(
                         df_data_vencimento_rf_current[[
-                            'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento',
+                            'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
                             'Data de Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
                         ]],
                         date_cols=['Data de Vencimento'],
