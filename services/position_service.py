@@ -14,17 +14,21 @@ from utils.ui import track_data_load
 # =============================================================================
 
 ASSET_CLASSES_ORDER = [
+    # Caixa e Equivalentes
     'Caixa e Equivalentes',
+
+    # Renda Fixa
     'Renda Fixa Pós-Fixada',
     'Renda Fixa Pré-Fixada',
     'Renda Fixa Atrelada à Inflação',
+    
+    # Renda Variável
     'Renda Variável',
+    
+    # Alternativos
     'Retorno Total',
-    # 'Fundos Imobiliários',
     'Investimentos Alternativos',
     'Ativos Reais',
-    # 'Criptomoedas',
-    'Commodities',
     'Reserva de Valor',
 ]
 
