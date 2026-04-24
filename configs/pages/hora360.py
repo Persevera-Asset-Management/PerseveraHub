@@ -6,7 +6,7 @@ INDICADORES_GRUPOS = {
         "dxy_index": "   Índice do Dólar (DXY)",
         "us_treasuries_7_10y": "   Índice de Treasuries 7-10 anos",
         "us_bloomberg_corporate_bond_index": "   Índice de Títulos Corporativos (EUA)",
-        # "crb_index": "   Índice CRB de Commodities",
+        "bloomberg_commodity_index": "   Índice de Commodities Bloomberg",
         "bitcoin_usd": "   Bitcoin",
         "gold_100oz_futures": "   Ouro",
     },
