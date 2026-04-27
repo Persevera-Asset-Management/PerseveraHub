@@ -7,9 +7,9 @@ from dateutil.relativedelta import relativedelta
 from persevera_tools.data import get_funds_data, get_series
 from persevera_tools.db.fibery import read_fibery
 from persevera_tools.quant_research.metrics import (
-    get_annualized_return,
-    get_consistency,
-    get_annualized_volatility,
+    calculate_annualized_return,
+    calculate_consistency,
+    calculate_annualized_volatility,
     calculate_max_drawdown,
     calculate_sharpe_ratio,
     calculate_sortino_ratio,
@@ -188,20 +188,20 @@ def compute_metrics(nav_series: pd.Series, cdi_series: pd.Series, metric_params:
                 result[mname] = float(pnav.iloc[-1] / pnav.iloc[0] - 1)
 
             elif key == "consistencia":
-                result[mname] = get_consistency(pnav, cdi_series.loc[start_dt:end_dt].dropna())
+                result[mname] = calculate_consistency(pnav, cdi_series.loc[start_dt:end_dt].dropna())
 
             elif key == "volatilidade":
-                result[mname] = get_annualized_volatility(pnav, frequency="daily")
+                result[mname] = calculate_annualized_volatility(pnav, frequency="daily")
 
             elif key == "max_dd":
                 result[mname] = abs(calculate_max_drawdown(pnav))
 
             elif key == "sharpe":
-                rf = get_annualized_return(cdi_series.loc[start_dt:end_dt].dropna())
+                rf = calculate_annualized_return(cdi_series.loc[start_dt:end_dt].dropna())
                 result[mname] = calculate_sharpe_ratio(pnav, risk_free_rate=rf)
 
             elif key == "sortino":
-                rf = get_annualized_return(cdi_series.loc[start_dt:end_dt].dropna())
+                rf = calculate_annualized_return(cdi_series.loc[start_dt:end_dt].dropna())
                 result[mname] = calculate_sortino_ratio(pnav, risk_free_rate=rf)
 
             elif key == "calmar":
