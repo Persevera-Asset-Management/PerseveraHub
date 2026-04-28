@@ -56,6 +56,12 @@ def calculate_skewness(df):
 def calculate_kurtosis(df):
     return _weekly_returns(df).kurt()
 
+def calculate_custom_return(df, start, end):
+    period_df = df.loc[str(start):str(end)].ffill()
+    if len(period_df) < 2:
+        return pd.Series(np.nan, index=df.columns)
+    return (period_df.iloc[-1] / period_df.iloc[0] - 1) * 100
+
 codes = list(CAPITAL_MARKET_ASSUMPTIONS.keys()) 
 
 years = 15
@@ -81,13 +87,77 @@ stats.index, performance_table.index = list(CAPITAL_MARKET_ASSUMPTIONS.values())
 stats.index.name, performance_table.index.name = 'Classe de Ativos', 'Classe de Ativos'
 performance_table.drop(columns=['code'], inplace=True)
 
-st.markdown("Data mais recente: **{0:%Y-%m-%d}**".format(data.index.max().date()))
+data_min = data.index.min().date()
+data_max = data.index.max().date()
+
+if 'custom_start' not in st.session_state:
+    st.session_state.custom_start = pd.to_datetime(date(data_max.year, 1, 1))
+else:
+    if not isinstance(st.session_state.custom_start, pd.Timestamp):
+        st.session_state.custom_start = pd.to_datetime(st.session_state.custom_start)
+    if st.session_state.custom_start.date() < data_min:
+        st.session_state.custom_start = pd.to_datetime(data_min)
+    elif st.session_state.custom_start.date() > data_max:
+        st.session_state.custom_start = pd.to_datetime(data_max)
+
+if 'custom_end' not in st.session_state:
+    st.session_state.custom_end = pd.to_datetime(data_max)
+else:
+    if not isinstance(st.session_state.custom_end, pd.Timestamp):
+        st.session_state.custom_end = pd.to_datetime(st.session_state.custom_end)
+    if st.session_state.custom_end.date() > data_max:
+        st.session_state.custom_end = pd.to_datetime(data_max)
+    elif st.session_state.custom_end.date() < data_min:
+        st.session_state.custom_end = pd.to_datetime(data_min)
+
+if st.session_state.custom_start > st.session_state.custom_end:
+    st.session_state.custom_start = st.session_state.custom_end
+
+with st.sidebar:
+    st.markdown("#### Período Customizado")
+    custom_start_input = st.date_input(
+        "Início",
+        format="DD/MM/YYYY",
+        value=st.session_state.custom_start.date(),
+        min_value=data_min,
+        max_value=data_max,
+        key="custom_start_picker",
+    )
+    custom_end_input = st.date_input(
+        "Fim",
+        format="DD/MM/YYYY",
+        value=st.session_state.custom_end.date(),
+        min_value=data_min,
+        max_value=data_max,
+        key="custom_end_picker",
+    )
+    if custom_start_input >= custom_end_input:
+        st.warning("A data de início deve ser anterior à data de fim.")
+
+st.session_state.custom_start = pd.to_datetime(custom_start_input)
+st.session_state.custom_end = pd.to_datetime(custom_end_input)
+
+custom_start = st.session_state.custom_start
+custom_end = st.session_state.custom_end
+
+st.markdown("Data mais recente: **{0:%Y-%m-%d}**".format(data_max))
 
 st.markdown("##### Performance Acumulada")
+
+if custom_start < custom_end:
+    custom_col_label = f"Custom ({custom_start:%d/%m/%y} – {custom_end:%d/%m/%y})"
+    custom_return = calculate_custom_return(data, custom_start, custom_end)
+    custom_return.index = list(CAPITAL_MARKET_ASSUMPTIONS.values())
+    performance_table[custom_col_label] = custom_return.values
+else:
+    custom_col_label = None
+
+all_perf_cols = list(performance_table.columns)
 st.dataframe(
     style_table(
         performance_table,
-        numeric_cols_format_as_float=list(performance_table.columns),
+        numeric_cols_format_as_float=all_perf_cols,
+        color_negative_positive_cols=all_perf_cols,
     )
 )
 
