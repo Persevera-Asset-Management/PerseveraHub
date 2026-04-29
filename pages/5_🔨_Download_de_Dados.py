@@ -1,12 +1,14 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import functools
 from datetime import datetime, timedelta, date
-from persevera_tools.data import FinancialDataService
-from persevera_tools.db.fibery import read_fibery
+
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
-import functools
-import numpy as np
+
+from persevera_tools.data import FinancialDataService
+from persevera_tools.db.fibery import read_fibery
 
 st.set_page_config(
     page_title="Download de Dados | Persevera",
@@ -88,11 +90,18 @@ try:
         include_fibery_fields=False
     )
     cnpjs = df[np.isin(df["Classificação Instrumento"], ["Fundo de Investimento", "Previdência Privada"])]["Name"].drop_duplicates().tolist()
+    
+    # CVM
     cvm_download_func = functools.partial(fds.get_cvm_data, source='cvm', cnpjs=cnpjs, save_to_db=True)
     create_download_button(row_cvm[0], "CVM", "CVM", cvm_download_func)
 
+    # Anbima Fundos
+    anbima_fundos_download_func = functools.partial(fds.get_anbima_fundos_serie_historica, cnpjs=cnpjs)
+    create_download_button(row_cvm[1], "Anbima Fundos", "Anbima Fundos", anbima_fundos_download_func)
+
+    # Mais Retorno (FIDC)
     mais_retorno_download_func = functools.partial(fds.get_data, source='mais_retorno_fundos', primary_keys=['fund_cnpj', 'date'], save_to_db=True)
-    create_download_button(row_cvm[1], "Mais Retorno (FIDC)", "Mais Retorno (FIDC)", mais_retorno_download_func)
+    create_download_button(row_cvm[2], "Mais Retorno (FIDC)", "Mais Retorno (FIDC)", mais_retorno_download_func)
 except Exception as e:
     st.error(f"Ocorreu um erro ao obter a lista de CNPJs para os fundos: {e}")
 
