@@ -3,12 +3,14 @@ import pandas as pd
 import numpy as np
 import streamlit_highcharts as hct
 from dateutil.relativedelta import relativedelta
-from persevera_tools.data import get_funds_data, get_persevera_peers, get_series
-from persevera_tools.db.fibery import read_fibery
+
 from utils.table import style_table
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
+
+from persevera_tools.data import get_funds_data, get_series
+from persevera_tools.db.fibery import read_fibery
 
 st.set_page_config(
     page_title="Fundos · Peer Group | Persevera",
