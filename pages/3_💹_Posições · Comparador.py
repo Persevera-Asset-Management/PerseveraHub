@@ -187,11 +187,11 @@ try:
 
     alias_map = (
         pd.concat([
-            df_d1[['Nome Ativo', 'Nome Ativo Completo']].drop_duplicates(),
-            df_d2[['Nome Ativo', 'Nome Ativo Completo']].drop_duplicates(),
+            df_d1[['Nome Ativo', 'Alias']].drop_duplicates(),
+            df_d2[['Nome Ativo', 'Alias']].drop_duplicates(),
         ])
         .drop_duplicates('Nome Ativo')
-        .set_index('Nome Ativo')['Nome Ativo Completo']
+        .set_index('Nome Ativo')['Alias']
     )
 
     mv_cols = st.columns(3)
@@ -201,7 +201,7 @@ try:
         if added:
             df_added = (
                 df_d2[df_d2['Nome Ativo'].isin(added)]
-                .groupby(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])['Saldo']
+                .groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])['Saldo']
                 .sum()
                 .reset_index()
                 .sort_values('Saldo', ascending=False)
@@ -209,7 +209,7 @@ try:
             df_added['% Portfolio'] = df_added['Saldo'] / aum_d2 * 100
             st.dataframe(
                 style_table(
-                    df_added.set_index(['Nome Ativo', 'Nome Ativo Completo']),
+                    df_added.set_index(['Nome Ativo', 'Alias']),
                     numeric_cols_format_as_float=['Saldo'],
                     percent_cols=['% Portfolio'],
                 ),
@@ -223,7 +223,7 @@ try:
         if removed:
             df_removed = (
                 df_d1[df_d1['Nome Ativo'].isin(removed)]
-                .groupby(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])['Saldo']
+                .groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])['Saldo']
                 .sum()
                 .reset_index()
                 .sort_values('Saldo', ascending=False)
@@ -231,7 +231,7 @@ try:
             df_removed['% Portfolio'] = df_removed['Saldo'] / aum_d1 * 100
             st.dataframe(
                 style_table(
-                    df_removed.set_index(['Nome Ativo', 'Nome Ativo Completo']),
+                    df_removed.set_index(['Nome Ativo', 'Alias']),
                     numeric_cols_format_as_float=['Saldo'],
                     percent_cols=['% Portfolio'],
                 ),
@@ -244,8 +244,8 @@ try:
         st.markdown(f"**Alteradas significativamente** ({len(df_changed)})")
         if not df_changed.empty:
             df_changed_display = df_changed.copy().reset_index()
-            df_changed_display.insert(1, 'Nome Ativo Completo', df_changed_display['Nome Ativo'].map(alias_map))
-            df_changed_display = df_changed_display.set_index(['Nome Ativo', 'Nome Ativo Completo'])
+            df_changed_display.insert(1, 'Alias', df_changed_display['Nome Ativo'].map(alias_map))
+            df_changed_display = df_changed_display.set_index(['Nome Ativo', 'Alias'])
             st.dataframe(
                 style_table(
                     df_changed_display,
@@ -263,12 +263,12 @@ try:
     # =========================================================================
     with st.expander("Posições Completas", expanded=False):
         df_d1_full = (
-            df_d1.groupby(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])['Saldo']
+            df_d1.groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])['Saldo']
             .sum()
             .reset_index()
         )
         df_d2_full = (
-            df_d2.groupby(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])['Saldo']
+            df_d2.groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])['Saldo']
             .sum()
             .reset_index()
         )
@@ -276,7 +276,7 @@ try:
         df_full = pd.merge(
             df_d1_full.rename(columns={'Saldo': 'D1 (R$)'}),
             df_d2_full.rename(columns={'Saldo': 'D2 (R$)'}),
-            on=['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'],
+            on=['Nome Ativo', 'Alias', 'Classificação do Conjunto'],
             how='outer',
         ).fillna(0)
 
@@ -286,7 +286,7 @@ try:
         df_full['Δ (pp)'] = df_full['D2 (%)'] - df_full['D1 (%)']
 
         df_full = df_full.sort_values('D2 (R$)', ascending=False)
-        df_full = df_full.set_index(['Nome Ativo', 'Nome Ativo Completo', 'Classificação do Conjunto'])
+        df_full = df_full.set_index(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])
 
         st.dataframe(
             style_table(

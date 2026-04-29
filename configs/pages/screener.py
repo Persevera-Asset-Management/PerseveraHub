@@ -1,3 +1,22 @@
+from persevera_tools.db.fibery import read_fibery
+import pandas as pd
+import streamlit as st
+
+st.cache_data(ttl=3600)
+def load_factor_definitions() -> pd.DataFrame:
+    try:
+        df = read_fibery(
+            table_name="Inv-Rsrch-Quant/Definições dos Fatores",
+            include_fibery_fields=False,
+        )
+        df = df[df["state"] == "Ativo"]
+        return df[["Name", "Alias", "Descrição", "Maior Melhor", "Estilo"]]
+    except Exception as e:
+        st.error(f"Error loading factor definitions: {str(e)}")
+        return pd.DataFrame(columns=["Name", "Alias", "Descrição", "Maior Melhor", "Estilo"])
+
+FACTOR_DEFINITIONS = load_factor_definitions()
+
 FACTOR_OPTIONS_SCREENER = {
     # Liquidez e Volume
     'ADTV (7d)': 'median_dollar_volume_traded_7d',
