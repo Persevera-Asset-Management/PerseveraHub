@@ -77,7 +77,7 @@ if df is not None:
         df_data_vencimento_rf = df.copy()
         df_data_vencimento_rf = df_data_vencimento_rf.groupby(
             ['Portfolio', pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
-            'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']
+            'Classificação do Conjunto', 'Classificação Instrumento', 'Data Vencimento']
         ).agg(**{
             'Quantidade': ('Quantidade', 'sum'),
             'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -87,27 +87,27 @@ if df is not None:
             df_data_vencimento_rf, level='Data Posição', group_level='Portfolio'
         ).copy()
         df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Portfolio', 'Nome Ativo'])
-        df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(
-            df_data_vencimento_rf_current['Data de Vencimento RF']
+        df_data_vencimento_rf_current['Data Vencimento'] = pd.to_datetime(
+            df_data_vencimento_rf_current['Data Vencimento']
         )
         df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(
-            by='Data de Vencimento', ascending=True
+            by='Data Vencimento', ascending=True
         )
 
         df_data_vencimento_rf_current = df_data_vencimento_rf_current[df_data_vencimento_rf_current['Saldo'] > 0]
-        # Calcular Dias para Vencimento como DIAS ÚTEIS entre a Data Posição e Data de Vencimento
+        # Calcular Dias para Vencimento como DIAS ÚTEIS entre a Data Posição e Data Vencimento
         df_data_vencimento_rf_current['Dias para Vencimento'] = np.busday_count(
             df_data_vencimento_rf_current['Data Posição'].values.astype('datetime64[D]'),
-            df_data_vencimento_rf_current['Data de Vencimento'].values.astype('datetime64[D]')
+            df_data_vencimento_rf_current['Data Vencimento'].values.astype('datetime64[D]')
         )
 
         st.dataframe(
             style_table(
                 df_data_vencimento_rf_current[[
                     'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento',
-                    'Data de Vencimento', 'Dias para Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
+                    'Data Vencimento', 'Dias para Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
                 ]],
-                date_cols=['Data de Vencimento'],
+                date_cols=['Data Vencimento'],
                 numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
                 numeric_cols_format_as_int=['Quantidade', 'Dias para Vencimento'],
                 highlight_row_if_value_lower={'Dias para Vencimento': 15},

@@ -1,11 +1,15 @@
 import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
+import numpy as np
+from datetime import datetime
+
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
+from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
+
 from services.position_service import (
     load_positions,
     load_target_allocations,
@@ -123,7 +127,7 @@ if selected_carteiras:
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
         st.markdown("Data da Posição: **{0:%Y-%m-%d}**".format(df["Data Posição"].max()))
 
-        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos e FGC"])
+        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos", "Monitor de FGC"])
 
         with tabs[0]: # Alocação Atual
 
@@ -257,14 +261,14 @@ if selected_carteiras:
             )
             hct.streamlit_highcharts(chart_portfolio_positions_custodiante)
 
-        with tabs[5]: # Vencimentos e FGC
+        with tabs[5]: # Vencimentos
             cols = st.columns(2)
             with cols[0]:
                 st.markdown("##### Vencimentos")
                 df_data_vencimento_rf = df.copy()
                 df_data_vencimento_rf = df_data_vencimento_rf.groupby(
                     [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
-                    'Classificação do Conjunto', 'Classificação Instrumento', 'Data de Vencimento RF']
+                    'Classificação do Conjunto', 'Classificação Instrumento', 'Data Vencimento']
                 ).agg(**{
                     'Quantidade': ('Quantidade', 'sum'),
                     'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -272,55 +276,108 @@ if selected_carteiras:
                 })
                 df_data_vencimento_rf_current = get_latest_date_data(df_data_vencimento_rf).copy()
                 df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
-                df_data_vencimento_rf_current['Data de Vencimento'] = pd.to_datetime(
-                    df_data_vencimento_rf_current['Data de Vencimento RF']
+                df_data_vencimento_rf_current['Data Vencimento'] = pd.to_datetime(
+                    df_data_vencimento_rf_current['Data Vencimento']
                 )
-                df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(
-                    by='Data de Vencimento', ascending=True
-                )
+                df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(by='Data Vencimento', ascending=True)
+                df_data_vencimento_rf_current = df_data_vencimento_rf_current[df_data_vencimento_rf_current['Saldo'] > 0]
+                df_data_vencimento_rf_current['Anos para Vencimento'] = np.busday_count(
+                    datetime.now().date(),
+                    df_data_vencimento_rf_current['Data Vencimento'].values.astype('datetime64[D]')
+                ) / 252
 
                 st.dataframe(
                     style_table(
                         df_data_vencimento_rf_current[[
                             'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
-                            'Data de Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
+                            'Data Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
                         ]],
-                        date_cols=['Data de Vencimento'],
+                        date_cols=['Data Vencimento'],
                         numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
                         numeric_cols_format_as_int=['Quantidade'],
                     )
                 )
 
             with cols[1]:
-                df_fgc = df.copy()
-                df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
+                # Distribuição por vencimento
+                maturity_bins = [0, 1, 2, 3, 5, 7, 10, np.inf]
+                maturity_labels = ['0-1 ano', '1-2 anos', '2-3 anos', '3-5 anos', '5-7 anos', '7-10 anos', '> 10 anos']
 
-                df_fgc = df_fgc.groupby(
-                    [pd.Grouper(key='Data Posição', freq='D'), 'Nome Emissor']
-                ).agg(**{'Saldo': ('Saldo', 'sum')})
-
-                if len(df_fgc) > 0:
-                    df_fgc_current = get_latest_date_data(df_fgc).copy()
-
-                    chart_portfolio_positions_fgc = create_chart(
-                        data=df_fgc_current.sort_values(by='Saldo', ascending=False),
-                        columns=['Saldo'],
-                        names=['Nome Emissor'],
-                        chart_type='column',
-                        title="Cobertura do FGC",
-                        y_axis_title="Total (R$)",
-                        x_axis_title="Banco Emissor",
-                        show_legend=False,
-                        horizontal_line={
-                            "value": 250000,
-                            "color": "#FF0000",
-                            "width": 2,
-                            "label": {"text": "Limite por Emissor", "align": "left"}
-                        }
+                def build_maturity_histogram(df_filtered, stack_by):
+                    df_hist = df_filtered.copy()
+                    df_hist['Faixa de Vencimento'] = pd.cut(
+                        df_hist['Anos para Vencimento'],
+                        bins=maturity_bins,
+                        labels=maturity_labels,
+                        right=False
                     )
-                    hct.streamlit_highcharts(chart_portfolio_positions_fgc)
-                else:
-                    st.info("Cliente não possui ativos cobertos pelo FGC")
+                    df_pivot = (
+                        df_hist.groupby(['Faixa de Vencimento', stack_by], observed=True)['Saldo']
+                        .sum()
+                        .unstack(level=stack_by)
+                        .reindex(maturity_labels)
+                        .fillna(0)
+                        .reset_index()
+                    )
+                    return df_pivot
+
+                sub_tabs = st.tabs(["Total", "Renda Fixa Pós-Fixada", "Renda Fixa Atrelada à Inflação", "Renda Fixa Pré-Fixada"])
+                tab_filters = [None, "Renda Fixa Pós-Fixada", "Renda Fixa Atrelada à Inflação", "Renda Fixa Pré-Fixada"]
+                tab_stack_by = ['Classificação do Conjunto', 'Alias', 'Alias', 'Alias']
+
+                for sub_tab, filter_val, stack_by in zip(sub_tabs, tab_filters, tab_stack_by):
+                    with sub_tab:
+                        df_tab = df_data_vencimento_rf_current.copy()
+                        if filter_val:
+                            df_tab = df_tab[df_tab['Classificação do Conjunto'] == filter_val]
+                        if len(df_tab) > 0:
+                            df_hist = build_maturity_histogram(df_tab, stack_by)
+                            series_cols = [c for c in df_hist.columns if c != 'Faixa de Vencimento']
+                            chart_hist = create_chart(
+                                data=df_hist,
+                                chart_type='bar',
+                                title="Distribuição por Prazo de Vencimento",
+                                columns=series_cols,
+                                names=series_cols,
+                                x_column='Faixa de Vencimento',
+                                y_axis_title="Saldo (R$)",
+                                stacking='normal',
+                                show_legend=False,
+                            )
+                            hct.streamlit_highcharts(chart_hist)
+                        else:
+                            st.info("Sem dados para este filtro")                
+
+        with tabs[6]: # Monitor de FGC
+            df_fgc = df.copy()
+            df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
+
+            df_fgc = df_fgc.groupby(
+                [pd.Grouper(key='Data Posição', freq='D'), 'Nome Emissor']
+            ).agg(**{'Saldo': ('Saldo', 'sum')})
+
+            if len(df_fgc) > 0:
+                df_fgc_current = get_latest_date_data(df_fgc).copy()
+
+                chart_portfolio_positions_fgc = create_chart(
+                    data=df_fgc_current.sort_values(by='Saldo', ascending=False),
+                    columns=['Saldo'],
+                    names=['Nome Emissor'],
+                    chart_type='column',
+                    title="Cobertura do FGC",
+                    y_axis_title="Total (R$)",
+                    x_axis_title="Banco Emissor",
+                    show_legend=False,
+                    horizontal_line={
+                        "value": 250000,
+                        "color": "#FF0000",
+                        "width": 2,
+                        "label": {"text": "Limite por Emissor", "align": "left"}
+                    }
+                )
+                hct.streamlit_highcharts(chart_portfolio_positions_fgc)
+            else:
+                st.info("Cliente não possui ativos cobertos pelo FGC")
 
     except KeyError as e:
         st.error(f"Erro ao acessar dados: campo {e} não encontrado")

@@ -180,7 +180,7 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
         "Dias Úteis", "creation-date",
-        "Data de Vencimento RF",
+        "Data Vencimento",
     ]
     
     df = df[columns]
@@ -224,7 +224,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
         "Dias Úteis", "creation-date",
-        "Data de Vencimento RF",
+        "Data Vencimento",
     ]
 
     df = df[columns]
