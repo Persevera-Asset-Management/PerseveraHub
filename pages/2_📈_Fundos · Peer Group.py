@@ -1,6 +1,6 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
+import streamlit as st
 import streamlit_highcharts as hct
 from dateutil.relativedelta import relativedelta
 
@@ -199,9 +199,9 @@ def load_benchmark_data(fund_name, _nav_index):
                      'Phoenix': ('br_cdi_index',),
                      'Prospera': ('br_cdi_index',),
                      'Compass': ('br_cdi_index',),
-                     'Marujo': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
                      'Nemesis': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
-                     'Proteus': ('br_cdi_index', 'br_ibovespa', 'br_smll')}
+                     'Proteus': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
+                     'Long Bias': ('br_cdi_index', 'br_ibovespa', 'br_smll')}
 
     codes_to_fetch = benchmark_map.get(fund_name, ('br_cdi_index',)) # Default to CDI
     df_benchmark = get_series(list(codes_to_fetch), start_date=_nav_index.min(), field='close')
@@ -214,7 +214,7 @@ def load_benchmark_data(fund_name, _nav_index):
     return df_benchmark
 
 with st.sidebar:
-    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus', 'Marujo']
+    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus', 'Long Bias']
     selected_fund_names = st.multiselect(
         "Selecione o(s) grupo(s) de fundos:",
         fund_names_list,
