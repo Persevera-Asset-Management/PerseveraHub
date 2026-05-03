@@ -399,7 +399,7 @@ if not performance_table_data.empty:
         highlight_row_if_value_equals='Persevera',
         highlight_color='lightblue'
     )
-    st.dataframe(styled_performance_table, use_container_width=True)
+    st.dataframe(styled_performance_table, width='stretch')
 
 else:
     st.info("Não há dados para a tabela de performance com os filtros selecionados.")

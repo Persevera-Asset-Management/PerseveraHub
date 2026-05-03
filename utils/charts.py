@@ -187,8 +187,14 @@ def create_highcharts_options(
             for j, idx in enumerate(correlation_matrix.index):
                 value = correlation_matrix.iloc[j, i]
                 point_value = round(value, 2) if pd.notna(value) else None
-                heatmap_data.append([i, j, point_value])
-        
+                heatmap_data.append({
+                    'x': i,
+                    'y': j,
+                    'value': point_value,
+                    'xName': str(col),
+                    'yName': str(idx),
+                })
+
         options = {
             'chart': {
                 'type': 'heatmap',
@@ -222,7 +228,12 @@ def create_highcharts_options(
                 'symbolHeight': 280
             },
             'tooltip': {
-                'formatter': "function () { return '<b>' + this.series.xAxis.categories[this.point.x] + '</b> vs <b>' + this.series.yAxis.categories[this.point.y] + '</b>: <b>' + this.point.value + '</b>'; }"
+                'headerFormat': '',
+                'pointFormat': (
+                    '<b>X:</b> {point.xName}<br/>'
+                    '<b>Y:</b> {point.yName}<br/>'
+                    '<b>Valor:</b> {point.value}'
+                ),
             },
             'series': [{
                 'name': 'Correlation',
