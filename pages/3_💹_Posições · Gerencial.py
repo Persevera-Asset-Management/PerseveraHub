@@ -49,7 +49,7 @@ if df is not None:
     with tabs[0]: # Posições Consolidadas
         df_positions = df.copy()
         df_positions = df_positions.groupby(
-            ['Portfolio', pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
+            ['Portfolio', pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
             'Emissor Geral', 'Classificação Instrumento']
         ).agg(**{
             'Quantidade': ('Quantidade', 'sum'),
@@ -65,7 +65,7 @@ if df is not None:
         st.dataframe(
             style_table(
                 df_positions_current[[
-                    'Portfolio', 'Nome Ativo', 'Nome Ativo Completo', 'Emissor Geral', 'Classificação Instrumento',
+                    'Portfolio', 'Nome Ativo', 'Alias', 'Emissor Geral', 'Classificação Instrumento',
                     'Quantidade', 'Valor Unitário', 'Saldo'
                 ]].set_index(['Portfolio', 'Nome Ativo']),
                 numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
@@ -76,7 +76,7 @@ if df is not None:
     with tabs[1]: # Vencimentos
         df_data_vencimento_rf = df.copy()
         df_data_vencimento_rf = df_data_vencimento_rf.groupby(
-            ['Portfolio', pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Nome Ativo Completo',
+            ['Portfolio', pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
             'Classificação do Conjunto', 'Classificação Instrumento', 'Data Vencimento']
         ).agg(**{
             'Quantidade': ('Quantidade', 'sum'),
@@ -104,7 +104,7 @@ if df is not None:
         st.dataframe(
             style_table(
                 df_data_vencimento_rf_current[[
-                    'Nome Ativo Completo', 'Classificação do Conjunto', 'Classificação Instrumento',
+                    'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
                     'Data Vencimento', 'Dias para Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
                 ]],
                 date_cols=['Data Vencimento'],
