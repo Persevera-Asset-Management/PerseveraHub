@@ -7,7 +7,7 @@ def get_carteiras_adm():
         table_name="Estr-CartAdm/Carteira Administrada",
         include_fibery_fields=False
     )
-    df = df[np.isin(df["state"], ["Ativa", "Em Aditamento/Atualização", "Em Assinatura", "Docs c/ Persevera"])]
+    df = df[~np.isin(df["state"], ["Standby", "Encerrada", "Abandonada"])]
     df = df[["Name", "Data Início Gestão", "Data Fim Gestão"]]
     df = df.dropna(subset=["Data Início Gestão"])
     df = df[df["Data Fim Gestão"].isna()]
