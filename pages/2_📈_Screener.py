@@ -15,6 +15,7 @@ from configs.pages.screener import (
 )
 
 from persevera_tools.data import get_descriptors, get_securities_by_exchange
+from persevera_tools.db.fibery import read_fibery
 
 st.set_page_config(
     page_title="Screener | Persevera",
@@ -29,7 +30,12 @@ check_authentication()
 @st.cache_data(ttl=3600)
 def load_data(start_date, descriptors_list) -> pd.DataFrame:
     try:
-        codes = get_securities_by_exchange(exchange='BZ').values()
+        df = read_fibery(
+            table_name="Inv-Rsrch-Quant/Ações Ativas",
+            include_fibery_fields=False,
+        )
+        df = df[df["Região"] == "BZ"]
+        codes = df["Ativo"].tolist()
         return get_descriptors(list(codes), start_date=start_date, descriptors=descriptors_list)
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
