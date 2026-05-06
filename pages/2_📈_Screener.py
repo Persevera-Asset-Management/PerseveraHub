@@ -4,15 +4,17 @@ import numpy as np
 import os
 from datetime import datetime, timedelta, date
 
-from configs.pages.screener import FACTOR_OPTIONS_SCREENER, FACTOR_MOMENTUM_COMPONENTS, FACTOR_VALUE_COMPONENTS, FACTOR_LIQUIDITY_COMPONENTS, FACTOR_RISK_COMPONENTS, FACTOR_QUALITY_COMPONENTS
-from configs.pages.screener import FACTOR_DEFINITIONS
 from utils.table import style_table
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
 
+from configs.pages.screener import (
+    get_factor_options,
+    get_factor_components,
+    get_higher_is_better_map,
+)
 
-from persevera_tools.data import get_descriptors, get_securities_by_exchange, get_equities_info
-from persevera_tools.db.fibery import read_fibery
+from persevera_tools.data import get_descriptors, get_securities_by_exchange
 
 st.set_page_config(
     page_title="Screener | Persevera",
@@ -33,24 +35,16 @@ def load_data(start_date, descriptors_list) -> pd.DataFrame:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
 
-@st.cache_data(ttl=3600)
-def load_sectors(codes):
-    try:
-        return get_equities_info(codes)
-    except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
-        return pd.DataFrame()
-
-def calculate_factor_exposure(df, factor_name) -> pd.DataFrame:
+def calculate_factor_exposure(df, factor_name, higher_is_better_map=None) -> pd.DataFrame:
     """
     Calculate factor scores for all configured factors.
-    
+
     The process follows these steps:
     1. Prepare factor data by aligning with universe
     2. Apply cross-sectional z-score standardization
     3. Handle outliers through winsorization
-    4. Apply sector-relative normalization if configured
-    5. Calculate final factor scores through ranking
+    4. Align signs so every component is "higher is better" before averaging
+    5. Calculate final factor scores through equal-weighted average
     """
     try:
         # -- Outlier handling: Two-step outlier trimming process --
@@ -80,6 +74,12 @@ def calculate_factor_exposure(df, factor_name) -> pd.DataFrame:
         std = df_trimmed.std()
         z_scores = (df_trimmed - mean) / std
 
+        # -- Sign alignment: invert columns where lower values are preferred --
+        if higher_is_better_map:
+            for col in z_scores.columns:
+                if not higher_is_better_map.get(col, True):
+                    z_scores[col] = -z_scores[col]
+
         # -- Factor Exposure: Equal-weight individual standardized scores --
         factor_exposure = z_scores.mean(axis=1)
 
@@ -103,15 +103,30 @@ with st.sidebar:
         format="%.0f"
     )
 
-    selected_cols_options = FACTOR_OPTIONS_SCREENER
-    default_selected_display_names = ['ADTV (21d)', 'Momentum (7d)', 'Momentum (1m)', 'Dividend Yield Fwd (%)', 'P/E Fwd', 'EV/EBITDA Fwd', 'EBIT Margin (%)', 'FCF Margin (%)', 'ROE (%)']
+    selected_cols_options = get_factor_options()
+    factor_option_names = list(selected_cols_options.keys())
 
-    selected_display_names = st.multiselect("Selecione as métricas para exibir:", options=list(selected_cols_options.keys()), default=default_selected_display_names)
-    selected_momentum_components = st.multiselect("Componentes de Momentum:", options=list(selected_cols_options.keys()), default=list(FACTOR_MOMENTUM_COMPONENTS.keys()))
-    selected_value_components = st.multiselect("Componentes de Value:", options=list(selected_cols_options.keys()), default=list(FACTOR_VALUE_COMPONENTS.keys()))
-    selected_liquidity_components = st.multiselect("Componentes de Liquidity:", options=list(selected_cols_options.keys()), default=list(FACTOR_LIQUIDITY_COMPONENTS.keys()))
-    selected_risk_components = st.multiselect("Componentes de Risk:", options=list(selected_cols_options.keys()), default=list(FACTOR_RISK_COMPONENTS.keys()))
-    selected_quality_components = st.multiselect("Componentes de Quality:", options=list(selected_cols_options.keys()), default=list(FACTOR_QUALITY_COMPONENTS.keys()))
+    descriptor_to_alias = {v: k for k, v in selected_cols_options.items()}
+    default_selected_display_names = [
+        descriptor_to_alias[desc] for desc in [
+            'median_dollar_volume_traded_21d',
+            'momentum_7d',
+            'momentum_1m',
+            'dividend_yield_fwd',
+            'price_to_earnings_fwd',
+            'ev_to_ebitda_fwd',
+            'ebit_margin',
+            'fcf_margin',
+            'roe',
+        ] if desc in descriptor_to_alias
+    ]
+
+    selected_display_names = st.multiselect("Selecione as métricas para exibir:", options=factor_option_names, default=default_selected_display_names)
+    selected_momentum_components = st.multiselect("Componentes de Momentum:", options=factor_option_names, default=list(get_factor_components('Momentum').keys()))
+    selected_value_components = st.multiselect("Componentes de Value:", options=factor_option_names, default=list(get_factor_components('Value').keys()))
+    selected_liquidity_components = st.multiselect("Componentes de Liquidity:", options=factor_option_names, default=list(get_factor_components('Liquidity').keys()))
+    selected_risk_components = st.multiselect("Componentes de Risk:", options=factor_option_names, default=list(get_factor_components('Risk').keys()))
+    selected_quality_components = st.multiselect("Componentes de Quality:", options=factor_option_names, default=list(get_factor_components('Quality').keys()))
 
 # Filter selected_cols based on user selection
 selected_cols = {name: selected_cols_options[name] for name in selected_display_names}
@@ -157,24 +172,13 @@ if not raw_data.empty:
     inverted_selected_cols = {v: k for k, v in selected_cols.items()}
     data = data.rename(columns=inverted_selected_cols)
 
-    # Load and merge sector data
-    all_codes = list(get_securities_by_exchange(exchange='BZ').values())
-    sector_data = load_sectors(all_codes)
-    if not sector_data.empty and 'sector_name_pt' in sector_data.columns:
-        sector_data_to_merge = sector_data[['sector_name_pt']].copy()
-        data = pd.merge(data, sector_data_to_merge, left_index=True, right_index=True, how='left')
-        data = data.rename(columns={'sector_name_pt': 'Setor'})
-        
-        if 'Setor' in data.columns:
-            cols = ['Setor'] + [col for col in data.columns if col != 'Setor']
-            data = data[cols]
-    
-    # Include factor exposures
-    factor_exposure_momentum = calculate_factor_exposure(raw_data[selected_descriptors_list_momentum], 'Momentum Score')
-    factor_exposure_value = calculate_factor_exposure(raw_data[selected_descriptors_list_value], 'Value Score')
-    factor_exposure_liquidity = calculate_factor_exposure(raw_data[selected_descriptors_list_liquidity], 'Liquidity Score')
-    factor_exposure_risk = -calculate_factor_exposure(raw_data[selected_descriptors_list_risk], 'Risk Score')
-    factor_exposure_quality = calculate_factor_exposure(raw_data[selected_descriptors_list_quality], 'Quality Score')
+    # Include factor exposures (sign alignment driven by `Maior Melhor` in FACTOR_DEFINITIONS)
+    higher_is_better_map = get_higher_is_better_map()
+    factor_exposure_momentum = calculate_factor_exposure(raw_data[selected_descriptors_list_momentum], 'Momentum Score', higher_is_better_map)
+    factor_exposure_value = calculate_factor_exposure(raw_data[selected_descriptors_list_value], 'Value Score', higher_is_better_map)
+    factor_exposure_liquidity = calculate_factor_exposure(raw_data[selected_descriptors_list_liquidity], 'Liquidity Score', higher_is_better_map)
+    factor_exposure_risk = calculate_factor_exposure(raw_data[selected_descriptors_list_risk], 'Risk Score', higher_is_better_map)
+    factor_exposure_quality = calculate_factor_exposure(raw_data[selected_descriptors_list_quality], 'Quality Score', higher_is_better_map)
 
     data = pd.concat([data, factor_exposure_momentum, factor_exposure_value, factor_exposure_liquidity, factor_exposure_risk, factor_exposure_quality], axis=1)
 
