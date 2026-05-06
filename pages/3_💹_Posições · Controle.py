@@ -108,21 +108,27 @@ if selected_carteiras:
         # Política de Investimentos
         if not is_single_carteira:
             st.info("Política disponível apenas para carteira única.")
-        elif selected_carteiras[0] in df_target_allocations.index:
-            df_policy_investments_current = df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['PL Min', 'PL Max'])
-            df_policy_investments_current = get_latest_date_data(df_policy_investments_current)
-            df_policy_investments_current = df_policy_investments_current.mul(100)
-            df_policy_investments_current = df_policy_investments_current.reindex(ASSET_CLASSES_ORDER)
-
-            with st.expander("Política de Investimentos", expanded=False):
-                st.dataframe(
-                    style_table(
-                        df_policy_investments_current.drop(columns='Target'),
-                        percent_cols=['PL Min', 'PL Max', 'Target'],
-                    )
-                )
         else:
-            st.warning("Política de Investimentos não cadastrada")
+            df_policy_investments_current = pd.DataFrame()
+            if selected_carteiras[0] in df_target_allocations.index:
+                df_policy_investments_current = (
+                    df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['PL Min', 'PL Max'])
+                )
+
+            if df_policy_investments_current.empty:
+                st.warning("Política de Investimentos não cadastrada")
+            else:
+                df_policy_investments_current = get_latest_date_data(df_policy_investments_current)
+                df_policy_investments_current = df_policy_investments_current.mul(100)
+                df_policy_investments_current = df_policy_investments_current.reindex(ASSET_CLASSES_ORDER)
+
+                with st.expander("Política de Investimentos", expanded=False):
+                    st.dataframe(
+                        style_table(
+                            df_policy_investments_current.drop(columns='Target'),
+                            percent_cols=['PL Min', 'PL Max', 'Target'],
+                        )
+                    )
 
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
         st.markdown("Data da Posição: **{0:%Y-%m-%d}**".format(df["Data Posição"].max()))
@@ -152,23 +158,29 @@ if selected_carteiras:
             with cols[1]:
                 if not is_single_carteira:
                     st.info("Política disponível apenas para carteira única.")
-                elif selected_carteiras[0] in df_target_allocations.index:
-                    df_target_allocations_current = df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['Target'])
-                    df_target_allocations_current = get_latest_date_data(df_target_allocations_current)
-                    df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
-                    df_target_allocations_current = df_target_allocations_current.reindex(ASSET_CLASSES_ORDER)
-
-                    chart_portfolio_composition_target = create_chart(
-                        data=df_target_allocations_current,
-                        columns=['Target'],
-                        names=['Target'],
-                        chart_type='donut',
-                        title="Alocação Alvo",
-                        y_axis_title="%",
-                    )
-                    hct.streamlit_highcharts(chart_portfolio_composition_target)
                 else:
-                    st.warning("Alocação alvo não cadastrada")
+                    df_target_allocations_current = pd.DataFrame()
+                    if selected_carteiras[0] in df_target_allocations.index:
+                        df_target_allocations_current = (
+                            df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['Target'])
+                        )
+
+                    if df_target_allocations_current.empty:
+                        st.warning("Alocação alvo não cadastrada")
+                    else:
+                        df_target_allocations_current = get_latest_date_data(df_target_allocations_current)
+                        df_target_allocations_current = df_target_allocations_current * df_portfolio_positions_current['Saldo'].sum()
+                        df_target_allocations_current = df_target_allocations_current.reindex(ASSET_CLASSES_ORDER)
+
+                        chart_portfolio_composition_target = create_chart(
+                            data=df_target_allocations_current,
+                            columns=['Target'],
+                            names=['Target'],
+                            chart_type='donut',
+                            title="Alocação Alvo",
+                            y_axis_title="%",
+                        )
+                        hct.streamlit_highcharts(chart_portfolio_composition_target)
 
         with tabs[1]: # Alocação Hierárquica
             df_inner_chart = df_portfolio_composition_current.reset_index()

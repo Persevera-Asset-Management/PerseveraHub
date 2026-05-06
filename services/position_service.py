@@ -71,9 +71,15 @@ def get_latest_date_data(
     
     Returns:
         DataFrame filtrado para a data mais recente (global ou por grupo).
+        Retorna o próprio DataFrame (vazio) caso a entrada esteja vazia.
     """
+    if df.empty:
+        return df
+
     if group_level is None:
         latest_date = df.index.get_level_values(level=level).max()
+        if pd.isna(latest_date):
+            return df.iloc[0:0]
         return df.loc[latest_date]
 
     if not isinstance(group_level, list):
