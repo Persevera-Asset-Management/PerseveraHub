@@ -4,9 +4,10 @@ import streamlit as st
 from datetime import datetime, timedelta
 from typing import Optional
 
+from utils.ui import track_data_load
+
 from persevera_tools.data.providers import ComdinheiroProvider
 from persevera_tools.db.fibery import read_fibery
-from utils.ui import track_data_load
 
 
 # =============================================================================

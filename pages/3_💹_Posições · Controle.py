@@ -276,11 +276,10 @@ if selected_carteiras:
         with tabs[5]: # Vencimentos
             cols = st.columns(2)
             with cols[0]:
-                st.markdown("##### Vencimentos")
                 df_data_vencimento_rf = df.copy()
                 df_data_vencimento_rf = df_data_vencimento_rf.groupby(
                     [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
-                    'Classificação do Conjunto', 'Classificação Instrumento', 'Data Vencimento']
+                    'Classificação do Conjunto', 'Classificação Instrumento', 'Data Vencimento', 'Nome Emissor']
                 ).agg(**{
                     'Quantidade': ('Quantidade', 'sum'),
                     'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -288,9 +287,7 @@ if selected_carteiras:
                 })
                 df_data_vencimento_rf_current = get_latest_date_data(df_data_vencimento_rf).copy()
                 df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
-                df_data_vencimento_rf_current['Data Vencimento'] = pd.to_datetime(
-                    df_data_vencimento_rf_current['Data Vencimento']
-                )
+                df_data_vencimento_rf_current['Data Vencimento'] = pd.to_datetime(df_data_vencimento_rf_current['Data Vencimento'])
                 df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(by='Data Vencimento', ascending=True)
                 df_data_vencimento_rf_current = df_data_vencimento_rf_current[df_data_vencimento_rf_current['Saldo'] > 0]
                 df_data_vencimento_rf_current['Anos para Vencimento'] = np.busday_count(
@@ -361,33 +358,45 @@ if selected_carteiras:
                             st.info("Sem dados para este filtro")                
 
         with tabs[6]: # Monitor de FGC
-            df_fgc = df.copy()
-            df_fgc = df_fgc[df_fgc['Classificação Instrumento'].isin(instruments_fgc)]
+            df_data_vencimento_rf_current_fgc = df_data_vencimento_rf_current[np.isin(df_data_vencimento_rf_current['Classificação Instrumento'], instruments_fgc)]
+            
+            cols = st.columns(2)
 
-            df_fgc = df_fgc.groupby(
-                [pd.Grouper(key='Data Posição', freq='D'), 'Nome Emissor']
-            ).agg(**{'Saldo': ('Saldo', 'sum')})
+            if len(df_data_vencimento_rf_current_fgc) > 0:
+                with cols[0]:
+                    st.dataframe(
+                        style_table(
+                            df_data_vencimento_rf_current_fgc[[
+                                'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
+                                'Data Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
+                            ]],
+                            date_cols=['Data Vencimento'],
+                            numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
+                            numeric_cols_format_as_int=['Quantidade'],
+                        )
+                    )
+                with cols[1]:
+                    df_fgc_total = df_data_vencimento_rf_current_fgc.groupby(
+                        ['Nome Emissor']
+                    ).agg(**{'Saldo': ('Saldo', 'sum')})
 
-            if len(df_fgc) > 0:
-                df_fgc_current = get_latest_date_data(df_fgc).copy()
-
-                chart_portfolio_positions_fgc = create_chart(
-                    data=df_fgc_current.sort_values(by='Saldo', ascending=False),
-                    columns=['Saldo'],
-                    names=['Nome Emissor'],
-                    chart_type='column',
-                    title="Cobertura do FGC",
-                    y_axis_title="Total (R$)",
-                    x_axis_title="Banco Emissor",
-                    show_legend=False,
-                    horizontal_line={
-                        "value": 250000,
-                        "color": "#FF0000",
-                        "width": 2,
-                        "label": {"text": "Limite por Emissor", "align": "left"}
-                    }
-                )
-                hct.streamlit_highcharts(chart_portfolio_positions_fgc)
+                    chart_portfolio_positions_fgc = create_chart(
+                        data=df_fgc_total.sort_values(by='Saldo', ascending=False),
+                        columns=['Saldo'],
+                        names=['Nome Emissor'],
+                        chart_type='column',
+                        title="Cobertura do FGC",
+                        y_axis_title="Total (R$)",
+                        x_axis_title="Banco Emissor",
+                        show_legend=False,
+                        horizontal_line={
+                            "value": 250000,
+                            "color": "#FF0000",
+                            "width": 2,
+                            "label": {"text": "Limite por Emissor", "align": "left"}
+                        }
+                    )
+                    hct.streamlit_highcharts(chart_portfolio_positions_fgc)
             else:
                 st.info("Cliente não possui ativos cobertos pelo FGC")
 
