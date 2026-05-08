@@ -149,8 +149,11 @@ asset_buckets = {
     for code in bucket_codes.keys()
 }
 
-with st.spinner(f"Carregando {LOOKBACK_YEARS} anos de dados..."):
-    start_date = pd.to_datetime(date.today() - timedelta(days=LOOKBACK_YEARS * 365))
+with st.sidebar:
+    lookback_years = st.number_input("Anos de lookback", value=LOOKBACK_YEARS, min_value=1, max_value=35, step=1)
+
+with st.spinner(f"Carregando {lookback_years} anos de dados..."):
+    start_date = pd.to_datetime(date.today() - timedelta(days=lookback_years * 365))
     data = load_data(codes, start_date.strftime('%Y-%m-%d'))
 
 if data.empty:
@@ -352,9 +355,11 @@ with tabs[1]:   # Longo Prazo
 with tabs[2]:   # Correlações
     correlation_matrix = _weekly_returns(data.rename(columns=asset_names)).corr()
     correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
+    height = max(550, 50 * len(BUCKET_ORDER) + 100)
     correlation_heatmap = create_chart(
         data=correlation_matrix,
         chart_type="heatmap",
         title="",
+        height=height,
     )
-    hct.streamlit_highcharts(correlation_heatmap)
+    hct.streamlit_highcharts(correlation_heatmap, height=height)

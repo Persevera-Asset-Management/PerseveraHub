@@ -2,12 +2,15 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
+
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table, get_monthly_returns_table, get_performance_table
 from utils.auth import check_authentication
-from persevera_tools.data import get_descriptors, get_series
+
 from services.position_service import load_equities_portfolio
+
+from persevera_tools.data import get_descriptors, get_series
 
 
 st.set_page_config(

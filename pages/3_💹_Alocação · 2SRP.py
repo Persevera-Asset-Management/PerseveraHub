@@ -123,7 +123,7 @@ with st.sidebar:
             "σ mínimo (%)",
             min_value=0.1,
             max_value=50.0,
-            value=1.0,
+            value=1.5,
             step=0.1,
             format="%.2f",
         )
@@ -138,7 +138,7 @@ with st.sidebar:
         n_profiles_input = st.number_input(
             "Nº de perfis",
             min_value=2,
-            max_value=20,
+            max_value=100,
             value=10,
             step=1,
         )
@@ -508,26 +508,43 @@ with tab_profile:
         hct.streamlit_highcharts(chart_donut)
 
     # RC alvo vs realizado por bucket
-    st.markdown("#### Contribuição de Risco por Bucket — Alvo vs. Realizado")
-    df_b = pd.DataFrame(
-        {
-            "Alvo": np.array(rc_t_b) * 100,
-            "Realizado": np.array(rc_r_b) * 100,
-        },
-        index=buckets_order,
-    )
-    chart_rc = create_chart(
-        data=df_b,
-        columns=["Alvo", "Realizado"],
-        names=["Alvo", "Realizado"],
-        color=["#9CA3AF", "#4682B4"],
-        chart_type="column",
-        title="RC · Alvo vs Realizado",
-        y_axis_title="%",
-        x_axis_title="Bucket",
-        height=350,
-    )
-    hct.streamlit_highcharts(chart_rc)
+    st.markdown("#### Contribuição de Risco · Alvo vs. Realizado")
+    cols = st.columns(2)
+    with cols[0]:
+        df_b = pd.DataFrame(
+            {
+                "Alvo": np.array(rc_t_b) * 100,
+                "Realizado": np.array(rc_r_b) * 100,
+            },
+            index=buckets_order,
+        )
+        chart_rc = create_chart(
+            data=df_b,
+            columns=["Alvo", "Realizado"],
+            names=["Alvo", "Realizado"],
+            chart_type="column",
+            title="Por Bucket",
+            y_axis_title="%",
+            x_axis_title="Bucket",
+        )
+        hct.streamlit_highcharts(chart_rc)
+    
+    with cols[1]:
+        df_rc_class = pd.DataFrame(
+            {
+                "Alvo": np.array(rc_t_a) * 100,
+                "Realizado": np.array(rc_p) * 100,
+            },
+            index=classes,
+        )
+        chart_rc_class = create_chart(
+            data=df_rc_class,
+            columns=["Alvo", "Realizado"],
+            names=["Alvo", "Realizado"],
+            chart_type="column",
+            title="Por Classe",
+        )
+        hct.streamlit_highcharts(chart_rc_class)
 
 
 # ===========================================================================
@@ -557,16 +574,10 @@ with tab_inputs:
 
     with cols[1]:
         df_vols_chart = df_vols.set_index("Classe de Ativo")[["Vol (a.a.)"]]
-        # color per asset based on bucket
-        vol_colors = [
-            BUCKET_COLORS.get(bucket_for_asset[c], "#888888")
-            for c in df_vols_chart.index
-        ]
         chart_vol = create_chart(
             data=df_vols_chart,
             columns=["Vol (a.a.)"],
             names=["Vol (a.a.)"],
-            color=vol_colors,
             chart_type="column",
             title="Volatilidade Anualizada",
             y_axis_title="%",
@@ -648,14 +659,10 @@ with tab_hrp:
         )
 
         df_hrp_chart = df_hrp.set_index("Classe de Ativo")[["Peso HRP"]]
-        hrp_colors = [
-            asset_palette.get(c, "#888888") for c in df_hrp_chart.index
-        ]
         chart_hrp = create_chart(
             data=df_hrp_chart,
             columns=["Peso HRP"],
             names=["Peso HRP"],
-            color=hrp_colors,
             chart_type="column",
             title="Pesos HRP",
             y_axis_title="%",
