@@ -9,6 +9,7 @@ CAPITAL_MARKET_ASSUMPTIONS = {
         "anbima_ima_b5+": "Títulos Públicos IPCA Longo (IMA-B 5+)",
         
         "anbima_ida_di": "Debêntures DI (IDA DI)",
+        "anbima_ida_liq_di": "Debêntures DI Liquidez (IDA LIQ DI)",
         "br_b3_corporate_bond_di_aaa_index": "Debêntures AAA DI (B3)",
         "br_b3_corporate_bond_di_ultra_quality_index": "Debêntures Ultra Quality DI (B3)",
         

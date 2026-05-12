@@ -14,7 +14,8 @@ from configs.pages.screener import (
     get_higher_is_better_map,
 )
 
-from persevera_tools.data import get_descriptors, get_securities_by_exchange
+from persevera_tools.data import get_descriptors
+from persevera_tools.db.operations import read_sql
 from persevera_tools.db.fibery import read_fibery
 
 st.set_page_config(
@@ -36,7 +37,14 @@ def load_data(start_date, descriptors_list) -> pd.DataFrame:
         )
         df = df[df["Região"] == "BZ"]
         codes = df["Ativo"].tolist()
-        return get_descriptors(list(codes), start_date=start_date, descriptors=descriptors_list)
+
+        query = f"""
+            SELECT * FROM factor_zoo_latest
+            WHERE code IN ('{"', '".join(codes)}')
+            AND date >= '{start_date}'
+        """
+        df = read_sql(query)
+        return df.pivot(index='code', columns='field', values='value')
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
