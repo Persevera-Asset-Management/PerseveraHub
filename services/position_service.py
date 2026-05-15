@@ -123,6 +123,56 @@ def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.D
     return df
 
 
+_COMDINHEIRO_PORTFOLIO_COLUMN_MAP = {
+    'date': 'Data',
+    'carteira': 'Carteira',
+    'ativo': 'Ativo',
+    'descricao': 'Descrição',
+    'quantidade': 'Quantidade',
+    'preco_unitario': 'Preço Unitário',
+    'saldo_bruto': 'Saldo Bruto',
+    'instituicao_financeira': 'Custodiante',
+    'tipo_ativo': 'Tipo de Ativo',
+    'ticker': 'Ticker',
+}
+
+_COMDINHEIRO_TICKER_STRIP_SUBSTRINGS = [
+    '.pu_med',
+    '.pu_ref',
+    '.pu_anb',
+    '.lastro',
+    'CETIP_',
+    'COE_',
+    '_unica',
+    '_subordinadaJunior1',
+    '_senior1',
+    '_subclasseA',
+    '_classeA',
+    '_ClasseA',
+    '_classeB',
+    '_classeC',
+    '_classe2',
+    'DEB:',
+]
+
+
+def prepare_comdinheiro_portfolio_positions_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Renomeia colunas de posições do Comdinheiro e normaliza `Ticker` para match com cadastro.
+
+    Args:
+        df: DataFrame retornado por `load_portfolio_from_comdinheiro` (colunas em snake_case).
+
+    Returns:
+        Cópia com nomes amigáveis e sufixos de precificação/série removidos do ticker.
+    """
+    out = df.rename(columns=_COMDINHEIRO_PORTFOLIO_COLUMN_MAP).copy()
+    strip_pattern = r'|'.join(_COMDINHEIRO_TICKER_STRIP_SUBSTRINGS)
+    out['Ticker'] = out['Ticker'].str.replace(strip_pattern, '', regex=True)
+    out['Ticker'] = out['Ticker'].str.replace(r'_@.*$', '', regex=True)
+    return out
+
+
 @st.cache_data(ttl=3600)
 def load_assets() -> pd.DataFrame:
     """
@@ -352,7 +402,7 @@ def load_portfolio_info() -> pd.DataFrame:
     
     df = read_fibery(
         table_name="Ops-Portfolios/Portfolio",
-        include_fibery_fields=False,
+        include_fibery_fields=True,
     )
 
     track_data_load("portfolio_info")
