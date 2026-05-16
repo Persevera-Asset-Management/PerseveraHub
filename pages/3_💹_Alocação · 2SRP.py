@@ -10,7 +10,10 @@ from utils.auth import check_authentication
 from utils.table import style_table
 from utils.chart_helpers import create_chart
 
-from persevera_tools.quant_research.two_stage_risk_parity import build_spectrum
+from persevera_tools.quant_research.two_stage_risk_parity import (
+    build_spectrum,
+    compute_feasible_vol_range,
+)
 from persevera_tools.quant_research.two_stage_risk_parity.loaders import load_from_fibery
 
 from configs.pages.capital_market_assumptions import BUCKET_COLORS
@@ -61,6 +64,14 @@ def _build_spectrum_with_overrides(
     if overrides:
         config = config.with_overrides(**overrides)
     return config, build_spectrum(config)
+
+
+@st.cache_data(ttl=3600, show_spinner="Calculando faixa viável de σ (long-only)...")
+def _feasible_vol_range(_config) -> tuple[float, float] | None:
+    try:
+        return compute_feasible_vol_range(_config)
+    except Exception:
+        return None
 
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
@@ -208,13 +219,30 @@ calib_name = config.calibration_name or "—"
 calib_status = config.calibration_status or "—"
 calib_date = config.calibration_date or "—"
 
-meta_cols = st.columns(4)
+feasible_range = _feasible_vol_range(config)
+if feasible_range is not None:
+    sigma_min_feas_pct = feasible_range[0] * 100.0
+    sigma_min_feas_str = f"{sigma_min_feas_pct:.2f}%"
+    sigma_min_feas_help = (
+        "Volatilidade mínima alcançável pelo universo em carteira long-only "
+        "(min-variance), respeitando os max_weight de cada classe."
+    )
+else:
+    sigma_min_feas_str = "—"
+    sigma_min_feas_help = "Falha ao calcular a vol mínima viável long-only."
+
+meta_cols = st.columns(5)
 meta_cols[0].metric("Calibração", calib_name)
 meta_cols[1].metric("Status", calib_status)
 meta_cols[2].metric("Data", calib_date)
 meta_cols[3].metric(
     "Faixa de σ",
     f"{config.sigma_min_pct:.2f}% – {config.sigma_max_pct:.2f}%",
+)
+meta_cols[4].metric(
+    "σ mínima long-only",
+    sigma_min_feas_str,
+    help=sigma_min_feas_help,
 )
 
 if not all(converged_per_profile.values()):
@@ -603,20 +631,56 @@ with tab_inputs:
     hct.streamlit_highcharts(chart_corr)
 
     st.markdown("#### Correlações Macro e Intra-Bucket")
+    st.caption(
+        "Macro: correlação entre portfólios de bucket, derivada da matriz "
+        "completa usando os pesos intra-bucket do HRP. "
+        "Intra: blocos da matriz completa por bucket."
+    )
+
+    full_corr = np.asarray(config.full_corr)
+
+    # Pesos intra-bucket implícitos no HRP (somam 1 dentro de cada bucket)
+    w_intra_by_bucket: dict[str, np.ndarray] = {}
+    for bk in buckets_order:
+        idxs = bucket_indices[bk]
+        w_b = np.asarray(w_hrp)[idxs]
+        s = float(w_b.sum())
+        w_intra_by_bucket[bk] = w_b / s if s > 0 else np.ones(len(idxs)) / len(idxs)
+
+    # Covariância macro k×k via w_a^T Σ_{AB} w_b
+    n_b = len(buckets_order)
+    macro_cov = np.zeros((n_b, n_b))
+    for a, bk_a in enumerate(buckets_order):
+        ia = bucket_indices[bk_a]
+        wa = w_intra_by_bucket[bk_a]
+        for b, bk_b in enumerate(buckets_order):
+            ib = bucket_indices[bk_b]
+            wb = w_intra_by_bucket[bk_b]
+            macro_cov[a, b] = float(wa @ cov[np.ix_(ia, ib)] @ wb)
+    macro_cov = 0.5 * (macro_cov + macro_cov.T)
+    bvols = np.sqrt(np.clip(np.diag(macro_cov), 0.0, None))
+    denom = np.outer(bvols, bvols)
+    macro_corr = np.divide(
+        macro_cov, denom, out=np.zeros_like(macro_cov), where=denom > 0
+    )
+    np.fill_diagonal(macro_corr, 1.0)
+
     chart_macro = create_chart(
-        data=_corr_lower_triangle(np.asarray(config.macro_corr), buckets_order),
+        data=_corr_lower_triangle(macro_corr, buckets_order),
         chart_type="heatmap",
         title="Correlação Macro (entre Buckets)",
         height=max(280, 50 * len(buckets_order) + 100),
     )
     hct.streamlit_highcharts(chart_macro)
 
-    intra_cols = st.columns(len(config.intra_corrs))
-    for i, (bk, mtx) in enumerate(config.intra_corrs.items()):
-        names = [classes[j] for j in bucket_indices[bk]]
+    intra_cols = st.columns(len(buckets_order))
+    for i, bk in enumerate(buckets_order):
+        idxs = bucket_indices[bk]
+        names = [classes[j] for j in idxs]
+        intra_corr = full_corr[np.ix_(idxs, idxs)]
         with intra_cols[i]:
             chart_intra = create_chart(
-                data=_corr_lower_triangle(np.asarray(mtx), names),
+                data=_corr_lower_triangle(intra_corr, names),
                 chart_type="heatmap",
                 title=f"Intra · {bk}",
                 height=max(280, 40 * len(names) + 100),

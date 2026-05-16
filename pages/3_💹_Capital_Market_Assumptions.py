@@ -1,18 +1,21 @@
-import streamlit as st
-import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
 from datetime import timedelta, date
+import streamlit as st
+import streamlit_highcharts as hct
+
 from utils.chart_helpers import create_chart
 from utils.ui import display_logo, load_css
 from utils.table import style_table, get_performance_table
 from utils.auth import check_authentication
-from persevera_tools.data import get_series
+
 from configs.pages.capital_market_assumptions import (
     CAPITAL_MARKET_ASSUMPTIONS,
     BUCKET_ORDER,
     BUCKET_COLORS,
 )
+
+from persevera_tools.data import get_series
 
 st.set_page_config(
     page_title="Capital Market Assumptions | Persevera",
