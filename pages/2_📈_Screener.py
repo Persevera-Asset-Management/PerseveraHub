@@ -41,6 +41,7 @@ def load_data(start_date, descriptors_list) -> pd.DataFrame:
         query = f"""
             SELECT * FROM factor_zoo_latest
             WHERE code IN ('{"', '".join(codes)}')
+            AND field IN ('{"', '".join(descriptors_list)}')
             AND date >= '{start_date}'
         """
         df = read_sql(query)
@@ -164,16 +165,15 @@ selected_descriptors_list_quality = list(selected_cols_quality.values())
 all_cols = selected_descriptors_list + selected_descriptors_list_momentum + selected_descriptors_list_value + selected_descriptors_list_liquidity + selected_descriptors_list_risk + selected_descriptors_list_quality
 all_cols = list(dict.fromkeys(all_cols))
 
+def keep_available_columns(columns, source_df):
+    return [col for col in columns if col in source_df.columns]
+
 # Load data
 with st.spinner("Carregando dados das empresas...", show_time=True):
     data_load_date = (pd.to_datetime(date.today()) - timedelta(days=360)).strftime('%Y-%m-%d')
     raw_data = load_data(start_date=data_load_date, descriptors_list=all_cols)
 
 if not raw_data.empty:
-    raw_data = raw_data.ffill()
-    raw_data = raw_data.iloc[-1].reset_index()
-    raw_data.columns = ['ticker', 'descriptor', 'value']
-    raw_data = raw_data.pivot(index='ticker', columns='descriptor', values='value')
 
     # Apply ADTV filter if 'median_dollar_volume_traded_21d' is in the columns
     if 'median_dollar_volume_traded_21d' in raw_data.columns and adtv_filter > 0:
