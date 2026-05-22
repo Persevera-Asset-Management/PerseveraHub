@@ -262,7 +262,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     Carrega todo o histórico disponível de posições para um único portfolio.
 
     Args:
-        portfolio: Código do portfolio (ex: 'ABC123').
+        portfolio: Código do portfolio (ex: 'ABCD').
 
     Returns:
         DataFrame com todas as posições históricas do portfolio.
@@ -391,6 +391,7 @@ def load_instruments_fgc() -> list:
     instruments_list = df[df["Cobertura FGC"]]["Name"].tolist()
     return instruments_list
 
+
 @st.cache_data(ttl=3600)
 def load_portfolio_info() -> pd.DataFrame:
     """
@@ -406,6 +407,20 @@ def load_portfolio_info() -> pd.DataFrame:
     )
 
     track_data_load("portfolio_info")
+    return df
+
+
+@st.cache_data(ttl=3600)
+def load_portfolios_rvqm() -> pd.DataFrame:
+    """
+    Carrega portfólios com carteira RVQM ativa do Fibery.
+    
+    Returns:
+        DataFrame com os portfólios com carteira RVQM ativa.
+    """
+    df = read_fibery(table_name="Inv-Asset Allocation/Clientes com Carteira RVQM", include_fibery_fields=False)
+    df = df[df["Carteira Ativa"]]
+    df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL"]]
     return df
 
 # =============================================================================

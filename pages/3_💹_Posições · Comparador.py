@@ -1,7 +1,8 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
+import streamlit as st
 import streamlit_highcharts as hct
+
 from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
 from utils.auth import check_authentication

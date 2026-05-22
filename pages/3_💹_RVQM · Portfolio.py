@@ -14,7 +14,7 @@ from persevera_tools.data import get_descriptors, get_series
 
 
 st.set_page_config(
-    page_title="Carteira RVQM | Persevera",
+    page_title="RVQM · Portfolio | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -23,7 +23,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Carteira RVQM")
+st.title("RVQM · Portfolio")
 
 # =============================================================================
 # Funções de carregamento
