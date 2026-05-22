@@ -212,8 +212,8 @@ if not raw_data.empty:
         numeric_cols_format_as_int=['ADTV (21d)'],
         numeric_cols_format_as_float=list(data.columns.drop('ADTV (21d)')),
         currency_cols=['ADTV (21d)'],
-        color_negative_positive_cols=list(data.columns),
-
+        highlight_quartile=['Momentum Score', 'Value Score', 'Liquidity Score', 'Risk Score', 'Quality Score'],
+        color_negative_positive_cols=list(data.columns.drop('ADTV (21d)')),
     )
     st.write(styled_data)
     

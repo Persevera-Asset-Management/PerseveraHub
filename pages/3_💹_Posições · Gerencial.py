@@ -1,12 +1,14 @@
-import streamlit as st
-import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
+import streamlit as st
+import streamlit_highcharts as hct
+
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import display_logo, load_css, show_data_freshness
 from utils.table import style_table
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from utils.auth import check_authentication
+
+from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
 from services.position_service import (
     load_positions,
     load_instruments_fgc,
