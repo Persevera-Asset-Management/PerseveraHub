@@ -202,7 +202,7 @@ if not raw_data.empty:
     data = data[cols]
 
     # Ensure 'ADTV (21d)' and 'Momentum (1m)' come first if present
-    first_cols = ['ADTV (21d)', 'Momentum (7d)', 'Momentum (1m)']
+    first_cols = ['ADTV (21d)', '7-day Momentum', '1-Month Momentum']
     first_cols = [col for col in first_cols if col in data.columns]
     remaining_cols = [col for col in data.columns if col not in first_cols]
     data = data[first_cols + remaining_cols]
@@ -213,7 +213,7 @@ if not raw_data.empty:
         numeric_cols_format_as_float=list(data.columns.drop('ADTV (21d)')),
         currency_cols=['ADTV (21d)'],
         highlight_quartile=['Momentum Score', 'Value Score', 'Liquidity Score', 'Risk Score', 'Quality Score'],
-        color_negative_positive_cols=list(data.columns.drop('ADTV (21d)')),
+        color_negative_positive_cols=list(data.columns.drop(['ADTV (21d)', 'Momentum Score', 'Value Score', 'Liquidity Score', 'Risk Score', 'Quality Score'])),
     )
     st.write(styled_data)
     
