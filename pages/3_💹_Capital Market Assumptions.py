@@ -264,7 +264,8 @@ with tabs[0]:   # Performance Acumulada
             performance_table,
             numeric_cols_format_as_float=perf_numeric_cols,
             color_negative_positive_cols=perf_numeric_cols,
-        )
+        ),
+        height="content",
     )
 
 with tabs[1]:   # Longo Prazo
