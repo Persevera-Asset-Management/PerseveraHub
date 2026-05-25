@@ -458,7 +458,7 @@ n_buys = int(buys_mask.sum())
 n_sells = int(sells_mask.sum())
 val_buys = lot_financial[buys_mask].sum()
 val_sells = lot_financial[sells_mask].abs().sum()
-net_cash = -lot_financial.sum() if lot_financial.sum() < 0 else lot_financial.sum()
+net_cash = val_sells - val_buys
 
 target_mask = current_market_data["Peso Alvo (%)"].gt(0)
 _te_pre = (
