@@ -26,7 +26,8 @@ def create_highcharts_options(
     line_width: int = 3,
     zoom_type: str = "x",
     animation: bool = False,
-    decimal_precision: int = 2,
+    decimal_precision: Union[int, Tuple[int, int]] = 2,
+    y_axis_label_format: Optional[Union[str, Tuple[Optional[str], Optional[str]]]] = None,
     point_name_column: Optional[str] = None,
     tooltip_point_format: Optional[str] = None,
     vertical_line: Optional[Dict[str, Any]] = None,
@@ -78,9 +79,11 @@ def create_highcharts_options(
     x_axis_title : str, optional
         X-axis title. Defaults to x_column name if not provided, or None if x_column is also None.
     y_axis_max : float or Tuple[Optional[float], Optional[float]], optional
-        Maximum value for the y-axis. For dual-axis charts, provide a tuple e.g., (100, None).
+        Maximum value for the y-axis. For dual-axis charts, a tuple (max_ax0, max_ax1) sets each axis
+        independently (None means no limit). A single float applies the same limit to both axes.
     y_axis_min : float or Tuple[Optional[float], Optional[float]], optional
-        Minimum value for the y-axis. For dual-axis charts, provide a tuple e.g., (0, None).
+        Minimum value for the y-axis. For dual-axis charts, a tuple (min_ax0, min_ax1) sets each axis
+        independently (None means no limit). A single float applies the same limit to both axes.
     series_name : str or List[str] or Tuple, optional
         Name(s) of the data series.
         - For single-axis charts: a string (if one y_column) or a list of strings (matching y_columns). Defaults to y_column names.
@@ -105,8 +108,14 @@ def create_highcharts_options(
         Type of zoom ('x', 'y', or 'xy')
     animation : bool, optional
         Whether to enable animations
-    decimal_precision : int, optional
-        Number of decimal places in tooltips
+    decimal_precision : int or Tuple[int, int], optional
+        Number of decimal places in tooltips. For dual-axis charts, a tuple (ax0_decimals, ax1_decimals)
+        allows different precision per axis (e.g., (2, 0) for 2 decimals on left, 0 on right).
+        A single int is applied to both axes.
+    y_axis_label_format : str or Tuple[Optional[str], Optional[str]], optional
+        Highcharts format string for the y-axis tick labels (e.g., '{value}%', '{value:,.0f}').
+        For single-axis charts, a single string. For dual-axis charts, a tuple (fmt_ax0, fmt_ax1)
+        where each element can be None to use the default '{value}'. Defaults to '{value}'.
     point_name_column : str, optional
         Column to use for individual point names, especially for scatter charts.
     tooltip_point_format : str, optional
@@ -483,6 +492,48 @@ def create_highcharts_options(
         else:
             y_axis_title_processed = current_y_axis_title # y_axis_title_processed is str
 
+    # --- Parse decimal_precision (supports per-axis tuple for dual-axis charts) ---
+    decimal_precision_ax0: int
+    decimal_precision_ax1: int
+    if isinstance(decimal_precision, (list, tuple)) and len(decimal_precision) == 2:
+        if not is_dual_axis:
+            raise ValueError("decimal_precision as a tuple is only supported for dual-axis chart types.")
+        decimal_precision_ax0 = int(decimal_precision[0])
+        decimal_precision_ax1 = int(decimal_precision[1])
+    else:
+        decimal_precision_ax0 = int(decimal_precision)
+        decimal_precision_ax1 = int(decimal_precision)
+
+    # --- Parse y_axis_label_format (supports per-axis tuple for dual-axis charts) ---
+    # None means "let Highcharts use its native default formatter" (which applies k/M abbreviations).
+    # A string forces an explicit Highcharts format, bypassing the native abbreviation logic.
+    y_axis_label_format_ax0: Optional[str]
+    y_axis_label_format_ax1: Optional[str]
+    if is_dual_axis:
+        if y_axis_label_format is None:
+            y_axis_label_format_ax0 = None
+            y_axis_label_format_ax1 = None
+        elif isinstance(y_axis_label_format, str):
+            y_axis_label_format_ax0 = y_axis_label_format
+            y_axis_label_format_ax1 = y_axis_label_format
+        elif isinstance(y_axis_label_format, (list, tuple)) and len(y_axis_label_format) == 2:
+            y_axis_label_format_ax0 = y_axis_label_format[0]  # None preserved → native formatter
+            y_axis_label_format_ax1 = y_axis_label_format[1]  # None preserved → native formatter
+        else:
+            raise ValueError(
+                "For dual-axis charts, y_axis_label_format must be a string or a tuple of two strings "
+                "(e.g., ('{value}%', '{value:,.0f}'))."
+            )
+    else:
+        if y_axis_label_format is None:
+            y_axis_label_format_ax0 = None
+        elif isinstance(y_axis_label_format, str):
+            y_axis_label_format_ax0 = y_axis_label_format
+        elif isinstance(y_axis_label_format, (list, tuple)):
+            raise ValueError("y_axis_label_format as a tuple is only supported for dual-axis chart types.")
+        else:
+            y_axis_label_format_ax0 = str(y_axis_label_format)
+
     # Use the DataFrame index if x_column is not specified
     is_using_index = False
     x_column_effective: str
@@ -620,18 +671,14 @@ def create_highcharts_options(
         
         if is_dual_axis:
             # y_axis_title_processed is Tuple[str, str] here, as set in the dual_axis_line block
-            title_ax1, title_ax2 = y_axis_title_processed 
-            chart_options["yAxis"] = [
-                { # Primary yAxis
-                    "title": {"text": title_ax1},
-                    "labels": {"format": "{value}"}, 
-                },
-                { # Secondary yAxis
-                    "title": {"text": title_ax2},
-                    "labels": {"format": "{value}"}, 
-                    "opposite": True
-                }
-            ]
+            title_ax1, title_ax2 = y_axis_title_processed
+            primary_yaxis: Dict[str, Any] = {"title": {"text": title_ax1}}
+            if y_axis_label_format_ax0 is not None:
+                primary_yaxis["labels"] = {"format": y_axis_label_format_ax0}
+            secondary_yaxis: Dict[str, Any] = {"title": {"text": title_ax2}, "opposite": True}
+            if y_axis_label_format_ax1 is not None:
+                secondary_yaxis["labels"] = {"format": y_axis_label_format_ax1}
+            chart_options["yAxis"] = [primary_yaxis, secondary_yaxis]
 
             # Optional horizontal line(s) on Y axes for dual-axis charts
             if horizontal_line is not None:
@@ -663,8 +710,14 @@ def create_highcharts_options(
                         chart_options["yAxis"][0]["max"] = y_axis_max[0]
                     if y_axis_max[1] is not None:
                         chart_options["yAxis"][1]["max"] = y_axis_max[1]
+                elif isinstance(y_axis_max, (int, float)):
+                    chart_options["yAxis"][0]["max"] = y_axis_max
+                    chart_options["yAxis"][1]["max"] = y_axis_max
                 else:
-                    raise ValueError("For dual-axis charts, y_axis_max must be a tuple of two values (e.g., (100, None)).")
+                    raise ValueError(
+                        "For dual-axis charts, y_axis_max must be a number (applied to both axes) "
+                        "or a tuple of two values (e.g., (100, None))."
+                    )
 
             if y_axis_min is not None:
                 if isinstance(y_axis_min, (list, tuple)) and len(y_axis_min) == 2:
@@ -672,15 +725,20 @@ def create_highcharts_options(
                         chart_options["yAxis"][0]["min"] = y_axis_min[0]
                     if y_axis_min[1] is not None:
                         chart_options["yAxis"][1]["min"] = y_axis_min[1]
+                elif isinstance(y_axis_min, (int, float)):
+                    chart_options["yAxis"][0]["min"] = y_axis_min
+                    chart_options["yAxis"][1]["min"] = y_axis_min
                 else:
-                    raise ValueError("For dual-axis charts, y_axis_min must be a tuple of two values (e.g., (0, None)).")
+                    raise ValueError(
+                        "For dual-axis charts, y_axis_min must be a number (applied to both axes) "
+                        "or a tuple of two values (e.g., (0, None))."
+                    )
         else: # Single y-axis configuration
             # y_axis_title_processed is a string here, as set in the single-axis block
-            chart_options["yAxis"] = {
-                "title": {
-                    "text": str(y_axis_title_processed)
-                }
-            }
+            single_yaxis: Dict[str, Any] = {"title": {"text": str(y_axis_title_processed)}}
+            if y_axis_label_format_ax0 is not None:
+                single_yaxis["labels"] = {"format": y_axis_label_format_ax0}
+            chart_options["yAxis"] = single_yaxis
 
             # Optional horizontal line on single Y axis
             if horizontal_line is not None and isinstance(horizontal_line, dict):
@@ -772,7 +830,7 @@ def create_highcharts_options(
                     "data": data_s, 
                     "type": "line", 
                     "yAxis": 0,
-                    "tooltip": {"valueDecimals": decimal_precision},
+                    "tooltip": {"valueDecimals": decimal_precision_ax0},
                     "lineWidth": line_width, 
                     "marker": {"enabled": False}
                 }
@@ -788,7 +846,7 @@ def create_highcharts_options(
                     "data": data_s, 
                     "type": "column" if chart_type == 'dual_axis_line_column' else ("area" if chart_type == 'dual_axis_line_area' else "line"), 
                     "yAxis": 1,
-                    "tooltip": {"valueDecimals": decimal_precision},
+                    "tooltip": {"valueDecimals": decimal_precision_ax1},
                     "lineWidth": line_width, 
                     "marker": {"enabled": False}
                 }
@@ -804,7 +862,7 @@ def create_highcharts_options(
                 series_options = {
                     "name": series_name_val,
                     "data": series_data,
-                    "tooltip": {"valueDecimals": decimal_precision}
+                    "tooltip": {"valueDecimals": decimal_precision_ax0}
                 }
             
                 # Add color if specified
@@ -848,7 +906,7 @@ def create_highcharts_options(
                 "cursor": "pointer",
                 "borderWidth": 0.5,  # Remove borders between slices for cleaner nested look
                 "tooltip": {
-                    "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision}f}}</b>'
+                    "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision_ax0}f}}</b>'
                 }
             }
             
@@ -920,7 +978,7 @@ def create_highcharts_options(
                 "innerSize": outer_inner_size, # e.g., "60%" - starts where inner ring ends
                 "dataLabels": {
                     "enabled": True,
-                    "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}}%"
+                    "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision_ax0}f}}%"
                 }
             }
             
@@ -934,10 +992,10 @@ def create_highcharts_options(
                 "innerSize": "65%" if chart_type == 'donut' else "0%",
                 "dataLabels": {
                     "enabled": True,
-                    "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision}f}} %"
+                    "format": f"<b>{{point.name}}</b>: {{point.percentage:,.{decimal_precision_ax0}f}} %"
                 },
                 "tooltip": {
-                    "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision}f}}</b>'
+                    "pointFormat": f'<span style="color:{{point.color}}">{{series.name}}</span>: <b>{{point.y:,.{decimal_precision_ax0}f}}</b>'
                 }
             }
 

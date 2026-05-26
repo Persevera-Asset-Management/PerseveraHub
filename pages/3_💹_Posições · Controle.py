@@ -17,6 +17,7 @@ from services.position_service import (
     load_instruments_fgc,
     get_latest_date_data,
     get_emissor_column,
+    INSTRUMENTOS_RF,
     ASSET_CLASSES_ORDER,
 )
 
@@ -133,6 +134,80 @@ if selected_carteiras:
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
         st.markdown("Data da Posição: **{0:%Y-%m-%d}**".format(df["Data Posição"].max()))
 
+        # =========================================================================
+        # SEÇÃO 1 — Indicadores Chave
+        # =========================================================================
+        if is_single_carteira:
+            classificacao_idx = df_portfolio_positions_current.index.get_level_values('Classificação do Conjunto')
+            total_saldo = df_portfolio_positions_current['Saldo'].sum()
+
+            saldo_caixa = df_portfolio_positions_current[classificacao_idx == 'Caixa e Equivalentes']['Saldo'].sum()
+            pct_caixa = saldo_caixa / total_saldo * 100 if total_saldo > 0 else 0
+
+            df_emissores_rf = df[df['Classificação Instrumento'].isin(INSTRUMENTOS_RF)]
+            df_emissores_total_kpi = get_emissor_column(df).groupby([pd.Grouper(key='Data Posição', freq='D'), 'Emissor'])["Saldo"].sum()
+            df_emissores_rf_kpi = get_emissor_column(df_emissores_rf).groupby([pd.Grouper(key='Data Posição', freq='D'), 'Emissor'])["Saldo"].sum()
+            total_emissores = len(get_latest_date_data(df_emissores_total_kpi))
+            total_emissores_rf = len(get_latest_date_data(df_emissores_rf_kpi))
+
+            df_ex_caixa = df_portfolio_positions_current[classificacao_idx != 'Caixa e Equivalentes']
+            if not df_ex_caixa.empty:
+                maior_posicao = df_ex_caixa['Saldo'].max(), df_ex_caixa['%'].max()
+                maior_posicao_alias = df_ex_caixa['Saldo'].idxmax()[1]  # level 1 = 'Alias'
+            else:
+                maior_posicao = (0.0, 0.0)
+                maior_posicao_alias = ""
+
+            df_rf_posicoes = df_emissores_rf.groupby(
+                [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias', 'Classificação do Conjunto']
+            ).agg(**{'Saldo': ('Saldo', 'sum')})
+            df_rf_posicoes_current = get_latest_date_data(df_rf_posicoes).reset_index()
+            df_rf_posicoes_current_ex_caixa = df_rf_posicoes_current[df_rf_posicoes_current['Classificação do Conjunto'] != 'Caixa e Equivalentes']
+            df_rf_posicoes_current_ex_caixa = df_rf_posicoes_current_ex_caixa.set_index(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])
+            if not df_rf_posicoes_current_ex_caixa.empty:
+                maior_posicao_rf = df_rf_posicoes_current_ex_caixa['Saldo'].max()
+                maior_posicao_rf_pct = maior_posicao_rf / total_saldo * 100 if total_saldo > 0 else 0
+                maior_posicao_rf_alias = df_rf_posicoes_current_ex_caixa['Saldo'].idxmax()[1]  # level 1 = 'Alias'
+            else:
+                maior_posicao_rf = 0.0
+                maior_posicao_rf_pct = 0.0
+                maior_posicao_rf_alias = ""
+
+            kpi_cols = st.columns(4)
+            with kpi_cols[0]:
+                st.metric(
+                    "Posição em Liquidez", f"{pct_caixa:.1f}%", height="stretch",
+                    delta=f"R$ {saldo_caixa:,.2f}",
+                    delta_color="off",
+                    delta_arrow="off",
+                )
+            with kpi_cols[1]:
+                st.metric(
+                    "Total de Emissores", total_emissores, height="stretch",
+                    delta=f"{total_emissores_rf} de Renda Fixa",
+                    delta_color="off",
+                    delta_arrow="off",    
+                )
+            with kpi_cols[2]:
+                st.metric(
+                    f"Maior Posição (ex-Caixa): **{maior_posicao_alias}**",
+                    f"{maior_posicao[1]:,.1f}%",
+                    delta=f"R$ {maior_posicao[0]:,.2f}",
+                    delta_color="off",
+                    delta_arrow="off",
+                )
+            with kpi_cols[3]:
+                st.metric(
+                    f"Maior Posição RF  (ex-Caixa): **{maior_posicao_rf_alias}**",
+                    f"{maior_posicao_rf_pct:,.1f}%",
+                    delta=f"R$ {maior_posicao_rf:,.2f}",
+                    delta_color="off",
+                    delta_arrow="off",
+                )
+
+        # =========================================================================
+        # SEÇÃO 2 — Gráficos
+        # =========================================================================
         tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos", "Monitor de FGC"])
 
         with tabs[0]: # Alocação Atual

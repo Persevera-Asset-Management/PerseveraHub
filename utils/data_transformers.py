@@ -817,6 +817,132 @@ class SeasonallyAdjustedAnnualRateMovingAverageTransformer(DataTransformer):
         
         return result
 
+class YearToDateTransformer(DataTransformer):
+    """
+    Calculates the year-to-date (acumulado anual) cumulative sum for a given column.
+    The accumulation resets at the start of each calendar year.
+
+    Config:
+        column    : column name (required)
+        frequency : pandas offset alias, e.g. 'D', 'B', 'W', 'M', 'MS', 'Q' (required)
+    """
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        freq = config.get('frequency')
+
+        if not column or column not in data.columns:
+            st.warning(f"Warning: Column '{column}' not found for year-to-date. Skipping.")
+            return data
+
+        if not freq:
+            st.warning(f"Warning: Frequency not specified for year-to-date on '{column}'. Skipping.")
+            return data
+
+        if not isinstance(data.index, pd.DatetimeIndex):
+            st.error(f"Error: Index is not DatetimeIndex. Cannot perform year-to-date on '{column}'.")
+            return data
+
+        result = data.copy()
+        new_column_name = f"{column}_ytd"
+
+        try:
+            col_data = result[[column]].dropna()
+            resampled = col_data.resample(freq).last()
+
+            ytd_series = resampled.groupby(resampled.index.year)[column].cumsum()
+
+            result[new_column_name] = ytd_series.reindex(result.index)
+        except Exception as e:
+            print(f"Error during year-to-date transformation for '{column}' with freq '{freq}': {e}")
+            return data
+
+        return result
+
+class AccumulatedByYearTransformer(DataTransformer):
+    """
+    Pivots a series into one column per calendar year, with a normalised
+    within-year index so all years share the same x-axis.
+
+    The index is determined by the frequency:
+        'D' / 'B'      → day of year  (1–366)
+        'W' / 'W-*'    → ISO week number (1–53)
+        'M' / 'MS'     → month (1–12)
+        'Q' / 'QS'     → quarter (1–4)
+
+    For a column 'col' with data spanning 2024–2026, produces a DataFrame
+    with index 1…N and columns col_2024, col_2025, col_2026 — each holding
+    the YTD cumulative sum at that position within the year.
+
+    NOTE: This transformer changes the DataFrame shape (new numeric index,
+    original columns are dropped). Use it as the final step in a pipeline.
+
+    Config:
+        column    : column name (required)
+        frequency : pandas offset alias (required)
+    """
+
+    _PERIOD_FUNCS = {
+        'D': lambda idx: idx.day_of_year,
+        'B': lambda idx: idx.day_of_year,
+        'W': lambda idx: idx.isocalendar().week.astype(int),
+        'M': lambda idx: idx.month,
+        'MS': lambda idx: idx.month,
+        'Q': lambda idx: idx.quarter,
+        'QS': lambda idx: idx.quarter,
+    }
+
+    @staticmethod
+    def _get_period(idx: pd.DatetimeIndex, freq: str) -> pd.Index:
+        base = freq.upper().split('-')[0]
+        func = AccumulatedByYearTransformer._PERIOD_FUNCS.get(base)
+        if func is None:
+            raise ValueError(f"Unsupported frequency '{freq}' for accumulated by year.")
+        return func(idx)
+
+    @staticmethod
+    def transform(data: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
+        column = config.get('column')
+        freq = config.get('frequency')
+
+        if not column or column not in data.columns:
+            st.warning(f"Warning: Column '{column}' not found for accumulated by year. Skipping.")
+            return data
+
+        if not freq:
+            st.warning(f"Warning: Frequency not specified for accumulated by year on '{column}'. Skipping.")
+            return data
+
+        if not isinstance(data.index, pd.DatetimeIndex):
+            st.error(f"Error: Index is not DatetimeIndex. Cannot perform accumulated by year on '{column}'.")
+            return data
+
+        try:
+            col_data = data[[column]].dropna()
+            resampled = col_data.resample(freq).last()
+
+            ytd = resampled.groupby(resampled.index.year)[column].cumsum()
+
+            period = AccumulatedByYearTransformer._get_period(resampled.index, freq)
+
+            pivot_df = pd.DataFrame({
+                'period': period,
+                'year': resampled.index.year,
+                'value': ytd.values,
+            })
+
+            result = pivot_df.pivot(index='period', columns='year', values='value')
+            result.index.name = None
+            result.columns = [f"{column}_{yr}" for yr in result.columns]
+            result.columns.name = None
+            result = result[result.columns[::-1]]
+
+        except Exception as e:
+            print(f"Error during accumulated by year transformation for '{column}' with freq '{freq}': {e}")
+            return data
+
+        return result
+
 class RollingBetaTransformer(DataTransformer):
     """Calculates rolling beta of a dependent series returns against an independent series returns."""
     @staticmethod
@@ -882,6 +1008,8 @@ TRANSFORMERS = {
     "base_100": Base100Transformer,
     "saar": SeasonallyAdjustedAnnualRateTransformer,
     "saar_ma": SeasonallyAdjustedAnnualRateMovingAverageTransformer,
+    "year_to_date": YearToDateTransformer,
+    "accumulated_by_year": AccumulatedByYearTransformer,
 }
 
 def apply_transformations(data: pd.DataFrame, transformations_config: List[Dict[str, Any]]) -> pd.DataFrame:
