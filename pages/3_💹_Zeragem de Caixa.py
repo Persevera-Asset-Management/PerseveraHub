@@ -1,6 +1,9 @@
+import io
+
 import pandas as pd
 import numpy as np
 import streamlit as st
+from datetime import datetime
 
 from utils.auth import check_authentication
 from utils.ui import display_logo, load_css, show_data_freshness
@@ -70,8 +73,9 @@ def get_balance(accounts: pd.DataFrame, cnpj: str, balance_col: str) -> pd.DataF
 
     return pd.DataFrame(df_xp_accounts_data)
 
-with st.spinner("Carregando contas sob gestão...", show_time=True):
-    st.session_state.df_accounts = load_accounts()
+if 'df_accounts' not in st.session_state or st.session_state.df_accounts is None:
+    with st.spinner("Carregando contas sob gestão...", show_time=True):
+        st.session_state.df_accounts = load_accounts()
 
 show_data_freshness('accounts', label='Contas sob gestão', ttl_minutes=60)
 
@@ -109,19 +113,26 @@ if selected_fund == CUSTOM_FUND_OPTION and not is_valid_cnpj(fund_cnpj):
     st.stop()
 
 balance_col = f'Saldo · {fund_label}'
-df_xp_accounts_data = get_balance(df_xp_accounts, fund_cnpj, balance_col)
-df_xp_accounts_data['Elegivel para Zeragem'] = (
-    (df_xp_accounts_data['Saldo Disponível'] > 100) & (df_xp_accounts_data[balance_col] > 0)
-)
-df_xp_accounts_data.sort_values(
-    by=['Elegivel para Zeragem', 'Saldo Disponível'],
-    ascending=False,
-    inplace=True,
-)
+cache_key = f'zeragem_balance_{fund_cnpj}'
+
+if cache_key not in st.session_state:
+    df_xp_accounts_data = get_balance(df_xp_accounts, fund_cnpj, balance_col)
+    df_xp_accounts_data['Elegivel para Zeragem'] = (
+        (df_xp_accounts_data['Saldo Disponível'] > 100) & (df_xp_accounts_data[balance_col] > 0)
+    )
+    df_xp_accounts_data['CNPJ do Fundo'] = fund_cnpj
+    df_xp_accounts_data.sort_values(
+        by=['Elegivel para Zeragem', 'Saldo Disponível'],
+        ascending=False,
+        inplace=True,
+    )
+    st.session_state[cache_key] = df_xp_accounts_data
+else:
+    df_xp_accounts_data = st.session_state[cache_key]
 
 st.dataframe(
     style_table(
-        df_xp_accounts_data,
+        df_xp_accounts_data[['Portfolio', 'Conta', 'CNPJ do Fundo', 'Saldo Disponível', balance_col, 'Elegivel para Zeragem']],
         numeric_cols_format_as_float=['Saldo Disponível', balance_col],
         highlight_row_by_column='Elegivel para Zeragem',
         highlight_row_if_value_equals=True,
@@ -129,3 +140,34 @@ st.dataframe(
     ),
     hide_index=True,
 )
+
+# ---------------------------------------------------------------------------
+# Exportar Excel para Zeragem
+# ---------------------------------------------------------------------------
+
+df_eligible = df_xp_accounts_data[df_xp_accounts_data['Elegivel para Zeragem']].copy()
+
+if df_eligible.empty:
+    st.info('Nenhuma conta elegível para zeragem no momento.')
+else:
+    df_export = pd.DataFrame({
+        'COD_CLIENTE': df_eligible['Conta'].values,
+        'CNPJ_FUNDO': df_eligible['CNPJ do Fundo'].apply(adjust_cnpj).values,
+        'VALOR_OPERACAO': df_eligible['Saldo Disponível'].values,
+        'TIPO_OPERACAO': 'A',
+        'CONTA_DESTINO': '',
+        'ENVIO_NOTIFICACAO': 'N',
+    })
+
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df_export.to_excel(writer, index=False, sheet_name='Zeragem')
+    buffer.seek(0)
+
+    st.download_button(
+        label='Exportar Excel para Zeragem',
+        data=buffer,
+        file_name=f'zeragem_caixa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        icon=':material/download:',
+    )
