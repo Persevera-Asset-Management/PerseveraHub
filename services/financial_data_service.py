@@ -73,6 +73,7 @@ SOURCE_TO_PROVIDER: Dict[str, str] = {
     'b3_bdi': 'b3',
     'mais_retorno_debentures': 'mais_retorno',
     'mais_retorno_fundos': 'mais_retorno',
+    'investfy_investor_flow': 'investfy',
 }
 
 
@@ -117,6 +118,7 @@ class SafeFinancialDataService(FinancialDataService):
             'mdic': lambda: MDICProvider(),
             'b3': lambda: B3Provider(),
             'mais_retorno': lambda: MaisRetornoProvider(),
+            'investfy': lambda: InvestfyProvider(),
         }
 
         for attr, factory in provider_factories.items():
