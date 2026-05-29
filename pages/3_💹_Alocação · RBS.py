@@ -413,6 +413,7 @@ with tab_spectrum:
             title="Espectro de Contrib. de Risco · Classe",
             y_axis_title="%",
             x_axis_title="Perfil",
+            y_axis_min=0.0,
             height=420,
         )
         hct.streamlit_highcharts(chart)
@@ -588,6 +589,7 @@ with tab_profile:
             names=["Alvo", "Realizado"],
             chart_type="column",
             title="Por Classe",
+            x_axis_title="Classe",
         )
         hct.streamlit_highcharts(chart_rc_class)
 
@@ -626,6 +628,7 @@ with tab_inputs:
             chart_type="column",
             title="Volatilidade Anualizada",
             y_axis_title="%",
+            x_axis_title="Classe",
             height=400,
             show_legend=False,
         )
