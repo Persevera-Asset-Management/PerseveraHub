@@ -37,6 +37,7 @@ from persevera_tools.data.providers.mdic import MDICProvider
 from persevera_tools.data.providers.sgs import SGSProvider
 from persevera_tools.data.providers.sidra import SidraProvider
 from persevera_tools.data.providers.simplify import SimplifyProvider
+from persevera_tools.data.providers.investfy import InvestfyProvider
 
 
 # Espelha o dicionário interno de :meth:`FinancialDataService.get_data` para que

@@ -10,11 +10,11 @@ from utils.auth import check_authentication
 from utils.table import style_table
 from utils.chart_helpers import create_chart
 
-from persevera_tools.quant_research.two_stage_risk_parity import (
+from persevera_tools.quant_research.risk_budgeting_spectrum import (
     build_spectrum,
     compute_feasible_vol_range,
 )
-from persevera_tools.quant_research.two_stage_risk_parity.loaders import load_from_fibery
+from persevera_tools.quant_research.risk_budgeting_spectrum.loaders import load_from_fibery
 
 from configs.pages.capital_market_assumptions import BUCKET_COLORS
 
@@ -23,7 +23,7 @@ from configs.pages.capital_market_assumptions import BUCKET_COLORS
 # Page setup
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Modelo de Alocação | Persevera",
+    page_title="Modelo de Alocação · RBS | Persevera",
     page_icon="💹",
     layout="wide",
 )
@@ -32,7 +32,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Modelo de Alocação · Two-Stage Risk Parity")
+st.title("Modelo de Alocação · Risk Budgeting Spectrum")
 
 
 # ---------------------------------------------------------------------------
@@ -121,8 +121,8 @@ with st.sidebar:
     st.header("Parâmetros")
     status_filter = st.selectbox(
         "Status da calibração",
-        options=["Rascunho", "Em Vigor", "Histórica"],
-        index=0,
+        options=["Rascunho", "Em Comitê", "Aprovada", "Substituída"],
+        index=2,  # default "Aprovada" — alinhado ao default do loader
     )
 
     st.markdown("---")
@@ -134,7 +134,7 @@ with st.sidebar:
             "σ mínimo (%)",
             min_value=0.1,
             max_value=50.0,
-            value=1.5,
+            value=2.1,
             step=0.1,
             format="%.2f",
         )
@@ -247,7 +247,11 @@ meta_cols[4].metric(
 
 if not all(converged_per_profile.values()):
     bad = [p for p, ok in converged_per_profile.items() if not ok]
-    st.warning(f"Solver não convergiu para os perfis: {bad}")
+    st.warning(
+        f"Perfis sem convergência factível (σ-alvo não atingida dentro da "
+        f"tolerância, ou constraints de peso/RC ativas): {bad}. "
+        f"Verifique se a σ-alvo desses perfis está dentro da faixa viável."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -305,19 +309,32 @@ with tab_overview:
         width='stretch',
     )
 
-    st.markdown("#### RC-Targets por Bucket (endpoints)")
+    st.markdown("#### RC-Targets por Bucket (endpoints + curvatura)")
+    st.caption(
+        "RC P1 / RC PN são os orçamentos de risco nos extremos do espectro. "
+        "A curvatura γ controla a transição entre eles: γ=1 interpola "
+        "linearmente; γ<1 faz o bucket transitar cedo (côncavo); γ>1, tarde "
+        "(convexo)."
+    )
+    rc_p10_col = f"RC P{config.n_profiles}"
     df_rc = pd.DataFrame(
         [
             {
                 "Bucket": rc.bucket,
                 "RC P1": rc.rc_p1 * 100,
-                f"RC P{config.n_profiles}": rc.rc_p10 * 100,
+                rc_p10_col: rc.rc_p10 * 100,
+                "Curvatura γ": (config.rc_curvature or {}).get(rc.bucket, 1.0),
             }
             for rc in config.rc_targets.values()
         ]
     ).set_index("Bucket")
     st.dataframe(
-        style_table(df_rc, percent_cols=df_rc.columns.tolist()),
+        # "Curvatura γ" NÃO é percentual — fica fora de percent_cols
+        style_table(
+            df_rc,
+            percent_cols=["RC P1", rc_p10_col],
+            numeric_cols_format_as_float=["Curvatura γ"],
+        ),
         width='stretch',
     )
 
@@ -556,7 +573,7 @@ with tab_profile:
             x_axis_title="Bucket",
         )
         hct.streamlit_highcharts(chart_rc)
-    
+
     with cols[1]:
         df_rc_class = pd.DataFrame(
             {
@@ -676,14 +693,14 @@ with tab_inputs:
     intra_cols = st.columns(len(buckets_order))
     for i, bk in enumerate(buckets_order):
         idxs = bucket_indices[bk]
-        names = [classes[j] for j in idxs]
+        bucket_class_names = [classes[j] for j in idxs]
         intra_corr = full_corr[np.ix_(idxs, idxs)]
         with intra_cols[i]:
             chart_intra = create_chart(
-                data=_corr_lower_triangle(intra_corr, names),
+                data=_corr_lower_triangle(intra_corr, bucket_class_names),
                 chart_type="heatmap",
                 title=f"Intra · {bk}",
-                height=max(280, 40 * len(names) + 100),
+                height=max(280, 40 * len(bucket_class_names) + 100),
             )
             hct.streamlit_highcharts(chart_intra)
 
@@ -693,9 +710,10 @@ with tab_inputs:
 # ===========================================================================
 with tab_hrp:
     st.markdown(
-        "Pesos provenientes da etapa **HRP** (Hierarchical Risk Parity), antes "
-        "da imposição dos targets de RC do espectro. Útil para auditoria do "
-        "primeiro estágio do modelo."
+        "Pesos de referência calculados por **HRP** (Hierarchical Risk Parity) "
+        "de dois níveis. **Não fazem parte do pipeline de produção** — servem "
+        "apenas como benchmark diagnóstico para comparar contra as carteiras "
+        "do espectro, que são geradas por risk budgeting com σ-alvo."
     )
 
     cols = st.columns(2)
@@ -736,7 +754,7 @@ with tab_hrp:
         hct.streamlit_highcharts(chart_hrp)
 
     with cols[1]:
-        st.markdown("#### Pesos HRP por Bucket (estágio macro)")
+        st.markdown("#### Pesos HRP por Bucket (agregação macro)")
         df_macro = pd.DataFrame(
             {"Peso Macro": np.asarray(w_macro) * 100}, index=buckets_order
         )
@@ -789,6 +807,6 @@ with st.expander("Exportar resultado", expanded=False):
     st.download_button(
         label="Baixar Excel",
         data=buffer.getvalue(),
-        file_name=f"two_stage_risk_parity_{datetime.now():%Y%m%d_%H%M}.xlsx",
+        file_name=f"risk_budgeting_spectrum_{datetime.now():%Y%m%d_%H%M}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
