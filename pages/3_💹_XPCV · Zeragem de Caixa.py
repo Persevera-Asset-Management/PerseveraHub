@@ -14,7 +14,7 @@ from persevera_tools.data.providers.ws_xp import XPWSProvider
 
 
 st.set_page_config(
-    page_title="Zeragem de Caixa · XPCV | Persevera",
+    page_title="XPCV · Zeragem de Caixa | Persevera",
     page_icon="💹",
     layout="wide"
 )
@@ -23,7 +23,7 @@ display_logo()
 load_css()
 check_authentication()
 
-st.title("Zeragem de Caixa · XPCV")
+st.title("XPCV · Zeragem de Caixa")
 
 PRE_SELECTED_FUNDS = {
     '47.562.149/0001-28': 'Persevera Trinity FI RF Ref DI',
