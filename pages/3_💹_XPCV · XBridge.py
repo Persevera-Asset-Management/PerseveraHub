@@ -1,9 +1,11 @@
 import pandas as pd
 import streamlit as st
+import streamlit_highcharts as hct
 
 from utils.auth import check_authentication
 from utils.ui import display_logo, load_css
 from utils.table import style_table
+from utils.chart_helpers import create_chart, render_chart
 
 from services.position_service import get_emissor_column, load_assets, load_issuers
 
@@ -193,7 +195,7 @@ with st.sidebar:
     )
     btn_run = st.button(
         "Processar arquivo",
-        use_container_width=True,
+        width="stretch",
         disabled=uploaded_file is None,
     )
 
@@ -245,7 +247,7 @@ try:
         df["Indexador XBridge"] = df["Indexador_x"]
     df["Vencimento XBridge"] = df["Vencimento"]
     df["Data Vencimento"] = pd.to_datetime(df["Data Vencimento"], errors="coerce")
-    df["Aprovado"] = df["Status do Emissor"].astype(str).str.casefold().eq("aprovado")
+    df["Aprovado"] = df["Status do Emissor"].isin(["Aprovado", "Name Lending"])
     df["Isento"] = df["Isento"].astype(str).str.casefold().eq("sim")
 
     df_approved = df[df["Aprovado"]].copy()
@@ -259,24 +261,66 @@ try:
     total_approved = len(df_approved)
     total_missing = len(df_missing)
 
-    col_total, col_registered, col_approved, col_missing = st.columns(4)
-    col_total.metric("Tickers no CSV", total_assets)
-    col_registered.metric("Cadastrados no Fibery", total_registered)
-    col_approved.metric("Aprovados para negociação", total_approved)
-    col_missing.metric("Não cadastrados", total_missing)
+    cols = st.columns(4)
+    cols[0].metric("Tickers no CSV", total_assets)
+    cols[1].metric("Cadastrados no Fibery", total_registered)
+    cols[2].metric("Aprovados para negociação", total_approved)
+    cols[3].metric("Não cadastrados", total_missing)
 
     tabs = st.tabs(["Aprovados", "Não cadastrados", "Cadastrados não aprovados", "Base cruzada"])
 
     with tabs[0]:
-        st.subheader("Ativos aprovados para negociação")
-        st.dataframe(
-            display_table(df_approved, DISPLAY_COLUMNS),
-            hide_index=True,
-            use_container_width=True,
-        )
+        only_with_offer = st.checkbox("Apenas com OFFER disponível", value=True)
+        df_display = df_approved.copy()
+        if only_with_offer:
+            has_offer = (
+                df_display["Vol. OFFER"].fillna(0).gt(0)
+                | df_display["Qtd. OFFER"].fillna(0).gt(0)
+            )
+            df_display = df_display[has_offer]
+
+        if df_display.empty:
+            st.info("Nenhum ativo aprovado encontrado com os filtros aplicados.")
+        else:
+            summary = (
+                df_display.groupby("Indexador Fibery", dropna=False)
+                .size()
+                .reset_index(name="count")
+                .sort_values("count", ascending=False)
+            )
+            summary["label"] = summary["Indexador Fibery"].fillna("Sem indexador").astype(str)
+
+            n_metric_cols = min(len(summary), 6)
+            metric_cols = st.columns(n_metric_cols)
+            for idx, (_, row) in enumerate(summary.iterrows()):
+                metric_cols[idx % n_metric_cols].metric(row["label"], int(row["count"]))
+
+            st.divider()
+
+            tab_labels = ["Todos"] + summary["label"].tolist()
+            subtabs = st.tabs(tab_labels)
+
+            with subtabs[0]:
+                st.dataframe(
+                    display_table(df_display, DISPLAY_COLUMNS),
+                    hide_index=True,
+                    width="stretch",
+                )
+
+            for i, label in enumerate(summary["label"].tolist(), start=1):
+                with subtabs[i]:
+                    fibery_val = summary.iloc[i - 1]["Indexador Fibery"]
+                    if pd.isna(fibery_val):
+                        mask = df_display["Indexador Fibery"].isna()
+                    else:
+                        mask = df_display["Indexador Fibery"].astype(str).eq(str(fibery_val))
+                    st.dataframe(
+                        display_table(df_display[mask], DISPLAY_COLUMNS),
+                        hide_index=True,
+                        width="stretch",
+                    )
 
     with tabs[1]:
-        st.subheader("Ativos ainda não cadastrados")
         missing_columns = [
             "Ticker",
             "Emissor / Risco",
@@ -295,19 +339,17 @@ try:
         st.dataframe(
             display_table(df_missing, missing_columns),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
     with tabs[2]:
-        st.subheader("Cadastrados, mas fora do status Aprovado")
         st.dataframe(
             display_table(df_registered_not_approved, DISPLAY_COLUMNS),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
     with tabs[3]:
-        st.subheader("Base cruzada completa")
         st.dataframe(
             style_table(
                 df[[col for col in ["Status Cadastro", *DISPLAY_COLUMNS] if col in df.columns]],
@@ -321,7 +363,7 @@ try:
                 left_align_cols=["Ticker", "Emissor / Risco", "Alias", "Emissor"],
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
 except Exception as exc:
