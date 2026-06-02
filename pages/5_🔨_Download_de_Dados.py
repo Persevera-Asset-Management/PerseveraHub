@@ -199,9 +199,9 @@ create_download_button(
 st.write("##### Crédito Privado")
 credito_privado_sources = [
     ("Debentures.com.br", "Debentures.com.br", "debentures_com", ["code"]),
-    ("ANBIMA (Debentures)", "ANBIMA (Debentures)", "anbima_debentures", ["date", "code", "field", "source"]),
-    ("ANBIMA (Títulos Públicos)", "ANBIMA (Títulos Públicos)", "anbima_titulos_publicos", ["date", "code", "field", "maturity"]),
-    ("ANBIMA (CRI/CRA)", "ANBIMA (CRI/CRA)", "anbima_cri_cra", ["date", "code", "field", "source"]),
+    ("ANBIMA Feed (Debentures)", "ANBIMA Feed (Debentures)", "anbima_feed_debentures_mais_mercado_secundario", ["date", "code", "field", "source"]),
+    ("ANBIMA Feed (Títulos Públicos)", "ANBIMA Feed (Títulos Públicos)", "anbima_feed_titulos_publicos_mercado_secundario", ["date", "code", "field", "maturity"]),
+    ("ANBIMA Feed (CRI/CRA)", "ANBIMA Feed (CRI/CRA)", "anbima_feed_cri_cra_mercado_secundario", ["date", "code", "field", "source"]),
     ("B3 (BDI)", "B3 (BDI)", "b3_bdi", ["date", "code", "field", "source"]),
     ("Mais Retorno", "Mais Retorno", "mais_retorno_debentures", ["date", "code", "field", "source"]),
 ]
