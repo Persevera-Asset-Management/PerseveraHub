@@ -150,8 +150,8 @@ CHARTS_ESTRATEGIA = {
     },
     "br_focus_selic": {
         "chart_config": {
-            "columns": ["br_focus_selic_median_2026R3", "br_focus_selic_median_2026R4", "br_focus_selic_median_2026R5", "br_focus_selic_median_2026R6", "br_focus_selic_median_2026R7", "br_focus_selic_median_2026R8"],
-            "names": ["R3 (abr/26)", "R4 (jun/26)", "R5 (ago/26)", "R6 (set/26)", "R7 (nov/26)", "R8 (dez/26)"],
+            "columns": ["br_focus_selic_median_2026R4", "br_focus_selic_median_2026R5", "br_focus_selic_median_2026R6", "br_focus_selic_median_2026R7", "br_focus_selic_median_2026R8"],
+            "names": ["R4 (jun/26)", "R5 (ago/26)", "R6 (set/26)", "R7 (nov/26)", "R8 (dez/26)"],
             "chart_type": "line",
             "title": "SELIC Focus (Próximas Reuniões)",
             "y_axis_title": "Taxa (%)",
@@ -179,19 +179,6 @@ CHARTS_ESTRATEGIA = {
     },
 
     # === Commodities ===
-    "crb_index": {
-        "chart_config": {
-            "columns": ["crb_index", "crb_fats_oils_index", "crb_food_index", "crb_livestock_index", "crb_metals_index", "crb_raw_industrials_index", "crb_textiles_index"],
-            "names": ["Índice CRB", "Fats & Oils", "Food", "Livestock", "Metals", "Raw Industrials", "Textiles"],
-            "chart_type": "line",
-            "title": "Commodities (CRB)",
-            "y_axis_title": "Índice",
-        },
-        "width": 6,
-        "context": "Commodities",
-        "group": "Commodities",
-        "block_title": "Commodities"
-    },
     "cepea_agri": {
         "chart_config": {
             "columns": ["br_cepea_arabica_coffee", "br_cepea_chilled_whole_broiler", "br_cepea_corn_wholesale", "br_cepea_cotton_feather", "br_cepea_ethanol_fuel", "br_cepea_fed_cattle", "br_cepea_paddy_rice", "br_cepea_pork", "br_cepea_soft_wheat", "br_cepea_soybean_wholesale", "br_cepea_sugar"],
@@ -207,8 +194,8 @@ CHARTS_ESTRATEGIA = {
     },
     "energy_commodities": {
         "chart_config": {
-            "columns": ["crude_oil_wti_futures", "crude_oil_brent_futures", "gasoline_rbob_futures", "usda_diesel", "natural_gas_futures", "thermal_coal_futures"],
-            "names": ["WTI", "Brent", "Gasolina", "Diesel", "Gás Natural", "Carvão Térmico"],
+            "columns": ["crude_oil_wti_futures", "crude_oil_brent_futures", "gasoline_rbob_futures", "natural_gas_futures", "thermal_coal_futures"],
+            "names": ["WTI", "Brent", "Gasolina", "Gás Natural", "Carvão Térmico"],
             "chart_type": "line",
             "title": "Commodities (Energia)",
             "y_axis_title": "Valor",
@@ -270,9 +257,6 @@ CHARTS_ESTRATEGIA = {
             "title": "BRL vs EM",
             "y_axis_title": ["Taxa", "Índice"],
         },
-        "transformations": [
-            {"type": "multiply", "column": "jpm_em_currency_index", "scalar": -1},
-        ],
         "width": 6,
         "context": "Moedas",
         "group": "Performance",
