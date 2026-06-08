@@ -186,6 +186,7 @@ def load_assets() -> pd.DataFrame:
         table_name="Inv-Taxonomia/Ativos",
         include_fibery_fields=False,
     )
+    df = df.drop_duplicates(subset=['Name'])
     track_data_load("assets")
     return df
 
