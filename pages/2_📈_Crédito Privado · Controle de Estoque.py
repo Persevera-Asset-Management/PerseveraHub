@@ -80,8 +80,11 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         if selected_status:
             df = df[df['Status do Emissor'].isin(selected_status)]
 
+        df_clean = df[['Carteira', 'Ticker', 'Ativo', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Status do Emissor', 'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante']]
+        df_clean.drop_duplicates(inplace=True)
+
         st.dataframe(style_table(
-            df[['Carteira', 'Ticker', 'Ativo', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Status do Emissor', 'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante']],
+            df_clean,
             date_cols=['Data Vencimento'],
             currency_cols=['Saldo Bruto', 'Preço Unitário'],
             numeric_cols_format_as_float=['Quantidade'],
