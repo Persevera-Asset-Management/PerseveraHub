@@ -582,6 +582,8 @@ def create_highcharts_options(
     # Create base chart options
     _chart_block: Dict[str, Any] = {
         "type": 'pie' if chart_type in ['pie', 'donut', 'nested_pie'] else (chart_type if not is_dual_axis else 'line'),
+        "backgroundColor": "#FFFFFF",
+        "plotBackgroundColor": "#FFFFFF",
         "zoomType": zoom_type if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
         "resetZoomButton": {
             "position": {
