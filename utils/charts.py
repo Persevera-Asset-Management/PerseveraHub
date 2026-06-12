@@ -6,6 +6,108 @@ DEFAULT_CHART_COLORS = [
     '#19202A', '#B99B7B', '#B3BEBD', '#CDB89B', '#CAD7D8', '#4682B4', '#3E5A6B', '#8B9DC3'
 ]
 
+_LIGHT_AXIS_COLORS = {
+    "gridLineColor": "#E6E6E6",
+    "lineColor": "#CCD6EB",
+    "tickColor": "#CCD6EB",
+    "minorGridLineColor": "#F2F2F2",
+}
+
+
+def _apply_light_axis_theme(axis: Dict[str, Any]) -> None:
+    """Apply light-theme colors to a single axis config dict."""
+    for key, value in _LIGHT_AXIS_COLORS.items():
+        axis[key] = value
+    axis.setdefault("labels", {}).setdefault("style", {})["color"] = "#666666"
+    axis.setdefault("title", {}).setdefault("style", {})["color"] = "#666666"
+
+
+def _apply_light_theme(options: Dict[str, Any]) -> None:
+    """
+    Force Highcharts light theme regardless of OS/browser dark mode.
+
+    Highcharts v11+ adapts to prefers-color-scheme; explicit colors plus the
+    highcharts-light class keep charts identical to a light-theme environment.
+    """
+    chart = options.setdefault("chart", {})
+    chart.update({
+        "backgroundColor": "#FFFFFF",
+        "plotBackgroundColor": "#FFFFFF",
+        "className": "highcharts-light",
+        "style": {"color": "#333333"},
+    })
+
+    if chart.get("resetZoomButton"):
+        chart["resetZoomButton"]["theme"] = {
+            "fill": "#FFFFFF",
+            "stroke": "#CCCCCC",
+            "style": {"color": "#333333"},
+            "r": 3,
+            "states": {
+                "hover": {
+                    "fill": "#E6E6E6",
+                    "style": {"color": "#333333"},
+                }
+            },
+        }
+
+    options.setdefault("title", {}).setdefault("style", {})["color"] = "#333333"
+
+    legend = options.setdefault("legend", {})
+    legend.setdefault("itemStyle", {})["color"] = "#333333"
+    legend.setdefault("itemHoverStyle", {})["color"] = "#000000"
+
+    if "xAxis" in options:
+        x_axis = options["xAxis"]
+        if isinstance(x_axis, list):
+            for axis in x_axis:
+                if isinstance(axis, dict):
+                    _apply_light_axis_theme(axis)
+        elif isinstance(x_axis, dict):
+            _apply_light_axis_theme(x_axis)
+
+    if "yAxis" in options:
+        y_axis = options["yAxis"]
+        if isinstance(y_axis, list):
+            for axis in y_axis:
+                if isinstance(axis, dict):
+                    _apply_light_axis_theme(axis)
+        elif isinstance(y_axis, dict):
+            _apply_light_axis_theme(y_axis)
+
+    if "colorAxis" in options and isinstance(options["colorAxis"], dict):
+        options["colorAxis"].setdefault("labels", {}).setdefault("style", {})["color"] = "#666666"
+
+    tooltip = options.setdefault("tooltip", {})
+    tooltip["backgroundColor"] = "rgba(255, 255, 255, 0.95)"
+    tooltip["borderColor"] = "#CCCCCC"
+    tooltip.setdefault("style", {})["color"] = "#333333"
+
+    plot_options = options.setdefault("plotOptions", {})
+    series_po = plot_options.setdefault("series", {})
+    series_po.setdefault("dataLabels", {}).setdefault("style", {}).update({
+        "color": "#333333",
+        "textOutline": "none",
+    })
+    series_po.setdefault("marker", {})["lineColor"] = "#FFFFFF"
+
+    if "pie" in plot_options and isinstance(plot_options["pie"], dict):
+        pie_po = plot_options["pie"]
+        if "dataLabels" in pie_po:
+            pie_po["dataLabels"].setdefault("style", {}).update({
+                "color": "#333333",
+                "textOutline": "none",
+            })
+
+    exporting = options.setdefault("exporting", {})
+    export_chart = exporting.setdefault("chartOptions", {}).setdefault("chart", {})
+    export_chart.update({
+        "backgroundColor": "#FFFFFF",
+        "plotBackgroundColor": "#FFFFFF",
+        "className": "highcharts-light",
+    })
+
+
 def create_highcharts_options(
     data: pd.DataFrame,
     y_column: Optional[Union[str, List[str], Tuple[str, str], Tuple[List[str], List[str]]]] = None,
@@ -254,6 +356,7 @@ def create_highcharts_options(
                 }
             }]
         }
+        _apply_light_theme(options)
         return options
 
     if instruments:
@@ -582,8 +685,6 @@ def create_highcharts_options(
     # Create base chart options
     _chart_block: Dict[str, Any] = {
         "type": 'pie' if chart_type in ['pie', 'donut', 'nested_pie'] else (chart_type if not is_dual_axis else 'line'),
-        "backgroundColor": "#FFFFFF",
-        "plotBackgroundColor": "#FFFFFF",
         "zoomType": zoom_type if chart_type not in ['pie', 'donut', 'nested_pie'] else None,
         "resetZoomButton": {
             "position": {
@@ -1063,6 +1164,7 @@ def create_highcharts_options(
     elif exporting is not None:
         chart_options["exporting"] = exporting
     
+    _apply_light_theme(chart_options)
     return chart_options
 
 
