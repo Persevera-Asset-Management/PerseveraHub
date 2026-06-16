@@ -198,6 +198,7 @@ def load_benchmark_data(fund_name, _nav_index):
                      'Yield': ('br_cdi_index',),
                      'Phoenix': ('br_cdi_index',),
                      'Prospera': ('br_cdi_index',),
+                     'FIDC': ('br_cdi_index',),
                      'Compass': ('br_cdi_index',),
                      'Nemesis': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
                      'Proteus': ('br_cdi_index', 'br_ibovespa', 'br_smll'),
@@ -214,7 +215,7 @@ def load_benchmark_data(fund_name, _nav_index):
     return df_benchmark
 
 with st.sidebar:
-    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'Compass', 'Nemesis', 'Proteus', 'Long Bias']
+    fund_names_list = ['Trinity', 'Yield', 'Phoenix', 'Prospera', 'FIDC', 'Compass', 'Nemesis', 'Proteus', 'Long Bias']
     selected_fund_names = st.multiselect(
         "Selecione o(s) grupo(s) de fundos:",
         fund_names_list,
