@@ -14,12 +14,23 @@ _LIGHT_AXIS_COLORS = {
 }
 
 
+def _apply_axis_nested_style(axis: Dict[str, Any], key: str, color: str) -> None:
+    """Apply text color to an axis nested config, respecting explicit None."""
+    if key in axis and axis[key] is None:
+        return
+    nested = axis.get(key)
+    if not isinstance(nested, dict):
+        nested = {} if nested is None else {"text": nested}
+        axis[key] = nested
+    nested.setdefault("style", {})["color"] = color
+
+
 def _apply_light_axis_theme(axis: Dict[str, Any]) -> None:
     """Apply light-theme colors to a single axis config dict."""
     for key, value in _LIGHT_AXIS_COLORS.items():
         axis[key] = value
-    axis.setdefault("labels", {}).setdefault("style", {})["color"] = "#666666"
-    axis.setdefault("title", {}).setdefault("style", {})["color"] = "#666666"
+    _apply_axis_nested_style(axis, "labels", "#666666")
+    _apply_axis_nested_style(axis, "title", "#666666")
 
 
 def _apply_light_theme(options: Dict[str, Any]) -> None:
