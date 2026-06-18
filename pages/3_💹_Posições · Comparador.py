@@ -151,7 +151,7 @@ try:
                 numeric_cols_format_as_float=[col_delta],
                 color_negative_positive_cols=[col_delta],
             ),
-            use_container_width=True,
+            width='stretch',
         )
 
     with alloc_cols[1]:
@@ -167,24 +167,33 @@ try:
         hct.streamlit_highcharts(chart_alloc)
 
     # =========================================================================
-    # SEÇÃO 3 — Movimentações
+    # SEÇÃO 3 — Movimentações (baseadas em Quantidade, não Saldo)
     # =========================================================================
     st.markdown("#### Movimentações")
 
-    assets_d1 = set(df_d1['Nome Ativo'].dropna().unique())
-    assets_d2 = set(df_d2['Nome Ativo'].dropna().unique())
-    added = assets_d2 - assets_d1
-    removed = assets_d1 - assets_d2
+    QTY_EPS = 1e-6
+    QTY_CHANGE_THRESHOLD_PCT = 0.5
 
-    pos_d1 = df_d1.groupby('Nome Ativo')['Saldo'].sum()
-    pos_d2 = df_d2.groupby('Nome Ativo')['Saldo'].sum()
+    qty_d1 = df_d1.groupby('Nome Ativo')['Quantidade'].sum()
+    qty_d2 = df_d2.groupby('Nome Ativo')['Quantidade'].sum()
+    df_qty = pd.DataFrame({'D1 (Qtd)': qty_d1, 'D2 (Qtd)': qty_d2}).fillna(0)
 
-    df_common = pd.DataFrame({'D1 (R$)': pos_d1, 'D2 (R$)': pos_d2}).dropna()
-    df_common['Δ (R$)'] = df_common['D2 (R$)'] - df_common['D1 (R$)']
-    df_common['Δ (%)'] = (df_common['D2 (R$)'] / df_common['D1 (R$)'] - 1) * 100
+    added = df_qty.index[
+        (df_qty['D1 (Qtd)'].abs() <= QTY_EPS) & (df_qty['D2 (Qtd)'].abs() > QTY_EPS)
+    ]
+    removed = df_qty.index[
+        (df_qty['D1 (Qtd)'].abs() > QTY_EPS) & (df_qty['D2 (Qtd)'].abs() <= QTY_EPS)
+    ]
 
-    threshold_abs = max(aum_d1, aum_d2) * 0.005
-    df_changed = df_common[df_common['Δ (R$)'].abs() > threshold_abs].sort_values('Δ (R$)')
+    df_common = df_qty[
+        (df_qty['D1 (Qtd)'].abs() > QTY_EPS) & (df_qty['D2 (Qtd)'].abs() > QTY_EPS)
+    ].copy()
+    df_common['Δ (Qtd)'] = df_common['D2 (Qtd)'] - df_common['D1 (Qtd)']
+    df_common['Δ (%)'] = (df_common['D2 (Qtd)'] / df_common['D1 (Qtd)'] - 1) * 100
+
+    df_changed = df_common[
+        df_common['Δ (%)'].abs() > QTY_CHANGE_THRESHOLD_PCT
+    ].sort_values('Δ (Qtd)')
 
     alias_map = (
         pd.concat([
@@ -199,44 +208,44 @@ try:
 
     with mv_cols[0]:
         st.markdown(f"**Adicionadas** ({len(added)})")
-        if added:
+        if len(added) > 0:
             df_added = (
                 df_d2[df_d2['Nome Ativo'].isin(added)]
-                .groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])['Saldo']
-                .sum()
+                .groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])
+                .agg({'Quantidade': 'sum', 'Saldo': 'sum'})
                 .reset_index()
-                .sort_values('Saldo', ascending=False)
+                .sort_values('Quantidade', ascending=False)
             )
             df_added['% Portfolio'] = df_added['Saldo'] / aum_d2 * 100
             st.dataframe(
                 style_table(
                     df_added.set_index(['Nome Ativo', 'Alias']),
-                    numeric_cols_format_as_float=['Saldo'],
+                    numeric_cols_format_as_float=['Quantidade', 'Saldo'],
                     percent_cols=['% Portfolio'],
                 ),
-                use_container_width=True,
+                width='stretch',
             )
         else:
             st.info("Nenhuma posição adicionada.")
 
     with mv_cols[1]:
         st.markdown(f"**Removidas** ({len(removed)})")
-        if removed:
+        if len(removed) > 0:
             df_removed = (
                 df_d1[df_d1['Nome Ativo'].isin(removed)]
-                .groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])['Saldo']
-                .sum()
+                .groupby(['Nome Ativo', 'Alias', 'Classificação do Conjunto'])
+                .agg({'Quantidade': 'sum', 'Saldo': 'sum'})
                 .reset_index()
-                .sort_values('Saldo', ascending=False)
+                .sort_values('Quantidade', ascending=False)
             )
             df_removed['% Portfolio'] = df_removed['Saldo'] / aum_d1 * 100
             st.dataframe(
                 style_table(
                     df_removed.set_index(['Nome Ativo', 'Alias']),
-                    numeric_cols_format_as_float=['Saldo'],
+                    numeric_cols_format_as_float=['Quantidade', 'Saldo'],
                     percent_cols=['% Portfolio'],
                 ),
-                use_container_width=True,
+                width='stretch',
             )
         else:
             st.info("Nenhuma posição removida.")
@@ -250,14 +259,14 @@ try:
             st.dataframe(
                 style_table(
                     df_changed_display,
-                    numeric_cols_format_as_float=['D1 (R$)', 'D2 (R$)', 'Δ (R$)'],
+                    numeric_cols_format_as_float=['D1 (Qtd)', 'D2 (Qtd)', 'Δ (Qtd)'],
                     percent_cols=['Δ (%)'],
-                    color_negative_positive_cols=['Δ (R$)', 'Δ (%)'],
+                    color_negative_positive_cols=['Δ (Qtd)', 'Δ (%)'],
                 ),
-                use_container_width=True,
+                width='stretch',
             )
         else:
-            st.info("Nenhuma alteração significativa (> 0,5% do portfolio).")
+            st.info("Nenhuma alteração significativa na quantidade (> 0,5%).")
 
     # =========================================================================
     # SEÇÃO 4 — Tabela completa de posições
@@ -296,7 +305,7 @@ try:
                 percent_cols=['D1 (%)', 'D2 (%)', 'Δ (pp)'],
                 color_negative_positive_cols=['Δ (R$)', 'Δ (pp)'],
             ),
-            use_container_width=True,
+            width='stretch',
         )
 
     # =========================================================================
@@ -328,7 +337,7 @@ try:
                 numeric_cols_format_as_float=[col_delta],
                 color_negative_positive_cols=[col_delta],
             ),
-            use_container_width=True,
+            width='stretch',
         )
 
 except KeyError as e:
