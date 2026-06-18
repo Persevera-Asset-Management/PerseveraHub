@@ -295,7 +295,7 @@ def download_comdinheiro_reports(
 
     try:
         _notify(callback, "Iniciando navegador...", 0.0)
-        driver = create_chrome_driver(headless=False)
+        driver = create_chrome_driver()
 
         _notify(callback, "Realizando login no ComDinheiro...", 0.05)
         login_comdinheiro(driver, settings)

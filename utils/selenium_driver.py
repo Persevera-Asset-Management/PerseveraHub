@@ -5,11 +5,14 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from time import monotonic, sleep
 
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import SessionNotCreatedException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+
+_XVFB_DISPLAY = ":99"
 
 logger = logging.getLogger(__name__)
 
@@ -163,32 +166,70 @@ def _ensure_browser_binaries() -> None:
     _export_binary_env_vars()
 
 
-def _ensure_display_if_needed(*, headless: bool) -> None:
-    if headless or os.environ.get("DISPLAY"):
-        return
-    if not (is_deploy_env() or sys.platform.startswith("linux")):
-        return
-    if not shutil.which("Xvfb"):
+def _find_xvfb_binary() -> str | None:
+    return shutil.which("Xvfb") or shutil.which("xvfb")
+
+
+def _is_display_ready(display: str) -> bool:
+    xdpyinfo = shutil.which("xdpyinfo")
+    if not xdpyinfo:
+        return False
+    result = subprocess.run(
+        [xdpyinfo, "-display", display],
+        capture_output=True,
+        timeout=3,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _ensure_display() -> None:
+    if sys.platform == "win32" and not is_deploy_env():
         return
 
-    logger.info("Iniciando Xvfb para suportar navegador visível no servidor.")
+    if not (is_deploy_env() or sys.platform.startswith("linux")):
+        return
+
+    display = os.environ.get("DISPLAY")
+    if display and _is_display_ready(display):
+        return
+
+    xvfb = _find_xvfb_binary()
+    if not xvfb:
+        raise WebDriverException(
+            "Xvfb não encontrado. O ComDinheiro exige navegador visível; "
+            "adicione xvfb, dbus-x11 e x11-utils no Aptfile."
+        )
+
+    logger.info("Iniciando Xvfb em %s para suportar navegador visível no servidor.", _XVFB_DISPLAY)
     subprocess.Popen(
-        ["Xvfb", ":99", "-screen", "0", "1920x1080x24"],
+        [xvfb, _XVFB_DISPLAY, "-ac", "-screen", "0", "1920x1080x24"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    os.environ["DISPLAY"] = ":99"
+
+    deadline = monotonic() + 10
+    while monotonic() < deadline:
+        if _is_display_ready(_XVFB_DISPLAY):
+            os.environ["DISPLAY"] = _XVFB_DISPLAY
+            return
+        sleep(0.2)
+
+    os.environ["DISPLAY"] = _XVFB_DISPLAY
+    sleep(1)
 
 
-def build_chrome_options(*, headless: bool = True) -> Options:
+def build_chrome_options() -> Options:
     options = Options()
-    if headless:
-        options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
     options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-extensions")
     options.add_argument("--window-size=1920,1080")
+
+    if is_deploy_env() or sys.platform.startswith("linux"):
+        options.add_argument("--disable-setuid-sandbox")
+        options.add_argument("--disable-gpu")
 
     chrome_binary = find_chrome_binary()
     if chrome_binary:
@@ -205,6 +246,7 @@ def driver_diagnostics() -> dict[str, str | None]:
         "DISPLAY": os.environ.get("DISPLAY"),
         "chrome_binary": find_chrome_binary(),
         "chromedriver": find_chromedriver(),
+        "xvfb": _find_xvfb_binary(),
         "deploy_env": str(is_deploy_env()),
         "project_root": str(_project_root()),
         "cwd": str(Path.cwd()),
@@ -227,30 +269,42 @@ def _raise_missing_driver_error() -> None:
 
 def validate_selenium_environment() -> None:
     _ensure_browser_binaries()
-    if find_chrome_binary() and find_chromedriver():
-        return
-    _raise_missing_driver_error()
+    if not find_chrome_binary() or not find_chromedriver():
+        _raise_missing_driver_error()
+
+    if is_deploy_env() or sys.platform.startswith("linux"):
+        if not _find_xvfb_binary():
+            raise WebDriverException(
+                "Xvfb não encontrado no servidor. Adicione xvfb ao Aptfile."
+            )
 
 
-def create_chrome_driver(*, headless: bool = True) -> webdriver.Chrome:
+def create_chrome_driver() -> webdriver.Chrome:
     _ensure_browser_binaries()
-    _ensure_display_if_needed(headless=headless)
+    _ensure_display()
 
     chromedriver = find_chromedriver()
     chrome_binary = find_chrome_binary()
-    options = build_chrome_options(headless=headless)
+    options = build_chrome_options()
 
     if is_deploy_env() and (not chromedriver or not chrome_binary):
         _raise_missing_driver_error()
 
-    if chromedriver:
-        os.environ["SE_OFFLINE"] = "true"
-        service = Service(executable_path=chromedriver)
-        driver = webdriver.Chrome(service=service, options=options)
-    elif not is_deploy_env():
-        driver = webdriver.Chrome(options=options)
-    else:
-        _raise_missing_driver_error()
+    try:
+        if chromedriver:
+            os.environ["SE_OFFLINE"] = "true"
+            service = Service(executable_path=chromedriver)
+            driver = webdriver.Chrome(service=service, options=options)
+        elif not is_deploy_env():
+            driver = webdriver.Chrome(options=options)
+        else:
+            _raise_missing_driver_error()
+    except SessionNotCreatedException as exc:
+        raise WebDriverException(
+            "Não foi possível iniciar o Chrome em modo visível. "
+            f"DISPLAY={os.environ.get('DISPLAY')!r}. "
+            "Confira Aptfile (xvfb, dbus-x11), bin/post_compile e Run Command."
+        ) from exc
 
     try:
         driver.command_executor.set_timeout(600)

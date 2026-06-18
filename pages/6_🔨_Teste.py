@@ -77,11 +77,8 @@ if show_diagnostics:
         if is_deploy_env():
 
             st.info(
-
                 "No servidor, o navegador roda em modo visível via Xvfb "
-
-                "(necessário para o ComDinheiro gerar os PDFs)."
-
+                "(obrigatório para o ComDinheiro gerar os PDFs)."
             )
 
 

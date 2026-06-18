@@ -25,3 +25,5 @@ libpango-1.0-0
 libcairo2
 libatspi2.0-0
 xvfb
+dbus-x11
+x11-utils
