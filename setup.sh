@@ -81,9 +81,16 @@ else
     echo "WARNING: Chrome/Chromium binary not found."
 fi
 
-if [ -z "$DISPLAY" ] || ! xdpyinfo -display "${DISPLAY:-:99}" >/dev/null 2>&1; then
-    if command -v Xvfb >/dev/null 2>&1; then
-        Xvfb :99 -ac -screen 0 1920x1080x24 >/tmp/xvfb.log 2>&1 &
+XDPYINFO_BIN="$(_resolve_file "$(_resolve_executable xdpyinfo || true)" /layers/digitalocean_apt/apt/usr/bin/xdpyinfo /usr/bin/xdpyinfo)"
+DISPLAY_READY=0
+if [ -n "$DISPLAY" ] && [ -n "$XDPYINFO_BIN" ] && "$XDPYINFO_BIN" -display "$DISPLAY" >/dev/null 2>&1; then
+    DISPLAY_READY=1
+fi
+
+if [ "$DISPLAY_READY" -eq 0 ]; then
+    XVFB_BIN="$(_resolve_file "$(_resolve_executable Xvfb || true)" /layers/digitalocean_apt/apt/usr/bin/Xvfb /usr/bin/Xvfb)"
+    if [ -n "$XVFB_BIN" ]; then
+        "$XVFB_BIN" :99 -ac -screen 0 1920x1080x24 >/tmp/xvfb.log 2>&1 &
         export DISPLAY=:99
         sleep 2
         echo "Xvfb started on DISPLAY=$DISPLAY"
@@ -92,9 +99,24 @@ if [ -z "$DISPLAY" ] || ! xdpyinfo -display "${DISPLAY:-:99}" >/dev/null 2>&1; t
     fi
 fi
 
-if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && command -v dbus-launch >/dev/null 2>&1; then
-    eval "$(dbus-launch --sh-syntax)"
-    echo "D-Bus session started."
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    DBUS_LAUNCH="$(_resolve_file "$(_resolve_executable dbus-launch || true)" /layers/digitalocean_apt/apt/usr/bin/dbus-launch /usr/bin/dbus-launch)"
+    if [ -n "$DBUS_LAUNCH" ]; then
+        eval "$("$DBUS_LAUNCH" --sh-syntax)"
+        echo "D-Bus session started via dbus-launch."
+    else
+        DBUS_DAEMON="$(_resolve_file "$(_resolve_executable dbus-daemon || true)" /layers/digitalocean_apt/apt/usr/bin/dbus-daemon /usr/bin/dbus-daemon)"
+        if [ -n "$DBUS_DAEMON" ]; then
+            mkdir -p /tmp/dbus
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/tmp/dbus/session.socket"
+            "$DBUS_DAEMON" --session --address="$DBUS_SESSION_BUS_ADDRESS" --nofork --nopidfile >/tmp/dbus.log 2>&1 &
+            sleep 1
+            echo "D-Bus session started via dbus-daemon."
+        else
+            export DBUS_SESSION_BUS_ADDRESS="disabled:"
+            echo "WARNING: D-Bus not found; using disabled session."
+        fi
+    fi
 fi
 
 if [ -n "$CHROMEDRIVER_BIN" ]; then

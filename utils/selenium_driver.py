@@ -179,12 +179,30 @@ def _ensure_browser_binaries() -> None:
     _export_binary_env_vars()
 
 
+_APT_BIN_PREFIXES = (
+    "/layers/digitalocean_apt/apt/usr/bin",
+    "/workspace/.apt/usr/bin",
+    "/usr/bin",
+)
+
+
+def _find_system_binary(name: str) -> str | None:
+    found = shutil.which(name)
+    if found:
+        return found
+    for prefix in _APT_BIN_PREFIXES:
+        candidate = f"{prefix}/{name}"
+        if _is_usable_binary(candidate):
+            return candidate
+    return None
+
+
 def _find_xvfb_binary() -> str | None:
-    return shutil.which("Xvfb") or shutil.which("xvfb")
+    return _find_system_binary("Xvfb") or _find_system_binary("xvfb")
 
 
 def _is_display_ready(display: str) -> bool:
-    xdpyinfo = shutil.which("xdpyinfo")
+    xdpyinfo = _find_system_binary("xdpyinfo")
     if not xdpyinfo:
         return False
     result = subprocess.run(
@@ -196,30 +214,60 @@ def _is_display_ready(display: str) -> bool:
     return result.returncode == 0
 
 
+def _start_dbus_daemon() -> None:
+    dbus_daemon = _find_system_binary("dbus-daemon")
+    if not dbus_daemon:
+        os.environ.setdefault("DBUS_SESSION_BUS_ADDRESS", "disabled:")
+        return
+
+    socket_dir = Path("/tmp/dbus")
+    socket_dir.mkdir(parents=True, exist_ok=True)
+    socket_path = socket_dir / "session.socket"
+    os.environ["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={socket_path}"
+
+    if socket_path.exists():
+        return
+
+    subprocess.Popen(
+        [
+            dbus_daemon,
+            "--session",
+            f"--address=unix:path={socket_path}",
+            "--nofork",
+            "--nopidfile",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    sleep(0.5)
+
+
 def _ensure_dbus_session() -> None:
     if os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
         return
 
-    dbus_launch = shutil.which("dbus-launch")
-    if not dbus_launch:
-        os.environ.setdefault("DBUS_SESSION_BUS_ADDRESS", "disabled:")
-        return
+    dbus_launch = _find_system_binary("dbus-launch")
+    if dbus_launch:
+        result = subprocess.run(
+            [dbus_launch, "--sh-syntax"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip(";").strip("'").strip('"')
+                if key in {"DBUS_SESSION_BUS_ADDRESS", "DISPLAY"} and value:
+                    os.environ[key] = value
+            if os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
+                return
 
-    result = subprocess.run(
-        [dbus_launch, "--sh-syntax"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        check=False,
-    )
-    for line in result.stdout.splitlines():
-        if "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip(";").strip("'").strip('"')
-        if key in {"DBUS_SESSION_BUS_ADDRESS", "DISPLAY"} and value:
-            os.environ[key] = value
+    _start_dbus_daemon()
 
 
 def _ensure_display() -> None:
@@ -277,10 +325,9 @@ def build_chrome_options(*, user_data_dir: str | None = None) -> Options:
 
     if is_deploy_env() or sys.platform.startswith("linux"):
         options.add_argument("--disable-setuid-sandbox")
-        options.add_argument("--disable-gpu")
+        options.add_argument("--disable-seccomp-filter-sandbox")
         options.add_argument("--no-zygote")
         options.add_argument("--ozone-platform=x11")
-        options.add_argument("--disable-software-rasterizer")
 
     profile_dir = user_data_dir or _chrome_user_data_dir()
     options.add_argument(f"--user-data-dir={profile_dir}")
@@ -291,10 +338,29 @@ def build_chrome_options(*, user_data_dir: str | None = None) -> Options:
     return options
 
 
-def _probe_chrome_binary(chrome_binary: str | None) -> str | None:
+def _chrome_missing_libs(chrome_binary: str | None) -> str | None:
+    if not chrome_binary or os.name == "nt":
+        return None
+    ldd = _find_system_binary("ldd")
+    if not ldd:
+        return None
+    result = subprocess.run(
+        [ldd, chrome_binary],
+        capture_output=True,
+        text=True,
+        timeout=15,
+        check=False,
+        env=os.environ.copy(),
+    )
+    missing = [line.strip() for line in result.stdout.splitlines() if "not found" in line]
+    return "; ".join(missing) if missing else None
+
+
+def _probe_chrome_binary(chrome_binary: str | None) -> str:
     if not chrome_binary:
         return "Chrome binary não encontrado."
 
+    env = os.environ.copy()
     try:
         version = subprocess.run(
             [chrome_binary, "--version"],
@@ -302,17 +368,18 @@ def _probe_chrome_binary(chrome_binary: str | None) -> str | None:
             text=True,
             timeout=15,
             check=False,
-            env=os.environ.copy(),
+            env=env,
         )
         if version.returncode != 0:
             return (version.stderr or version.stdout or "Falha ao executar chrome --version.").strip()
+        return (version.stdout or version.stderr).strip()
     except Exception as exc:
         return f"Falha ao executar chrome --version: {exc}"
-    return None
 
 
 def driver_diagnostics() -> dict[str, str | None]:
     chrome_binary = find_chrome_binary()
+    _ensure_display()
     return {
         "platform": platform.platform(),
         "GOOGLE_CHROME_BIN": os.environ.get("GOOGLE_CHROME_BIN"),
@@ -324,10 +391,13 @@ def driver_diagnostics() -> dict[str, str | None]:
         "chrome_binary": chrome_binary,
         "chromedriver": find_chromedriver(),
         "xvfb": _find_xvfb_binary(),
+        "dbus_launch": _find_system_binary("dbus-launch"),
+        "dbus_daemon": _find_system_binary("dbus-daemon"),
         "deploy_env": str(is_deploy_env()),
         "project_root": str(_project_root()),
         "cwd": str(Path.cwd()),
         "chrome_version_probe": _probe_chrome_binary(chrome_binary),
+        "chrome_missing_libs": _chrome_missing_libs(chrome_binary),
     }
 
 
@@ -357,7 +427,12 @@ def validate_selenium_environment() -> None:
             )
 
     probe_error = _probe_chrome_binary(find_chrome_binary())
-    if probe_error:
+    missing_libs = _chrome_missing_libs(find_chrome_binary())
+    if missing_libs:
+        raise WebDriverException(
+            f"Chrome com bibliotecas ausentes: {missing_libs}"
+        )
+    if probe_error.startswith("Falha") or probe_error.startswith("Chrome binary"):
         raise WebDriverException(
             f"Chrome encontrado, mas não executa corretamente: {probe_error}"
         )
@@ -372,7 +447,10 @@ def create_chrome_driver() -> webdriver.Chrome:
     _configure_chrome_runtime_env(chrome_binary)
 
     probe_error = _probe_chrome_binary(chrome_binary)
-    if probe_error:
+    missing_libs = _chrome_missing_libs(chrome_binary)
+    if missing_libs:
+        raise WebDriverException(f"Chrome com bibliotecas ausentes: {missing_libs}")
+    if probe_error.startswith("Falha") or probe_error.startswith("Chrome binary"):
         raise WebDriverException(
             f"Chrome encontrado, mas não executa corretamente: {probe_error}"
         )
@@ -401,11 +479,14 @@ def create_chrome_driver() -> webdriver.Chrome:
         except OSError:
             log_tail = ""
 
+        missing_libs = _chrome_missing_libs(chrome_binary)
         details = (
             f"DISPLAY={os.environ.get('DISPLAY')!r}, "
             f"LD_LIBRARY_PATH={os.environ.get('LD_LIBRARY_PATH')!r}, "
             f"DBUS_SESSION_BUS_ADDRESS={os.environ.get('DBUS_SESSION_BUS_ADDRESS')!r}"
         )
+        if missing_libs:
+            details += f"\nBibliotecas ausentes: {missing_libs}"
         if log_tail:
             details += f"\n\nChromedriver log (final):\n{log_tail}"
         raise WebDriverException(
