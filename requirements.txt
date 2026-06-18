@@ -22,9 +22,6 @@ python-bcb==0.3.3
 git+https://github.com/Persevera-Asset-Management/PerseveraTools.git
 git+https://github.com/Persevera-Asset-Management/PerseveraStyleAnalysis.git
 gspread==6.2.1
-selenium==4.34.2
-PyPDF2==3.0.1
-undetected-chromedriver==3.5.5
 setuptools==80.9.0
 Markdown==3.6
 streamlit
