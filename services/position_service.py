@@ -105,7 +105,7 @@ def get_latest_date_data(
 # Funções de Carregamento de Dados
 # =============================================================================
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.DataFrame:
     """
     Carrega posições de um portfolio do Comdinheiro.
@@ -173,7 +173,7 @@ def prepare_comdinheiro_portfolio_positions_df(df: pd.DataFrame) -> pd.DataFrame
     return out
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_assets() -> pd.DataFrame:
     """
     Carrega ativos do Fibery.
@@ -191,7 +191,7 @@ def load_assets() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_issuers() -> pd.DataFrame:
     """
     Carrega emissores e devedores do Fibery.
@@ -211,7 +211,7 @@ def load_issuers() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     """
     Carrega posições do Fibery.
@@ -257,7 +257,7 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     """
     Carrega todo o histórico disponível de posições para um único portfolio.
@@ -305,7 +305,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     """
     Carrega alocações target do Fibery.
@@ -360,7 +360,7 @@ def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_accounts() -> pd.DataFrame:
     """
     Carrega contas do Fibery (apenas contas sob gestão).
@@ -376,7 +376,7 @@ def load_accounts() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_instruments_fgc() -> list:
     """
     Carrega lista de instrumentos com cobertura do FGC.
@@ -393,7 +393,7 @@ def load_instruments_fgc() -> list:
     return instruments_list
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_portfolio_info() -> pd.DataFrame:
     """
     Carrega informações do portfolio do Fibery.
@@ -411,7 +411,7 @@ def load_portfolio_info() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def load_portfolios_rvqm() -> pd.DataFrame:
     """
     Carrega portfólios com carteira RVQM ativa do Fibery.
