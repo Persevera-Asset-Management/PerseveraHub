@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, date
 from utils.table import style_table
 from utils.ui import display_logo, load_css
 from utils.auth import check_authentication
+from utils.chart_helpers import create_chart
+import streamlit_highcharts as hct
 
 from configs.pages.screener import (
     get_factor_options,
@@ -27,6 +29,23 @@ st.set_page_config(
 display_logo()
 load_css()
 check_authentication()
+
+@st.cache_data(ttl=3600)
+def load_descriptor_evolution(codes, descriptor, start_date) -> pd.DataFrame:
+    try:
+        result = get_descriptors(
+            list(codes),
+            start_date=start_date,
+            descriptors=[descriptor],
+        )
+        if isinstance(result, pd.Series):
+            return result.to_frame(name=codes[0])
+        if isinstance(result.columns, pd.MultiIndex):
+            return result.xs(descriptor, level="descriptor", axis=1)
+        return result
+    except Exception as e:
+        st.error(f"Erro ao carregar evolução da métrica: {str(e)}")
+        return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
 def load_data(start_date, descriptors_list) -> pd.DataFrame:
@@ -216,6 +235,71 @@ if not raw_data.empty:
         color_negative_positive_cols=list(data.columns.drop(['ADTV (21d)', 'Momentum Score', 'Value Score', 'Liquidity Score', 'Risk Score', 'Quality Score'])),
     )
     st.write(styled_data)
-    
+
+    with st.expander("Evolução de Métricas", expanded=False):
+        row_1 = st.columns([1, 3])
+        with row_1[0]:
+            chart_descriptor_display = st.selectbox(
+                "Métrica",
+                options=factor_option_names,
+                key="screener_chart_descriptor",
+            )
+            chart_descriptor = selected_cols_options[chart_descriptor_display]
+            
+        with row_1[1]:
+            available_codes = sorted(data.index.tolist())
+            chart_tickers = st.multiselect(
+                "Ativos",
+                options=available_codes,
+                default=[],
+                key="screener_chart_tickers",
+            )
+        
+        row_2 = st.columns([1, 3])
+        with row_2[0]:
+            start_date = st.date_input(
+                "Data inicial",
+                value=pd.to_datetime("2010-01-01"),
+                min_value=pd.to_datetime("2010-01-01"),
+                max_value=pd.to_datetime(date.today()),
+                format="DD/MM/YYYY",
+            )
+
+        generate_chart = st.button("Gerar gráfico", disabled=len(chart_tickers) == 0)
+
+        if generate_chart:
+            st.session_state.screener_chart_request = {
+                "descriptor": chart_descriptor,
+                "descriptor_display": chart_descriptor_display,
+                "tickers": list(chart_tickers),
+            }
+
+        chart_request = st.session_state.get("screener_chart_request")
+        if chart_request:
+            with st.spinner("Carregando série histórica...", show_time=True):
+                chart_data = load_descriptor_evolution(
+                    tuple(chart_request["tickers"]),
+                    chart_request["descriptor"],
+                    start_date=pd.to_datetime(start_date),
+                )
+
+            if chart_data.empty:
+                st.warning("Não há dados históricos para a seleção.")
+            else:
+                chart_data = chart_data.dropna(how="all")
+                hct.streamlit_highcharts(
+                    create_chart(
+                        data=chart_data,
+                        columns=list(chart_data.columns),
+                        names=list(chart_data.columns),
+                        chart_type="line",
+                        title=chart_request["descriptor_display"],
+                        y_axis_title=chart_request["descriptor_display"],
+                        x_axis_title="Data",
+                        decimal_precision=2,
+                    ),
+                    key="screener_descriptor_evolution",
+                )
+
 else:
     st.warning("No data available for the selected metrics and date.")
