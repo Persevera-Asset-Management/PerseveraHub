@@ -35,6 +35,7 @@ def _find_chrome_binary() -> str | None:
         shutil.which("chromium-browser"),
         shutil.which("google-chrome"),
         shutil.which("google-chrome-stable"),
+        str(Path.cwd() / ".chrome-for-testing/chrome-linux64/chrome"),
         *_deploy_paths(
             "/.chrome-for-testing/chrome-linux64/chrome",
             "/.apt/usr/bin/chromium",
@@ -50,6 +51,7 @@ def _find_chromedriver() -> str | None:
     return _existing_file(
         os.environ.get("CHROMEDRIVER_PATH"),
         shutil.which("chromedriver"),
+        str(Path.cwd() / ".chrome-for-testing/chromedriver-linux64/chromedriver"),
         *_deploy_paths(
             "/.chrome-for-testing/chromedriver-linux64/chromedriver",
             "/.chromedriver/bin/chromedriver",
@@ -91,8 +93,9 @@ def _raise_missing_driver_error() -> None:
     details = "\n".join(f"- {key}: {value or 'não encontrado'}" for key, value in diagnostics.items())
     raise WebDriverException(
         "Chrome/Chromium ou chromedriver não encontrados no servidor.\n"
-        "Na Digital Ocean App Platform, confira se o arquivo Aptfile está na raiz "
-        "do repositório e faça um redeploy.\n\n"
+        "Na Digital Ocean App Platform, confira se o Aptfile está na raiz "
+        "do repositório (sem pacote chromium) e se o Chrome for Testing foi "
+        "instalado no build via bin/post_compile.\n\n"
         f"Diagnóstico:\n{details}"
     )
 
@@ -107,8 +110,8 @@ def get_driver():
 
     if not chromedriver:
         raise WebDriverException(
-            "Chromedriver não encontrado. Instale chromium-chromedriver via Aptfile "
-            "(Digital Ocean) ou packages.txt (dev local) e faça redeploy."
+            "Chromedriver não encontrado. O Chrome for Testing deve ser instalado "
+            "no build (bin/post_compile) ou via scripts/install_chrome_for_testing.sh."
         )
 
     os.environ["SE_OFFLINE"] = "true"
@@ -132,7 +135,8 @@ if st.button("Scrape"):
     except WebDriverException as exc:
         st.error(
             "Não foi possível iniciar o Chrome/Chromium no servidor. "
-            "Na Digital Ocean, confira se o Aptfile está na raiz do repositório, "
-            "se o Run Command executa setup.sh e faça um redeploy."
+            "Na Digital Ocean, confira se o Aptfile contém apenas libs do sistema "
+            "(sem chromium), se o build executou bin/post_compile e se o Run Command "
+            "usa `. ./setup.sh &&` antes do streamlit."
         )
         st.exception(exc)

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "-----> Installing Chrome for Testing (post_compile)"
+bash scripts/install_chrome_for_testing.sh

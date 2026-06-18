@@ -105,6 +105,7 @@ venv.bak/
 
 # Streamlit specific
 .streamlit/secrets.toml
+.chrome-for-testing/
 
 # Data files
 *.csv

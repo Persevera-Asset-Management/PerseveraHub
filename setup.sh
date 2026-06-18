@@ -27,18 +27,14 @@ _resolve_file() {
     return 1
 }
 
-CHROME_BIN="${GOOGLE_CHROME_BIN:-${CHROME_BIN:-}}"
-if [ -z "$CHROME_BIN" ]; then
-    CHROME_BIN="$(_resolve_executable chrome || true)"
-fi
-if [ -z "$CHROME_BIN" ]; then
-    CHROME_BIN="$(_resolve_executable chromium || true)"
-fi
-if [ -z "$CHROME_BIN" ]; then
-    CHROME_BIN="$(_resolve_executable chromium-browser || true)"
-fi
-if [ -z "$CHROME_BIN" ]; then
-    CHROME_BIN="$(_resolve_file \
+_find_chrome_binary() {
+    _resolve_file \
+        "${GOOGLE_CHROME_BIN:-}" \
+        "${CHROME_BIN:-}" \
+        "$(_resolve_executable chrome || true)" \
+        "$(_resolve_executable chromium || true)" \
+        "$(_resolve_executable chromium-browser || true)" \
+        "${PWD}/.chrome-for-testing/chrome-linux64/chrome" \
         /app/.chrome-for-testing/chrome-linux64/chrome \
         /workspace/.chrome-for-testing/chrome-linux64/chrome \
         /app/.apt/usr/bin/chromium \
@@ -46,15 +42,14 @@ if [ -z "$CHROME_BIN" ]; then
         /app/.apt/usr/bin/chromium-browser \
         /workspace/.apt/usr/bin/chromium-browser \
         /usr/bin/chromium \
-        /usr/bin/chromium-browser || true)"
-fi
+        /usr/bin/chromium-browser
+}
 
-CHROMEDRIVER_BIN="${CHROMEDRIVER_PATH:-}"
-if [ -z "$CHROMEDRIVER_BIN" ]; then
-    CHROMEDRIVER_BIN="$(_resolve_executable chromedriver || true)"
-fi
-if [ -z "$CHROMEDRIVER_BIN" ]; then
-    CHROMEDRIVER_BIN="$(_resolve_file \
+_find_chromedriver_binary() {
+    _resolve_file \
+        "${CHROMEDRIVER_PATH:-}" \
+        "$(_resolve_executable chromedriver || true)" \
+        "${PWD}/.chrome-for-testing/chromedriver-linux64/chromedriver" \
         /app/.chrome-for-testing/chromedriver-linux64/chromedriver \
         /workspace/.chrome-for-testing/chromedriver-linux64/chromedriver \
         /app/.chromedriver/bin/chromedriver \
@@ -63,7 +58,17 @@ if [ -z "$CHROMEDRIVER_BIN" ]; then
         /workspace/.apt/usr/bin/chromedriver \
         /usr/bin/chromedriver \
         /usr/lib/chromium/chromedriver \
-        /usr/lib/chromium-browser/chromedriver || true)"
+        /usr/lib/chromium-browser/chromedriver
+}
+
+CHROME_BIN="$(_find_chrome_binary || true)"
+CHROMEDRIVER_BIN="$(_find_chromedriver_binary || true)"
+
+if { [ -z "$CHROME_BIN" ] || [ -z "$CHROMEDRIVER_BIN" ]; } && [ -f "./scripts/install_chrome_for_testing.sh" ]; then
+    echo "Chrome for Testing not found. Running install script..."
+    bash ./scripts/install_chrome_for_testing.sh
+    CHROME_BIN="$(_find_chrome_binary || true)"
+    CHROMEDRIVER_BIN="$(_find_chromedriver_binary || true)"
 fi
 
 if [ -n "$CHROME_BIN" ]; then
