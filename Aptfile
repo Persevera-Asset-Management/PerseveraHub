@@ -24,6 +24,12 @@ libdrm2
 libpango-1.0-0
 libcairo2
 libatspi2.0-0
+libxkbcommon0
+libvulkan1
+libxshmfence1
+libu2f-udev
+fonts-noto-core
 xvfb
+dbus
 dbus-x11
 x11-utils

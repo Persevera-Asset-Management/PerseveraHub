@@ -4,6 +4,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from time import monotonic, sleep
 
@@ -123,6 +124,16 @@ def find_chromedriver() -> str | None:
     )
 
 
+def _configure_chrome_runtime_env(chrome_binary: str | None) -> None:
+    if not chrome_binary or os.name == "nt":
+        return
+
+    chrome_dir = str(Path(chrome_binary).resolve().parent)
+    current = os.environ.get("LD_LIBRARY_PATH", "")
+    if chrome_dir not in current.split(":"):
+        os.environ["LD_LIBRARY_PATH"] = f"{chrome_dir}:{current}" if current else chrome_dir
+
+
 def _run_install_script() -> None:
     root = _project_root()
     if sys.platform == "win32":
@@ -151,12 +162,14 @@ def _export_binary_env_vars() -> None:
     if chrome_binary:
         os.environ["GOOGLE_CHROME_BIN"] = chrome_binary
         os.environ["CHROME_BIN"] = chrome_binary
+        _configure_chrome_runtime_env(chrome_binary)
     if chromedriver:
         os.environ["CHROMEDRIVER_PATH"] = chromedriver
 
 
 def _ensure_browser_binaries() -> None:
     if find_chrome_binary() and find_chromedriver():
+        _configure_chrome_runtime_env(find_chrome_binary())
         return
 
     if not (sys.platform.startswith("linux") or is_deploy_env()):
@@ -183,6 +196,32 @@ def _is_display_ready(display: str) -> bool:
     return result.returncode == 0
 
 
+def _ensure_dbus_session() -> None:
+    if os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
+        return
+
+    dbus_launch = shutil.which("dbus-launch")
+    if not dbus_launch:
+        os.environ.setdefault("DBUS_SESSION_BUS_ADDRESS", "disabled:")
+        return
+
+    result = subprocess.run(
+        [dbus_launch, "--sh-syntax"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    for line in result.stdout.splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip(";").strip("'").strip('"')
+        if key in {"DBUS_SESSION_BUS_ADDRESS", "DISPLAY"} and value:
+            os.environ[key] = value
+
+
 def _ensure_display() -> None:
     if sys.platform == "win32" and not is_deploy_env():
         return
@@ -192,6 +231,7 @@ def _ensure_display() -> None:
 
     display = os.environ.get("DISPLAY")
     if display and _is_display_ready(display):
+        _ensure_dbus_session()
         return
 
     xvfb = _find_xvfb_binary()
@@ -212,24 +252,38 @@ def _ensure_display() -> None:
     while monotonic() < deadline:
         if _is_display_ready(_XVFB_DISPLAY):
             os.environ["DISPLAY"] = _XVFB_DISPLAY
+            _ensure_dbus_session()
             return
         sleep(0.2)
 
     os.environ["DISPLAY"] = _XVFB_DISPLAY
+    _ensure_dbus_session()
     sleep(1)
 
 
-def build_chrome_options() -> Options:
+def _chrome_user_data_dir() -> str:
+    return tempfile.mkdtemp(prefix="chrome-profile-")
+
+
+def build_chrome_options(*, user_data_dir: str | None = None) -> Options:
     options = Options()
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--disable-extensions")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
     options.add_argument("--window-size=1920,1080")
 
     if is_deploy_env() or sys.platform.startswith("linux"):
         options.add_argument("--disable-setuid-sandbox")
         options.add_argument("--disable-gpu")
+        options.add_argument("--no-zygote")
+        options.add_argument("--ozone-platform=x11")
+        options.add_argument("--disable-software-rasterizer")
+
+    profile_dir = user_data_dir or _chrome_user_data_dir()
+    options.add_argument(f"--user-data-dir={profile_dir}")
 
     chrome_binary = find_chrome_binary()
     if chrome_binary:
@@ -237,19 +291,43 @@ def build_chrome_options() -> Options:
     return options
 
 
+def _probe_chrome_binary(chrome_binary: str | None) -> str | None:
+    if not chrome_binary:
+        return "Chrome binary não encontrado."
+
+    try:
+        version = subprocess.run(
+            [chrome_binary, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+            env=os.environ.copy(),
+        )
+        if version.returncode != 0:
+            return (version.stderr or version.stdout or "Falha ao executar chrome --version.").strip()
+    except Exception as exc:
+        return f"Falha ao executar chrome --version: {exc}"
+    return None
+
+
 def driver_diagnostics() -> dict[str, str | None]:
+    chrome_binary = find_chrome_binary()
     return {
         "platform": platform.platform(),
         "GOOGLE_CHROME_BIN": os.environ.get("GOOGLE_CHROME_BIN"),
         "CHROME_BIN": os.environ.get("CHROME_BIN"),
         "CHROMEDRIVER_PATH": os.environ.get("CHROMEDRIVER_PATH"),
         "DISPLAY": os.environ.get("DISPLAY"),
-        "chrome_binary": find_chrome_binary(),
+        "DBUS_SESSION_BUS_ADDRESS": os.environ.get("DBUS_SESSION_BUS_ADDRESS"),
+        "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH"),
+        "chrome_binary": chrome_binary,
         "chromedriver": find_chromedriver(),
         "xvfb": _find_xvfb_binary(),
         "deploy_env": str(is_deploy_env()),
         "project_root": str(_project_root()),
         "cwd": str(Path.cwd()),
+        "chrome_version_probe": _probe_chrome_binary(chrome_binary),
     }
 
 
@@ -278,6 +356,12 @@ def validate_selenium_environment() -> None:
                 "Xvfb não encontrado no servidor. Adicione xvfb ao Aptfile."
             )
 
+    probe_error = _probe_chrome_binary(find_chrome_binary())
+    if probe_error:
+        raise WebDriverException(
+            f"Chrome encontrado, mas não executa corretamente: {probe_error}"
+        )
+
 
 def create_chrome_driver() -> webdriver.Chrome:
     _ensure_browser_binaries()
@@ -285,7 +369,18 @@ def create_chrome_driver() -> webdriver.Chrome:
 
     chromedriver = find_chromedriver()
     chrome_binary = find_chrome_binary()
+    _configure_chrome_runtime_env(chrome_binary)
+
+    probe_error = _probe_chrome_binary(chrome_binary)
+    if probe_error:
+        raise WebDriverException(
+            f"Chrome encontrado, mas não executa corretamente: {probe_error}"
+        )
+
     options = build_chrome_options()
+    chromedriver_log = tempfile.NamedTemporaryFile(prefix="chromedriver-", suffix=".log", delete=False)
+    chromedriver_log_path = chromedriver_log.name
+    chromedriver_log.close()
 
     if is_deploy_env() and (not chromedriver or not chrome_binary):
         _raise_missing_driver_error()
@@ -293,17 +388,29 @@ def create_chrome_driver() -> webdriver.Chrome:
     try:
         if chromedriver:
             os.environ["SE_OFFLINE"] = "true"
-            service = Service(executable_path=chromedriver)
+            service = Service(executable_path=chromedriver, log_output=chromedriver_log_path)
             driver = webdriver.Chrome(service=service, options=options)
         elif not is_deploy_env():
             driver = webdriver.Chrome(options=options)
         else:
             _raise_missing_driver_error()
     except SessionNotCreatedException as exc:
+        log_tail = ""
+        try:
+            log_tail = Path(chromedriver_log_path).read_text(encoding="utf-8", errors="replace")[-2000:]
+        except OSError:
+            log_tail = ""
+
+        details = (
+            f"DISPLAY={os.environ.get('DISPLAY')!r}, "
+            f"LD_LIBRARY_PATH={os.environ.get('LD_LIBRARY_PATH')!r}, "
+            f"DBUS_SESSION_BUS_ADDRESS={os.environ.get('DBUS_SESSION_BUS_ADDRESS')!r}"
+        )
+        if log_tail:
+            details += f"\n\nChromedriver log (final):\n{log_tail}"
         raise WebDriverException(
             "Não foi possível iniciar o Chrome em modo visível. "
-            f"DISPLAY={os.environ.get('DISPLAY')!r}. "
-            "Confira Aptfile (xvfb, dbus-x11), bin/post_compile e Run Command."
+            f"{details}"
         ) from exc
 
     try:

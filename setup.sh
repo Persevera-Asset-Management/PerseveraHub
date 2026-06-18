@@ -74,9 +74,27 @@ fi
 if [ -n "$CHROME_BIN" ]; then
     export GOOGLE_CHROME_BIN="$CHROME_BIN"
     export CHROME_BIN="$CHROME_BIN"
+    CHROME_DIR="$(dirname "$CHROME_BIN")"
+    export LD_LIBRARY_PATH="${CHROME_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     echo "Chrome binary: $CHROME_BIN"
 else
     echo "WARNING: Chrome/Chromium binary not found."
+fi
+
+if [ -z "$DISPLAY" ] || ! xdpyinfo -display "${DISPLAY:-:99}" >/dev/null 2>&1; then
+    if command -v Xvfb >/dev/null 2>&1; then
+        Xvfb :99 -ac -screen 0 1920x1080x24 >/tmp/xvfb.log 2>&1 &
+        export DISPLAY=:99
+        sleep 2
+        echo "Xvfb started on DISPLAY=$DISPLAY"
+    else
+        echo "WARNING: Xvfb not found."
+    fi
+fi
+
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && command -v dbus-launch >/dev/null 2>&1; then
+    eval "$(dbus-launch --sh-syntax)"
+    echo "D-Bus session started."
 fi
 
 if [ -n "$CHROMEDRIVER_BIN" ]; then
