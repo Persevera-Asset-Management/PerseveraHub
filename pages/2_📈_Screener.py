@@ -54,7 +54,7 @@ def load_data(start_date, descriptors_list) -> pd.DataFrame:
             table_name="Inv-Rsrch-Quant/Ações Ativas",
             include_fibery_fields=False,
         )
-        df = df[df["Denominacao"] == "BRL"]
+        df = df[df["Denominação"] == "BRL"]
         codes = df["Ativo"].tolist()
 
         query = f"""
