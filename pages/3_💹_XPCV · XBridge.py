@@ -315,7 +315,7 @@ try:
                     else:
                         mask = df_display["Indexador XBridge"].astype(str).eq(str(xbridge_val))
                     st.dataframe(
-                        display_table(df_display[mask], DISPLAY_COLUMNS),
+                        display_table(df_display[mask].sort_values("OFFER Mercado", ascending=False), DISPLAY_COLUMNS),
                         hide_index=True,
                         width="stretch",
                     )
