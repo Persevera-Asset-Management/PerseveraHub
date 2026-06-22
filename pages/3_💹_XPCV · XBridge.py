@@ -283,12 +283,12 @@ try:
             st.info("Nenhum ativo aprovado encontrado com os filtros aplicados.")
         else:
             summary = (
-                df_display.groupby("Indexador Fibery", dropna=False)
+                df_display.groupby("Indexador XBridge", dropna=False)
                 .size()
                 .reset_index(name="count")
                 .sort_values("count", ascending=False)
             )
-            summary["label"] = summary["Indexador Fibery"].fillna("Sem indexador").astype(str)
+            summary["label"] = summary["Indexador XBridge"].fillna("Sem indexador").astype(str)
 
             n_metric_cols = min(len(summary), 6)
             metric_cols = st.columns(n_metric_cols)
@@ -309,11 +309,11 @@ try:
 
             for i, label in enumerate(summary["label"].tolist(), start=1):
                 with subtabs[i]:
-                    fibery_val = summary.iloc[i - 1]["Indexador Fibery"]
-                    if pd.isna(fibery_val):
-                        mask = df_display["Indexador Fibery"].isna()
+                    xbridge_val = summary.iloc[i - 1]["Indexador XBridge"]
+                    if pd.isna(xbridge_val):
+                        mask = df_display["Indexador XBridge"].isna()
                     else:
-                        mask = df_display["Indexador Fibery"].astype(str).eq(str(fibery_val))
+                        mask = df_display["Indexador XBridge"].astype(str).eq(str(xbridge_val))
                     st.dataframe(
                         display_table(df_display[mask], DISPLAY_COLUMNS),
                         hide_index=True,
