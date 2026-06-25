@@ -237,17 +237,18 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
+        "Indexador",
         "Dias Úteis", "creation-date",
         "Data Vencimento",
     ]
-    
+
     df = df[columns]
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])
     df['creation-date'] = pd.to_datetime(df['creation-date'])
 
     df = df[df['Dias Úteis'].notna()]
     df.drop(columns=['Dias Úteis'], inplace=True)
-    
+
     df.drop_duplicates(subset=['Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo'], keep='last', inplace=True)
     df.drop(columns=['creation-date'], inplace=True)
 
@@ -281,6 +282,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
         "Classificação do Conjunto", "Classificação Instrumento-Relation",
         "Nome Emissor", "Nome Devedor",
         "Quantidade", "Valor Unitário", "Saldo",
+        "Indexador",
         "Dias Úteis", "creation-date",
         "Data Vencimento",
     ]
