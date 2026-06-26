@@ -16,6 +16,7 @@ from configs.pages.capital_market_assumptions import (
 )
 
 from persevera_tools.data import get_series
+from persevera_tools.quant_research.metrics import calculate_ewma_volatility
 
 st.set_page_config(
     page_title="Capital Market Assumptions | Persevera",
@@ -109,6 +110,15 @@ def attach_bucket_index(df, asset_names, asset_buckets):
         names=['Bucket', 'Classe de Ativos'],
     )
     return df.drop(columns=['__rank', '__bucket', '__name'])
+
+
+def compute_ewma_volatility_panel(df, asset_names):
+    """EWMA volatility (annualized) for each asset, indexed by display name."""
+    vol = pd.DataFrame(index=df.index)
+    for code in df.columns:
+        name = asset_names.get(code, code)
+        vol[name] = calculate_ewma_volatility(df[code], decay=0.995)
+    return vol * 100
 
 
 def scatter_data_by_bucket(stats_df, x_col, y_col):
@@ -355,6 +365,30 @@ with tabs[1]:   # Longo Prazo
         que a normal — maior probabilidade de eventos extremos. Um valor negativo (platicúrtica)
         indica caudas mais leves que a normal.
         """)
+
+    vol_evolution = compute_ewma_volatility_panel(data, asset_names)
+    vol_columns = list(vol_evolution.columns)
+    vol_colors = [
+        BUCKET_COLORS.get(asset_buckets.get(code, ''), '#999999')
+        for code in data.columns
+    ]
+    chart_vol_evolution = create_chart(
+        data=vol_evolution,
+        columns=vol_columns,
+        names=vol_columns,
+        color=vol_colors,
+        chart_type='line',
+        title="Evolução da Volatilidade (EWMA)",
+        y_axis_title="Volatilidade (%)",
+        show_legend=True,
+        legend_layout='vertical',
+    )
+    hct.streamlit_highcharts(chart_vol_evolution)
+    st.info("""
+    - **Volatilidade EWMA**: estimativa exponencialmente ponderada da volatilidade diária,
+    anualizada (√252), com fator de decaimento λ = 0.995.
+    - Reage mais rapidamente a choques recentes do que uma janela móvel fixa.
+    """)
 
 with tabs[2]:   # Correlações
     correlation_matrix = _weekly_returns(data.rename(columns=asset_names)).corr()
