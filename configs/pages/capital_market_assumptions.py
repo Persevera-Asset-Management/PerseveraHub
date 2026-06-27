@@ -28,6 +28,7 @@ CAPITAL_MARKET_ASSUMPTIONS = {
         "anbima_ihfa": "Fundos Multimercado (IHFA)",
         "gold_100oz_futures": "Ouro (sem variação cambial)",
         "bitcoin_usd": "Bitcoin",
+        "usd_brl": "Real (USD/BRL)",
     },
 }
 

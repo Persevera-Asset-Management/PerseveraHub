@@ -3,11 +3,12 @@ import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, date
-from persevera_tools.data import get_securities_by_exchange, get_descriptors
-from persevera_tools.quant_research.metrics import calculate_sqn
 
 from utils.chart_helpers import create_chart
 from utils.table import style_table
+
+from persevera_tools.data import get_securities_by_exchange, get_descriptors
+from persevera_tools.quant_research.metrics import calculate_sqn
 
 st.title("SQN Scanner")
 
