@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Optional
@@ -470,3 +471,288 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df['Emissor'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
     return df
+
+
+def build_portfolio_snapshot(
+    df_positions: pd.DataFrame,
+    df_target_allocations: pd.DataFrame,
+    *,
+    reference_date: datetime | None = None,
+) -> dict:
+    """
+    Constrói um snapshot JSON estruturado por portfolio com posições e targets,
+    pronto para ser consumido por um modelo de IA para suporte a alocações.
+
+    Espera posições normalizadas (com coluna ``Emissor Geral``) e targets
+    retornados por ``load_target_allocations``. Usa a data de posição mais
+    recente **por portfolio** como referência.
+
+    O snapshot inclui por portfolio:
+    - data_referencia: data do snapshot mais recente disponível para o portfolio
+    - patrimonio_brl: patrimônio total
+    - metricas: indicadores sintéticos (n_ativos, maior posição, concentração, gaps críticos)
+    - distribuicao_por_classe: alocação atual por classe de ativo
+    - targets_e_gaps: target, posição atual e desvio para todas as classes com target definido
+    - concentracao_emissores_rf: concentração de crédito por emissor/devedor (RF)
+    - vencimentos_rf: saldo de RF segmentado por prazo de vencimento
+    - posicoes_por_classe: posições individuais enriquecidas com instrumento, emissor,
+      indexador e vencimento
+    """
+    portfolios = sorted(df_positions['Portfolio'].dropna().unique().tolist())
+
+    df_targets = df_target_allocations.reset_index()
+    idx = df_targets.groupby(['Portfolio', 'Name'])['Data Documento'].idxmax()
+    df_targets_latest = df_targets.loc[idx].reset_index(drop=True)
+
+    hoje = pd.Timestamp((reference_date or datetime.now()).date())
+
+    snapshot = {}
+
+    for portfolio in portfolios:
+        df_port = df_positions[df_positions['Portfolio'] == portfolio].copy()
+        latest_date = df_port['Data Posição'].max()
+        data_referencia = str(latest_date.date()) if pd.notna(latest_date) else None
+        df_port = df_port[df_port['Data Posição'] == latest_date].copy()
+
+        patrimonio = float(df_port['Saldo'].sum()) if not df_port.empty else 0.0
+
+        df_port['Emissor Geral'] = df_port['Emissor Geral'].fillna('N/A')
+        df_port['Nome Ativo Completo'] = df_port['Nome Ativo Completo'].fillna('')
+        df_port['Classificação Instrumento'] = df_port['Classificação Instrumento'].fillna('')
+
+        has_indexador = 'Indexador' in df_port.columns
+
+        group_cols = [
+            'Nome Ativo', 'Nome Ativo Completo',
+            'Classificação do Conjunto', 'Classificação Instrumento', 'Emissor Geral',
+        ]
+        agg_dict: dict = {
+            'Saldo': ('Saldo', 'sum'),
+            'Quantidade': ('Quantidade', 'sum'),
+            'Data Vencimento': ('Data Vencimento', 'first'),
+        }
+        if has_indexador:
+            agg_dict['Indexador'] = ('Indexador', 'first')
+
+        df_pos = df_port.groupby(group_cols, dropna=False).agg(**agg_dict).reset_index()
+        df_pos = df_pos.sort_values('Saldo', ascending=False)
+
+        posicoes_por_classe: dict = {}
+        for _, row in df_pos.iterrows():
+            asset_class = row['Classificação do Conjunto']
+            pct_total = (row['Saldo'] / patrimonio * 100) if patrimonio else 0.0
+            dv = row['Data Vencimento']
+            entry: dict = {
+                'nome': row['Nome Ativo'],
+                'nome_completo': row['Nome Ativo Completo'] or None,
+                'instrumento': row['Classificação Instrumento'] or None,
+                'emissor': row['Emissor Geral'] if row['Emissor Geral'] != 'N/A' else None,
+                'saldo_brl': round(float(row['Saldo']), 2),
+                'pct_total': round(pct_total, 4),
+                'data_vencimento': str(dv)[:10] if pd.notna(dv) else None,
+            }
+            if has_indexador:
+                ix = row.get('Indexador')
+                entry['indexador'] = ix if pd.notna(ix) and ix else None
+            posicoes_por_classe.setdefault(asset_class, []).append(entry)
+
+        saldo_por_classe = df_port.groupby('Classificação do Conjunto')['Saldo'].sum()
+        dist_por_classe: dict = {}
+        for asset_class in ASSET_CLASSES_ORDER:
+            saldo_classe = saldo_por_classe.get(asset_class, np.nan)
+            if pd.notna(saldo_classe) and saldo_classe > 0:
+                pct_classe = float(saldo_classe) / patrimonio * 100 if patrimonio else 0.0
+                dist_por_classe[asset_class] = {
+                    'saldo_brl': round(float(saldo_classe), 2),
+                    'pct_total': round(pct_classe, 4),
+                }
+
+        df_port_targets = df_targets_latest[df_targets_latest['Portfolio'] == portfolio]
+        targets: dict = {}
+        for _, trow in df_port_targets.iterrows():
+            classe = trow['Name']
+            target_pct = float(trow['Target']) * 100 if pd.notna(trow['Target']) else None
+            atual_info = dist_por_classe.get(classe)
+            atual_pct = atual_info['pct_total'] if atual_info else 0.0
+            gap_pp = round(target_pct - atual_pct, 4) if target_pct is not None else None
+            gap_brl = round((target_pct - atual_pct) / 100 * patrimonio, 2) \
+                if target_pct is not None and patrimonio else None
+            targets[classe] = {
+                'target_pct': round(target_pct, 4) if target_pct is not None else None,
+                'atual_pct': round(atual_pct, 4),
+                'gap_pp': gap_pp,
+                'gap_brl': gap_brl,
+            }
+
+        df_rf = df_port[df_port['Classificação Instrumento'].isin(INSTRUMENTOS_RF)]
+        emissores_rf = df_rf.groupby('Emissor Geral')['Saldo'].sum().sort_values(ascending=False)
+        concentracao_emissores_rf = {
+            emissor: {
+                'saldo_brl': round(float(saldo), 2),
+                'pct_total': round(float(saldo) / patrimonio * 100, 4) if patrimonio else 0.0,
+            }
+            for emissor, saldo in emissores_rf.items()
+            if emissor != 'N/A' and saldo > 0
+        }
+
+        vencimentos_rf: dict = {}
+        if 'Data Vencimento' in df_rf.columns:
+            df_rf_venc = df_rf[df_rf['Data Vencimento'].notna()].copy()
+            df_rf_venc['dias_venc'] = (
+                pd.to_datetime(df_rf_venc['Data Vencimento']) - hoje
+            ).dt.days
+            buckets = {
+                '0_90d': df_rf_venc[df_rf_venc['dias_venc'] <= 90]['Saldo'].sum(),
+                '91_365d': df_rf_venc[
+                    (df_rf_venc['dias_venc'] > 90) & (df_rf_venc['dias_venc'] <= 365)
+                ]['Saldo'].sum(),
+                '366d_mais': df_rf_venc[df_rf_venc['dias_venc'] > 365]['Saldo'].sum(),
+            }
+            vencimentos_rf = {
+                k: {
+                    'saldo_brl': round(float(v), 2),
+                    'pct_total': round(float(v) / patrimonio * 100, 4) if patrimonio else 0.0,
+                }
+                for k, v in buckets.items()
+                if v > 0
+            }
+
+        if not df_pos.empty:
+            idx_max = df_pos['Saldo'].idxmax()
+            maior_nome = df_pos.loc[idx_max, 'Nome Ativo']
+            maior_pct = round(float(df_pos.loc[idx_max, 'Saldo']) / patrimonio * 100, 4) \
+                if patrimonio else 0.0
+        else:
+            maior_nome = None
+            maior_pct = 0.0
+
+        top3_emissores_rf_pct = round(
+            float(emissores_rf.head(3).sum()) / patrimonio * 100, 4
+        ) if patrimonio and not emissores_rf.empty else 0.0
+
+        gaps_criticos = [
+            f"{cls}: {info['gap_pp']:+.2f}pp"
+            for cls, info in targets.items()
+            if info['gap_pp'] is not None and abs(info['gap_pp']) >= 2.0
+        ]
+
+        metricas = {
+            'n_ativos': int(len(df_pos)),
+            'maior_posicao_nome': maior_nome,
+            'maior_posicao_pct': maior_pct,
+            'top3_emissores_rf_pct': top3_emissores_rf_pct,
+            'gaps_criticos': gaps_criticos,
+        }
+
+        snapshot[portfolio] = {
+            'data_referencia': data_referencia,
+            'patrimonio_brl': round(patrimonio, 2),
+            'metricas': metricas,
+            'distribuicao_por_classe': dist_por_classe,
+            'targets_e_gaps': targets,
+            'concentracao_emissores_rf': concentracao_emissores_rf,
+            'vencimentos_rf': vencimentos_rf,
+            'posicoes_por_classe': posicoes_por_classe,
+        }
+
+    return snapshot
+
+
+def enrich_snapshot_with_officers(
+    snapshot: dict,
+    df_portfolio_info: pd.DataFrame | None = None,
+) -> dict:
+    """Adiciona ``officer_atual`` a cada portfolio do snapshot."""
+    if df_portfolio_info is None:
+        df_portfolio_info = load_portfolio_info()
+
+    officers = (
+        df_portfolio_info.dropna(subset=['Name'])
+        .drop_duplicates(subset=['Name'])
+        .set_index('Name')['Officer Atual']
+        .to_dict()
+    )
+
+    enriched: dict = {}
+    for code, data in snapshot.items():
+        entry = dict(data)
+        officer = officers.get(code)
+        if officer is not None and pd.notna(officer):
+            entry['officer_atual'] = officer
+        enriched[code] = entry
+    return enriched
+
+
+def clients_from_snapshot(
+    snapshot: dict,
+    officer_filter: str | list[str] | None = None,
+    exclude: list[str] | None = None,
+) -> list:
+    """
+    Converte snapshot de portfólios em lista de ``Client`` para o AllocationEngine.
+
+    Espelha ``load_snapshot`` do allocation_engine, mas aceita dict em memória.
+
+    officer_filter : string única (match parcial) ou lista de officers (match exato).
+    """
+    from persevera_tools.quant_research.allocation_engine import Client
+
+    excluded = set(exclude or [])
+    clients = []
+
+    if isinstance(officer_filter, str):
+        officer_filters = [officer_filter] if officer_filter else []
+        partial_match = True
+    else:
+        officer_filters = list(officer_filter or [])
+        partial_match = False
+
+    allowed_officers = {str(o) for o in officer_filters}
+
+    for cod, data in snapshot.items():
+        pl = data.get('patrimonio_brl', 0)
+        if pl <= 0:
+            continue
+
+        if cod in excluded:
+            continue
+
+        officer = data.get('officer_atual')
+
+        if officer_filters:
+            if officer is None:
+                continue
+            officer_str = str(officer)
+            if partial_match:
+                if not any(f.lower() in officer_str.lower() for f in officer_filters):
+                    continue
+            elif officer_str not in allowed_officers:
+                continue
+
+        cash = (
+            data.get('distribuicao_por_classe', {})
+            .get('Caixa e Equivalentes', {})
+            .get('saldo_brl', 0.0)
+        )
+
+        existing: dict[str, float] = {}
+        for posicoes in data.get('posicoes_por_classe', {}).values():
+            for pos in posicoes:
+                ticker = (
+                    pos.get('nome')
+                    or pos.get('ticker')
+                    or pos.get('codigo')
+                    or ''
+                )
+                if ticker:
+                    existing[ticker] = existing.get(ticker, 0.0) + pos.get('saldo_brl', 0.0)
+
+        clients.append(Client(
+            code=cod,
+            pl=pl,
+            cash=cash,
+            existing_positions=existing,
+            officer=officer,
+        ))
+
+    return clients

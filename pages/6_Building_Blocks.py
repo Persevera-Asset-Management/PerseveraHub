@@ -3,8 +3,9 @@ import streamlit_highcharts as hct
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, date
-from utils.chart_helpers import create_chart
+
 from utils.table import style_table
+
 from persevera_tools.quant_research.metrics import calculate_tracking_error
 from persevera_tools.data.sma import get_building_blocks
 from persevera_tools.data import get_series, get_funds_data
