@@ -7,7 +7,8 @@ from utils.auth import (
     login_form,
     render_sidebar_controls,
 )
-from utils.navigation import build_navigation_pages, reconcile_intended_page
+from utils.navigation import build_navigation_pages
+from utils.routing import route_to_requested_page, sync_browser_url
 from utils.ui import display_logo, load_css
 
 load_dotenv()
@@ -48,5 +49,6 @@ if not st.session_state.get("authentication_status"):
     st.stop()
 
 render_sidebar_controls()
-reconcile_intended_page(pg, pages)
+route_to_requested_page(pg, pages)
+sync_browser_url(pg.url_path or None)
 pg.run()

@@ -92,37 +92,14 @@ def _iter_pages(grouped: dict[str, list[st.Page]]) -> list[st.Page]:
     return pages
 
 
-def reconcile_intended_page(
-    current_page: st.Page,
-    pages: dict[str, list[st.Page]],
-) -> None:
-    """Corrige roteamento quando F5 cai na Home apesar da URL apontar para outra página."""
-    from streamlit.runtime.scriptrunner_utils.script_run_context import (
-        get_script_run_ctx,
-    )
-
-    ctx = get_script_run_ctx()
-    if not ctx:
-        return
-
-    intended = ctx.pages_manager.intended_page_name
-    if not intended or current_page.url_path == intended:
-        return
-
-    for page in _iter_pages(pages):
-        if page.url_path == intended:
-            st.switch_page(page)
-            return
-
-
 def build_navigation_pages(
     home_page: st.Page,
     username: str | None = None,
     pages_dir: Path | None = None,
 ) -> dict[str, list[st.Page]]:
-    """Monta o mapa de seções → páginas a partir dos arquivos em pages/."""
+    """Monta o mapa de seções → páginas a partir dos arquivos em views/."""
     if pages_dir is None:
-        pages_dir = Path(__file__).resolve().parent.parent / "pages"
+        pages_dir = Path(__file__).resolve().parent.parent / "views"
 
     grouped: dict[str, list[st.Page]] = {HOME_SECTION: [home_page]}
 

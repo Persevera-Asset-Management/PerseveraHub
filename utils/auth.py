@@ -36,9 +36,6 @@ def ensure_session() -> None:
 
     authenticator.login(location="unrendered")
 
-    if st.session_state.get("authentication_status"):
-        st.rerun()
-
 
 def login_form():
     authenticator = initialize_authenticator()

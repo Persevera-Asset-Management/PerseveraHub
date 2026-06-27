@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-PAGES_DIR = Path(__file__).resolve().parent.parent / "pages"
+PAGES_DIR = Path(__file__).resolve().parent.parent / "views"
 
 
 def _remove_set_page_config(content: str) -> str:
