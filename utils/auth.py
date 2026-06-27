@@ -28,16 +28,34 @@ def login_form():
         st.warning('Por favor, insira seu nome de usuário e senha')
 
 def check_authentication():
-    if 'authentication_status' not in st.session_state or st.session_state.authentication_status is not True:
-        login_form()
+    """Mantido por compatibilidade; auth é centralizada em app.py."""
+    if (
+        "authentication_status" not in st.session_state
+        or st.session_state.authentication_status is not True
+    ):
         st.stop()
-    
-    # User is authenticated, show logout and return authenticator
-    authenticator = initialize_authenticator()
-    authenticator.logout('Logout', 'sidebar')
-    return authenticator 
+    return initialize_authenticator()
+
+
+def render_sidebar_controls() -> None:
+    """Logout e limpeza de cache — exibidos na sidebar de todas as páginas."""
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if st.button("Logout"):
+            custom_logout()
+            st.rerun()
+    with col2:
+        if st.button("Clear Cache"):
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            st.toast("Cache cleared successfully!")
+            st.rerun()
+
+def get_current_username() -> str | None:
+    return st.session_state.get("username")
+
 
 def custom_logout():
     """Logs the user out without rendering a button."""
-    if 'authenticator' in st.session_state:
-        st.session_state.authenticator._logout_logic() 
+    if "authenticator" in st.session_state:
+        st.session_state.authenticator._logout_logic()

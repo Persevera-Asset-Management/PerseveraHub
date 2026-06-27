@@ -60,5 +60,4 @@ def render_highcharts_with_fullscreen(chart_options, key=None, height=None):
     </html>
     """
     
-    # Render the component
     st.iframe(html_template, height=chart_height + 50)

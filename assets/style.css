@@ -214,6 +214,51 @@ p {
     box-shadow: 0 2px 4px var(--color-shadow-light);
 }
 
+/* ===== TOP NAVIGATION (st.navigation position="top") ===== */
+.stAppHeader {
+    background-color: var(--color-bg-header-sidebar) !important;
+    border-bottom: 2px solid var(--color-primary-light);
+    box-shadow: 0 2px 8px var(--color-shadow-medium);
+}
+
+.stAppHeader span,
+.stAppHeader p,
+.stAppHeader label,
+.stAppHeader button,
+.stAppHeader svg {
+    color: var(--color-text-on-dark) !important;
+    fill: var(--color-text-on-dark) !important;
+}
+
+.stAppHeader a {
+    color: var(--color-text-on-dark) !important;
+    text-decoration: none;
+}
+
+.stAppHeader a:hover {
+    color: var(--color-primary-light) !important;
+}
+
+.stAppHeader [data-testid="stLogo"] {
+    margin-right: var(--spacing-4);
+}
+
+.stAppHeader .rc-overflow-item {
+    font-family: var(--font-family-secondary);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+}
+
+.stAppHeader [aria-current="page"],
+.stAppHeader [data-selected="true"] {
+    color: var(--color-primary-light) !important;
+    border-bottom: 2px solid var(--color-primary-light);
+}
+
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: var(--spacing-2);
+}
+
 /* ===== BUTTON COMPONENTS ===== */
 .stButton > button {
     background-color: var(--color-primary-lighter) !important;
