@@ -118,6 +118,10 @@ with st.sidebar:
         "Objetivo",
         options=["max_clients", "max_volume"],
         format_func=lambda x: "Maximizar clientes" if x == "max_clients" else "Maximizar volume",
+        help=(
+            "Maximizar clientes: oferta pequena, democratizar entre assessores/clientes. "
+            "Maximizar volume: oferta grande, colocar volume nos clientes com maior capacidade."
+        ),
     )
     min_pct = st.number_input("Exposição mínima (% PL)", min_value=0.0, max_value=100.0, value=1.5, step=0.1)
     max_pct = st.number_input("Exposição máxima (% PL)", min_value=0.0, max_value=100.0, value=2.0, step=0.1)
