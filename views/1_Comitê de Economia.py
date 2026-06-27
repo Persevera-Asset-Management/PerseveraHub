@@ -5,7 +5,7 @@ from persevera_tools.data import get_series
 from utils.chart_helpers import extract_codes_from_config, organize_charts_by_context, render_chart_group_with_context
 from configs.pages.reuniao_economia import CHARTS_ECONOMIA
 
-st.title('Reunião · Economia')
+st.title('Comitê de Economia')
 
 @st.cache_data(ttl=7200)
 def load_data(codes, start_date):

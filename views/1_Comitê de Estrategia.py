@@ -6,7 +6,7 @@ from configs.pages.reuniao_estrategia import CHARTS_ESTRATEGIA
 from persevera_tools.data import get_series
 from utils.table import get_performance_table, style_table
 
-st.title('Reunião · Estratégia')
+st.title('Comitê de Estratégia')
 
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date, field='close'):

@@ -10,7 +10,7 @@ from utils.table import style_table
 
 from persevera_tools.fixed_income import get_emissions, calculate_spread
 
-st.title("Crédito Privado · Emissões e Spreads")
+st.title("Emissões e Spreads")
 
 @st.cache_data(ttl=3600)
 def load_emissions(start_date):

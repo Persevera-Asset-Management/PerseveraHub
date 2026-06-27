@@ -14,7 +14,7 @@ from services.position_service import (
     prepare_comdinheiro_portfolio_positions_df,
 )
 
-st.title("Crédito Privado · Controle de Estoque")
+st.title("Controle de Estoque")
 
 for key in ('df', 'df_assets', 'df_issuers'):
     st.session_state.setdefault(key, None)

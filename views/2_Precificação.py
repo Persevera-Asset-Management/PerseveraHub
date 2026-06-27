@@ -11,7 +11,7 @@ from utils.table import style_table
 from persevera_tools.fixed_income import get_series
 
 # Common meetings header with navigation links
-st.title("Crédito Privado · Precificação")
+st.title("Precificação")
 
 def load_data(code):
     try:

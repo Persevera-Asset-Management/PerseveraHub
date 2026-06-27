@@ -13,7 +13,7 @@ from persevera_tools.data.providers.ws_btg import BTGWSProvider
 
 ZERAGEM_CUSTODIANS = ('XPCV', 'BTG CTVM')
 
-st.title("Zeragem de Caixa")
+st.title("Operações em Lote")
 
 PRE_SELECTED_FUNDS = {
     '47.562.149/0001-28': 'Persevera Trinity FI RF Ref DI',

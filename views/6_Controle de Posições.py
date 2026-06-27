@@ -20,7 +20,7 @@ from services.position_service import (
     ASSET_CLASSES_ORDER,
 )
 
-st.title("Posições · Controle")
+st.title("Controle de Posições")
 
 # Definição dos parâmetros
 with st.sidebar:
