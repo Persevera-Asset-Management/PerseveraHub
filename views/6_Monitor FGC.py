@@ -274,5 +274,5 @@ else:
             numeric_cols_format_as_float=["Valor Unitário", "Saldo"],
             numeric_cols_format_as_int=["Quantidade"],
         ),
-        use_container_width=True,
+        width="stretch",
     )

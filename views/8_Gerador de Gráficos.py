@@ -205,13 +205,13 @@ with st.sidebar:
 
             st.caption("Atalhos de período")
             p1, p2, p3 = st.columns(3)
-            p1.button("1A", on_click=_set_date_preset_years, args=(1,), use_container_width=True)
-            p2.button("3A", on_click=_set_date_preset_years, args=(3,), use_container_width=True)
-            p3.button("5A", on_click=_set_date_preset_years, args=(5,), use_container_width=True)
+            p1.button("1A", on_click=_set_date_preset_years, args=(1,), width="stretch")
+            p2.button("3A", on_click=_set_date_preset_years, args=(3,), width="stretch")
+            p3.button("5A", on_click=_set_date_preset_years, args=(5,), width="stretch")
             p4, p5, p6 = st.columns(3)
-            p4.button("10A", on_click=_set_date_preset_years, args=(10,), use_container_width=True)
-            p5.button("YTD", on_click=_set_date_preset_ytd, use_container_width=True)
-            p6.button("Máx", on_click=_set_date_preset_years, args=(30,), use_container_width=True)
+            p4.button("10A", on_click=_set_date_preset_years, args=(10,), width="stretch")
+            p5.button("YTD", on_click=_set_date_preset_ytd, width="stretch")
+            p6.button("Máx", on_click=_set_date_preset_years, args=(30,), width="stretch")
 
             start_date_input = st.date_input(
                 "Data de início",
@@ -390,9 +390,9 @@ with st.sidebar:
             )
 
         t_col1, t_col2 = st.columns([3, 1])
-        if t_col1.button("Adicionar transformação", key="add_transform", use_container_width=True):
+        if t_col1.button("Adicionar transformação", key="add_transform", width="stretch"):
             st.session_state.transformations.append({"column": None, "type": "default", "params": {}})
-        if t_col2.button("Limpar", key="clear_transforms", use_container_width=True):
+        if t_col2.button("Limpar", key="clear_transforms", width="stretch"):
             st.session_state.transformations = []
             st.rerun()
 
@@ -567,7 +567,7 @@ with st.sidebar:
             ]
             st.rerun()
 
-    generate_clicked = st.button("Gerar gráfico", key="generate_chart_button", type="primary", use_container_width=True)
+    generate_clicked = st.button("Gerar gráfico", key="generate_chart_button", type="primary", width="stretch")
 
 # --- Área principal: estado vazio e pré-visualização ---
 if data_source == "Colar Dados Personalizados" and st.session_state.get("pasted_data", "").strip():
@@ -583,7 +583,7 @@ if data_source == "Colar Dados Personalizados" and st.session_state.get("pasted_
                 + ", ".join(str(c) for c in preview_cols[:5])
                 + ("…" if len(preview_cols) > 5 else "")
             )
-            st.dataframe(preview_df.head(20), use_container_width=True)
+            st.dataframe(preview_df.head(20), width="stretch")
             st.session_state.y_columns_options = preview_cols
 
 # --- Lógica principal ---
