@@ -42,7 +42,7 @@ def create_download_button(
     """
     with column:
         help_text = disabled_reason if disabled else None
-        if st.button(label, use_container_width=True, disabled=disabled, help=help_text):
+        if st.button(label, width="stretch", disabled=disabled, help=help_text):
             try:
                 with st.spinner(f'Baixando dados de {data_source_name}...'):
                     download_function()

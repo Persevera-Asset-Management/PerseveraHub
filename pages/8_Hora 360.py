@@ -164,7 +164,7 @@ else:
     fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, transparent=True)
     buf.seek(0)
 
-    st.image(buf, use_container_width=True)
+    st.image(buf, width="stretch")
 
     st.download_button(
         label="Download da Imagem",

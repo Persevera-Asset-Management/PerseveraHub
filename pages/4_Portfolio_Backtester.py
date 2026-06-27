@@ -104,7 +104,7 @@ with st.form("portfolio_form"):
         st.session_state["portfolio_table"],
         hide_index=True,
         column_config=weight_col_config,
-        use_container_width=True,
+        width="stretch",
         key="portfolio_table_editor",
         num_rows="dynamic",
     )

@@ -150,7 +150,7 @@ st.markdown("#### Ativos disponíveis para alocação")
 assets_df = st.data_editor(
     DEFAULT_ASSETS,
     num_rows="dynamic",
-    use_container_width=True,
+    width="stretch",
     column_config={
         "Ticker": st.column_config.TextColumn("Ticker", required=True),
         "Modo": st.column_config.SelectboxColumn("Modo", options=list(ASSET_MODES), required=True),
@@ -240,7 +240,7 @@ if (
                 percent_cols=["% PL (nova)", "Exposição total %", "Caixa após %"],
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
             height="content"
         )
 

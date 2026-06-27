@@ -392,7 +392,7 @@ styled = (
     .applymap(color_bk, subset=["Breakeven (anos)"])
     .format({"Vantagem Mesa no venc. (bps)": "{:+.1f}"})
 )
-st.dataframe(styled, use_container_width=True, hide_index=True)
+st.dataframe(styled, width="stretch", hide_index=True)
 
 # =============================================================================
 # SEÇÃO 7 — Decomposição no vencimento

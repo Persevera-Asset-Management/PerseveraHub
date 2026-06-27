@@ -229,7 +229,7 @@ styled_monthly = (
     .map(color_returns_cell)
     .format("{:.1f}%", na_rep="—")
 )
-st.dataframe(styled_monthly, use_container_width=True)
+st.dataframe(styled_monthly, width="stretch")
 
 st.dataframe(
     style_table(
@@ -237,7 +237,7 @@ st.dataframe(
         numeric_cols_format_as_float=list(performance_table.columns),
         highlight_quartile=list(performance_table.columns)
         ),
-    use_container_width=True
+    width="stretch"
 )
 
 # =============================================================================

@@ -41,11 +41,11 @@ def render_sidebar_controls() -> None:
     """Logout e limpeza de cache — exibidos na sidebar de todas as páginas."""
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        if st.button("Logout"):
+        if st.button("Logout", width="stretch"):
             custom_logout()
             st.rerun()
     with col2:
-        if st.button("Clear Cache"):
+        if st.button("Clear Cache", width="stretch"):
             st.cache_data.clear()
             st.cache_resource.clear()
             st.toast("Cache cleared successfully!")
