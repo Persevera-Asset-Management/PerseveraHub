@@ -2,12 +2,12 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from utils.auth import (
+    ensure_session,
     get_current_username,
-    initialize_authenticator,
     login_form,
     render_sidebar_controls,
 )
-from utils.navigation import build_navigation_pages
+from utils.navigation import build_navigation_pages, reconcile_intended_page
 from utils.ui import display_logo, load_css
 
 load_dotenv()
@@ -21,15 +21,7 @@ st.set_page_config(
 display_logo()
 load_css()
 
-if "authentication_status" not in st.session_state:
-    st.session_state.authentication_status = None
-
-if not st.session_state.authentication_status:
-    login_form()
-    st.stop()
-
-initialize_authenticator()
-render_sidebar_controls()
+ensure_session()
 
 
 def render_home() -> None:
@@ -50,4 +42,11 @@ home = st.Page(
 )
 pages = build_navigation_pages(home, username=get_current_username())
 pg = st.navigation(pages, position="top")
+
+if not st.session_state.get("authentication_status"):
+    login_form()
+    st.stop()
+
+render_sidebar_controls()
+reconcile_intended_page(pg, pages)
 pg.run()

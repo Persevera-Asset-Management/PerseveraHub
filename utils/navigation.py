@@ -56,6 +56,8 @@ def get_user_allowed_sections(username: str | None) -> set[str] | None:
     Prioridade: role em secrets → sections em secrets → acesso total.
     """
     if not username:
+        if st.session_state.get("authentication_status"):
+            return None
         return {HOME_SECTION}
 
     users = st.secrets.get("credentials", {}).get("usernames", {})
@@ -81,6 +83,36 @@ def _filter_sections(
     if allowed is None:
         return grouped
     return {name: pages for name, pages in grouped.items() if name in allowed}
+
+
+def _iter_pages(grouped: dict[str, list[st.Page]]) -> list[st.Page]:
+    pages: list[st.Page] = []
+    for section_pages in grouped.values():
+        pages.extend(section_pages)
+    return pages
+
+
+def reconcile_intended_page(
+    current_page: st.Page,
+    pages: dict[str, list[st.Page]],
+) -> None:
+    """Corrige roteamento quando F5 cai na Home apesar da URL apontar para outra página."""
+    from streamlit.runtime.scriptrunner_utils.script_run_context import (
+        get_script_run_ctx,
+    )
+
+    ctx = get_script_run_ctx()
+    if not ctx:
+        return
+
+    intended = ctx.pages_manager.intended_page_name
+    if not intended or current_page.url_path == intended:
+        return
+
+    for page in _iter_pages(pages):
+        if page.url_path == intended:
+            st.switch_page(page)
+            return
 
 
 def build_navigation_pages(
