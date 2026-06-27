@@ -1,4 +1,4 @@
-import streamlit.components.v1 as components
+import streamlit as st
 import json
 
 def render_highcharts_with_fullscreen(chart_options, key=None, height=None):
@@ -61,4 +61,4 @@ def render_highcharts_with_fullscreen(chart_options, key=None, height=None):
     """
     
     # Render the component
-    components.html(html_template, height=chart_height + 50, scrolling=False)
+    st.iframe(html_template, height=chart_height + 50)

@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,6 +12,8 @@ from persevera_tools.db.fibery import read_fibery
 # =============================================================================
 # Constantes
 # =============================================================================
+
+_CACHE_TTL = 10800  # 3 horas
 
 ASSET_CLASSES_ORDER = [
     # Caixa e Equivalentes
@@ -47,6 +48,21 @@ INSTRUMENTOS_RF = [
     'LIG',
     'Títulos Públicos Federais',
     'Debênture',
+]
+
+_POSITIONS_COLUMNS = [
+    "Data Posição", "Portfolio", "Custodiante Acronimo",
+    "Nome Ativo", "Nome Ativo Completo", "Alias",
+    "Classificação do Conjunto", "Classificação Instrumento-Relation",
+    "Nome Emissor", "Nome Devedor",
+    "Quantidade", "Valor Unitário", "Saldo",
+    "Indexador",
+    "Dias Úteis", "creation-date",
+    "Data Vencimento",
+]
+
+_POSITIONS_DEDUP_SUBSET = [
+    'Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo',
 ]
 
 
@@ -101,11 +117,25 @@ def get_latest_date_data(
     return result
 
 
+def _normalize_positions_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Normaliza DataFrame bruto de posições do Fibery."""
+    df = df[_POSITIONS_COLUMNS].copy()
+    df['Data Posição'] = pd.to_datetime(df['Data Posição'])
+    df['creation-date'] = pd.to_datetime(df['creation-date'])
+    df = df[df['Dias Úteis'].notna()]
+    df = df.drop(columns=['Dias Úteis'])
+    df = df.drop_duplicates(subset=_POSITIONS_DEDUP_SUBSET, keep='last')
+    df = df.drop(columns=['creation-date'])
+    df = df.dropna(subset=['Classificação do Conjunto'])
+    df = df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'})
+    return df
+
+
 # =============================================================================
 # Funções de Carregamento de Dados
 # =============================================================================
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.DataFrame:
     """
     Carrega posições de um portfolio do Comdinheiro.
@@ -140,7 +170,7 @@ _COMDINHEIRO_TICKER_STRIP_SUBSTRINGS = [
     '.pu_med',
     '.pu_ref',
     '.pu_anb',
-    '.lastro',
+    '.lasto',
     'CETIP_',
     'COE_',
     '_unica',
@@ -173,7 +203,7 @@ def prepare_comdinheiro_portfolio_positions_df(df: pd.DataFrame) -> pd.DataFrame
     return out
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_assets() -> pd.DataFrame:
     """
     Carrega ativos do Fibery.
@@ -191,7 +221,7 @@ def load_assets() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_issuers() -> pd.DataFrame:
     """
     Carrega emissores e devedores do Fibery.
@@ -211,7 +241,7 @@ def load_issuers() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     """
     Carrega posições do Fibery.
@@ -230,35 +260,12 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
         params={"$dataRecente": data_recente},
         include_fibery_fields=False,
     )
-    
-    columns = [
-        "Data Posição", "Portfolio", "Custodiante Acronimo",
-        "Nome Ativo", "Nome Ativo Completo", "Alias",
-        "Classificação do Conjunto", "Classificação Instrumento-Relation",
-        "Nome Emissor", "Nome Devedor",
-        "Quantidade", "Valor Unitário", "Saldo",
-        "Indexador",
-        "Dias Úteis", "creation-date",
-        "Data Vencimento",
-    ]
 
-    df = df[columns]
-    df['Data Posição'] = pd.to_datetime(df['Data Posição'])
-    df['creation-date'] = pd.to_datetime(df['creation-date'])
-
-    df = df[df['Dias Úteis'].notna()]
-    df.drop(columns=['Dias Úteis'], inplace=True)
-
-    df.drop_duplicates(subset=['Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo'], keep='last', inplace=True)
-    df.drop(columns=['creation-date'], inplace=True)
-
-    df.dropna(subset=['Classificação do Conjunto'], inplace=True)
-    df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)
     track_data_load("positions")
-    return df
+    return _normalize_positions_df(df)
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     """
     Carrega todo o histórico disponível de posições para um único portfolio.
@@ -276,38 +283,11 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
         include_fibery_fields=False,
     )
 
-    columns = [
-        "Data Posição", "Portfolio", "Custodiante Acronimo",
-        "Nome Ativo", "Nome Ativo Completo", "Alias",
-        "Classificação do Conjunto", "Classificação Instrumento-Relation",
-        "Nome Emissor", "Nome Devedor",
-        "Quantidade", "Valor Unitário", "Saldo",
-        "Indexador",
-        "Dias Úteis", "creation-date",
-        "Data Vencimento",
-    ]
-
-    df = df[columns]
-    df['Data Posição'] = pd.to_datetime(df['Data Posição'])
-    df['creation-date'] = pd.to_datetime(df['creation-date'])
-
-    df = df[df['Dias Úteis'].notna()]
-    df.drop(columns=['Dias Úteis'], inplace=True)
-
-    df.drop_duplicates(
-        subset=['Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo'],
-        keep='last',
-        inplace=True,
-    )
-    df.drop(columns=['creation-date'], inplace=True)
-
-    df.dropna(subset=['Classificação do Conjunto'], inplace=True)
-    df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'}, inplace=True)
     track_data_load("positions_portfolio")
-    return df
+    return _normalize_positions_df(df)
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     """
     Carrega alocações target do Fibery.
@@ -323,24 +303,11 @@ def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
         include_fibery_fields=False
     )
     
-    # Extrai informações do nome do documento
-    df["Portfolio"] = np.where(
-        df["Política de Investimento"].isna(),
-        df["Alocação Target"].str.split("_").str[0],
-        df["Política de Investimento"].str.split("_").str[0]
-    )
-    df["Tipo Documento"] = np.where(
-        df["Política de Investimento"].isna(),
-        df["Alocação Target"].str.split("_").str[1],
-        df["Política de Investimento"].str.split("_").str[1]
-    )
-    df["Data Documento"] = np.where(
-        df["Política de Investimento"].isna(),
-        pd.to_datetime(df["Alocação Target"].str[-10:]),
-        pd.to_datetime(df["Política de Investimento"].str[-10:])
-    )
+    source = df["Política de Investimento"].fillna(df["Alocação Target"])
+    df["Portfolio"] = source.str.split("_").str[0]
+    df["Tipo Documento"] = source.str.split("_").str[1]
+    df["Data Documento"] = pd.to_datetime(source.str[-10:])
     
-    # Seleciona colunas baseado no parâmetro
     if include_limits:
         columns = ["Portfolio", "Tipo Documento", "Data Documento", "Name", "PL Min", "PL Max", "Target"]
         agg_dict = {
@@ -356,13 +323,12 @@ def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     
     df = df[columns]
     
-    # Agrupa por Portfolio, Data e Name
     df = df.groupby(['Portfolio', pd.Grouper(key='Data Documento', freq='D'), 'Name']).agg(**agg_dict)
     
     return df
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_accounts() -> pd.DataFrame:
     """
     Carrega contas do Fibery (apenas contas sob gestão).
@@ -378,7 +344,7 @@ def load_accounts() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_instruments_fgc() -> list:
     """
     Carrega lista de instrumentos com cobertura do FGC.
@@ -395,13 +361,13 @@ def load_instruments_fgc() -> list:
     return instruments_list
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_portfolio_info() -> pd.DataFrame:
     """
-    Carrega informações do portfolio do Fibery.
+    Carrega informações dos portfolios do Fibery.
 
     Returns:
-        DataFrame com os emissores e devedores.
+        DataFrame com os portfolios.
     """
     
     df = read_fibery(
@@ -413,7 +379,7 @@ def load_portfolio_info() -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=10800)
+@st.cache_data(ttl=_CACHE_TTL)
 def load_portfolios_rvqm() -> pd.DataFrame:
     """
     Carrega portfólios com carteira RVQM ativa do Fibery.
@@ -425,6 +391,22 @@ def load_portfolios_rvqm() -> pd.DataFrame:
     df = df[df["Carteira Ativa"]]
     df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL"]]
     return df
+
+
+@st.cache_data(ttl=_CACHE_TTL)
+def load_equities_portfolio() -> pd.DataFrame:
+    """
+    Carrega portfólio de ações do Fibery.
+    
+    Returns:
+        DataFrame com o portfólio de ações.
+    """
+    df = read_fibery(table_name="Inv-Asset Allocation/Carteira RVQM", include_fibery_fields=False)
+    df = df[["Data de Implementação", "Ativo", "Peso"]].copy()
+    df['Data de Implementação'] = pd.to_datetime(df['Data de Implementação'])
+    df = df.rename(columns={'Ativo': 'code', 'Data de Implementação': 'date', 'Peso': 'weight'})
+    return df
+
 
 # =============================================================================
 # Funções de Agregação de Dados
@@ -487,22 +469,4 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
     df['Emissor'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
-    return df
-
-
-# =============================================================================
-# Funções de Carregamento de Dados
-# =============================================================================
-
-def load_equities_portfolio() -> pd.DataFrame:
-    """
-    Carrega portfólio de ações do Fibery.
-    
-    Returns:
-        DataFrame com o portfólio de ações.
-    """
-    df = read_fibery(table_name="Inv-Asset Allocation/Carteira RVQM", include_fibery_fields=False)
-    df = df[["Data de Implementação", "Ativo", "Peso"]]
-    df['Data de Implementação'] = pd.to_datetime(df['Data de Implementação'])
-    df.rename(columns={'Ativo': 'code', 'Data de Implementação': 'date', 'Peso': 'weight'}, inplace=True)
     return df
