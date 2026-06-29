@@ -2,9 +2,10 @@ import streamlit as st
 import streamlit_highcharts as hct
 import pandas as pd
 from datetime import datetime, date
+
 from utils.chart_helpers import create_chart
 from utils.table import style_table
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
+from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
 from services.position_service import (
     load_assets,

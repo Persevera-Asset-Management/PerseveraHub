@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 from datetime import datetime, timedelta
+from collections.abc import Iterable
 from typing import Optional
 
 from utils.ui import track_data_load
@@ -15,6 +16,8 @@ from persevera_tools.db.fibery import read_fibery
 # =============================================================================
 
 _CACHE_TTL = 10800  # 3 horas
+
+FILTER_OUT_CARTEIRA_STATES = ["Standby", "Encerrada", "Abandonada"]
 
 ASSET_CLASSES_ORDER = [
     # Caixa e Equivalentes
@@ -381,6 +384,39 @@ def load_portfolio_info() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=_CACHE_TTL)
+def load_active_carteiras_adm() -> dict:
+    """
+    Carrega carteiras administradas ativas do Fibery.
+
+    Exclui estados Standby, Encerrada e Abandonada, exige data de início de
+    gestão e descarta carteiras com data de fim de gestão preenchida.
+
+    Returns:
+        Dict indexado por código da carteira com metadados de gestão.
+    """
+    df = read_fibery(
+        table_name="Estr-CartAdm/Carteira Administrada",
+        include_fibery_fields=False,
+    )
+    df = df[~np.isin(df["state"], FILTER_OUT_CARTEIRA_STATES)]
+    df = df[["Name", "Data Início Gestão", "Data Fim Gestão"]]
+    df = df.dropna(subset=["Data Início Gestão"])
+    df = df[df["Data Fim Gestão"].isna()]
+    df.drop(columns=["Data Fim Gestão"], inplace=True)
+    df = df.rename(columns={"Name": "Código", "Data Início Gestão": "Data Início Gestão"})
+    df["Código"] = df["Código"].str.split("-").str[0]
+    df.set_index("Código", inplace=True)
+
+    track_data_load("active_carteiras_adm")
+    return df.to_dict("index")
+
+
+def active_carteira_codes() -> set[str]:
+    """Retorna os códigos das carteiras administradas ativas."""
+    return set(load_active_carteiras_adm().keys())
+
+
+@st.cache_data(ttl=_CACHE_TTL)
 def load_portfolios_rvqm() -> pd.DataFrame:
     """
     Carrega portfólios com carteira RVQM ativa do Fibery.
@@ -478,6 +514,8 @@ def build_portfolio_snapshot(
     df_target_allocations: pd.DataFrame,
     *,
     reference_date: datetime | None = None,
+    active_carteiras_only: bool = True,
+    portfolios: Iterable[str] | None = None,
 ) -> dict:
     """
     Constrói um snapshot JSON estruturado por portfolio com posições e targets,
@@ -486,6 +524,11 @@ def build_portfolio_snapshot(
     Espera posições normalizadas (com coluna ``Emissor Geral``) e targets
     retornados por ``load_target_allocations``. Usa a data de posição mais
     recente **por portfolio** como referência.
+
+    Por padrão, inclui apenas carteiras administradas ativas
+    (``load_active_carteiras_adm``). Use ``active_carteiras_only=False`` para
+    incluir qualquer portfolio presente nas posições, ou ``portfolios`` para
+    uma seleção explícita.
 
     O snapshot inclui por portfolio:
     - data_referencia: data do snapshot mais recente disponível para o portfolio
@@ -498,7 +541,16 @@ def build_portfolio_snapshot(
     - posicoes_por_classe: posições individuais enriquecidas com instrumento, emissor,
       indexador e vencimento
     """
-    portfolios = sorted(df_positions['Portfolio'].dropna().unique().tolist())
+    codes_in_positions = set(df_positions["Portfolio"].dropna().unique())
+
+    if portfolios is not None:
+        allowed = set(portfolios)
+    elif active_carteiras_only:
+        allowed = active_carteira_codes()
+    else:
+        allowed = codes_in_positions
+
+    portfolio_list = sorted(codes_in_positions & allowed)
 
     df_targets = df_target_allocations.reset_index()
     idx = df_targets.groupby(['Portfolio', 'Name'])['Data Documento'].idxmax()
@@ -508,7 +560,7 @@ def build_portfolio_snapshot(
 
     snapshot = {}
 
-    for portfolio in portfolios:
+    for portfolio in portfolio_list:
         df_port = df_positions[df_positions['Portfolio'] == portfolio].copy()
         latest_date = df_port['Data Posição'].max()
         data_referencia = str(latest_date.date()) if pd.notna(latest_date) else None

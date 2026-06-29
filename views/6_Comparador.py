@@ -12,7 +12,7 @@ from services.position_service import (
     ASSET_CLASSES_ORDER,
     INSTRUMENTOS_RF,
 )
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
+from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
 st.title("Posições · Comparador")
 

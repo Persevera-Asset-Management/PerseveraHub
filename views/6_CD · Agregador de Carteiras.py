@@ -5,7 +5,7 @@ from datetime import datetime, date
 from utils.chart_helpers import create_chart
 from utils.table import style_table
 from persevera_tools.data.providers import ComdinheiroProvider
-from configs.pages.visualizador_de_carteiras import CODIGOS_CARTEIRAS_ADM
+from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
 st.title("Agregador de Carteiras")
 
