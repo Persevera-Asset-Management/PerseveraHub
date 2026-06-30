@@ -4,6 +4,7 @@ CAPITAL_MARKET_ASSUMPTIONS = {
 
         "anbima_irf_m1": "Títulos Públicos Pré-Fixados Curto (IRF-M 1)",
         "anbima_irf_m1+": "Títulos Públicos Pré-Fixados Longo (IRF-M 1+)",
+        "br_teva_pre_fixado_5y_index": "Títulos Públicos Pré-Fixados 5 Anos (ITBR Pré 5 Anos)",
         
         "anbima_ima_b5": "Títulos Públicos IPCA Curto (IMA-B 5)",
         "anbima_ima_b5+": "Títulos Públicos IPCA Longo (IMA-B 5+)",
