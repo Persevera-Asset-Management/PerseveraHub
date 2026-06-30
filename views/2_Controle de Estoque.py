@@ -1,9 +1,7 @@
 import streamlit as st
-import streamlit_highcharts as hct
 import pandas as pd
 from datetime import datetime, date
 
-from utils.chart_helpers import create_chart
 from utils.table import style_table
 from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
@@ -43,8 +41,6 @@ if btn_run:
         st.session_state.df_assets = load_assets()
         st.session_state.df_issuers = load_issuers()
         
-        if "selected_asset" in st.session_state:
-            st.session_state.selected_asset = ""
         st.rerun()
 
 df_cd = st.session_state.df
@@ -56,19 +52,37 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         df_cd = prepare_comdinheiro_portfolio_positions_df(df_cd)
 
         df_assets = get_emissor_column(df_assets)
-        df = df_cd.merge(df_assets[['Name', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Emissor']], left_on='Ticker', right_on='Name', how='left')
+        df = df_cd.merge(
+            df_assets[['Name', 'Alias', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Emissor']],
+            left_on='Ticker',
+            right_on='Name',
+            how='left'
+        )
 
-        df = df.merge(df_issuers.set_index('Nome Emissor'), left_on='Emissor', right_index=True, how='left')
+        df = df.merge(
+            df_issuers.set_index('Nome Emissor'),
+            left_on='Emissor',
+            right_index=True,
+            how='left',
+        )
 
         saldo_carteiras = df.groupby('Carteira').agg({'Saldo Bruto': 'sum'}).rename(columns={'Saldo Bruto': 'Saldo Total'})
         df = df.merge(saldo_carteiras, right_index=True, left_on='Carteira', how='left')
         df['Percentual'] = df['Saldo Bruto'] / df['Saldo Total'] * 100
         df = df[df['Tipo de Ativo'].isin(['cri', 'cra', 'debenture'])]
 
+        df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
+
         if selected_status:
             df = df[df['Status do Emissor'].isin(selected_status)]
 
-        df_clean = df[['Carteira', 'Ticker', 'Ativo', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Status do Emissor', 'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante']]
+        df['Alias'] = df['Alias'].fillna(df['Ativo'])
+        df_clean = df[[
+            'Carteira', 'Ticker', 'Alias', 'Indexador', 'Data Vencimento',
+            'Nome Emissor', 'Nome Devedor', 'Status do Emissor',
+            'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante',
+        ]].copy()
+        df_clean.drop(columns=['Ativo'], inplace=True)
         df_clean.drop_duplicates(inplace=True)
 
         st.dataframe(style_table(
@@ -82,3 +96,5 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
 
     except Exception as e:
         st.error(f"Error: {str(e)}")
+else:
+    st.info("Selecione os parâmetros e clique em **Executar** para carregar os dados.")
