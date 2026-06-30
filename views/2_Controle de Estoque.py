@@ -69,7 +69,7 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         saldo_carteiras = df.groupby('Carteira').agg({'Saldo Bruto': 'sum'}).rename(columns={'Saldo Bruto': 'Saldo Total'})
         df = df.merge(saldo_carteiras, right_index=True, left_on='Carteira', how='left')
         df['Percentual'] = df['Saldo Bruto'] / df['Saldo Total'] * 100
-        df = df[df['Tipo de Ativo'].isin(['cri', 'cra', 'debenture'])]
+        df = df[df['Tipo de Ativo'].isin(['cri', 'cra', 'debenture', 'cdca', 'cpr'])]
 
         df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
 
