@@ -82,7 +82,6 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
             'Nome Emissor', 'Nome Devedor', 'Status do Emissor',
             'Quantidade', 'Preço Unitário', 'Saldo Bruto', 'Percentual', 'Custodiante',
         ]].copy()
-        df_clean.drop(columns=['Ativo'], inplace=True)
         df_clean.drop_duplicates(inplace=True)
 
         st.dataframe(style_table(

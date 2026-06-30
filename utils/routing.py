@@ -8,7 +8,6 @@ e restauramos via ``st.switch_page``.
 from __future__ import annotations
 
 import streamlit as st
-import streamlit.components.v1 as components
 
 from utils.navigation import _iter_pages
 
@@ -50,7 +49,7 @@ def route_to_requested_page(
 
 def sync_browser_url(slug: str | None) -> None:
     """Espelha o slug da página ativa em ``/?page=<slug>`` para sobreviver ao F5."""
-    components.html(
+    st.iframe(
         f"""
         <script>
         (function () {{
