@@ -245,7 +245,7 @@ if not incomplete.empty:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tabs = st.tabs(["Performance Acumulada", "Longo Prazo", "Correlações"])
+tabs = st.tabs(["Performance Acumulada", "Longo Prazo", "Volatilidade", "Correlações"])
 
 with tabs[0]:   # Performance Acumulada
     perf_numeric_cols = [c for c in performance_table.columns]
@@ -306,7 +306,7 @@ with tabs[1]:   # Longo Prazo
         medindo a dispersão em torno da média. Valores altos indicam maior risco.
         """)
 
-    with cols[1]:
+    with cols[1]:   # Assimetria vs Curtose
         scatter_sk, used_buckets_sk, used_colors_sk = scatter_data_by_bucket(
             stats[['Curtose', 'Assimetria']],
             x_col='Curtose',
@@ -346,6 +346,7 @@ with tabs[1]:   # Longo Prazo
         indica caudas mais leves que a normal.
         """)
 
+with tabs[2]:   # Volatilidade
     vol_evolution = compute_ewma_volatility_panel(data, asset_names)
     vol_columns = list(vol_evolution.columns)
     vol_colors = [
@@ -353,7 +354,7 @@ with tabs[1]:   # Longo Prazo
         for code in data.columns
     ]
     chart_vol_evolution = create_chart(
-        data=vol_evolution,
+        data=vol_evolution.iloc[-1000:],
         columns=vol_columns,
         names=vol_columns,
         color=vol_colors,
@@ -363,14 +364,25 @@ with tabs[1]:   # Longo Prazo
         show_legend=True,
         legend_layout='vertical',
     )
-    hct.streamlit_highcharts(chart_vol_evolution)
+
+    cols = st.columns([2, 1])
+    with cols[0]:
+        hct.streamlit_highcharts(chart_vol_evolution)
+    with cols[1]:
+        st.dataframe(
+            style_table(
+                vol_evolution.iloc[-1].to_frame("Volatilidade (%)"),
+                numeric_cols_format_as_float=["Volatilidade (%)"],
+            ),
+            # height="content",
+        )
     st.info("""
     - **Volatilidade EWMA**: estimativa exponencialmente ponderada da volatilidade diária,
     anualizada (√252), com fator de decaimento λ = 0.995.
     - Reage mais rapidamente a choques recentes do que uma janela móvel fixa.
     """)
 
-with tabs[2]:   # Correlações
+with tabs[3]:   # Correlações
     correlation_matrix = _weekly_returns(data.rename(columns=asset_names)).corr()
     correlation_matrix = correlation_matrix.where(np.tril(np.ones(correlation_matrix.shape)).astype(np.bool_))
     height = max(550, 50 * len(BUCKET_ORDER) + 100)
