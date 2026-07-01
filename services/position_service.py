@@ -509,6 +509,67 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@st.cache_data(ttl=_CACHE_TTL)
+def build_ticker_issuer_lookup() -> dict[str, str]:
+    """
+    Mapa ticker (Name/Alias, uppercase) → emissor via cadastro Fibery.
+
+    Usa a mesma regra de ``get_emissor_column`` (devedor, senão emissor).
+    """
+    df = get_emissor_column(load_assets())
+    lookup: dict[str, str] = {}
+    for _, row in df.iterrows():
+        emissor = row.get('Emissor')
+        if pd.isna(emissor) or not str(emissor).strip():
+            continue
+        emissor_str = str(emissor).strip()
+        for key in (row.get('Name'), row.get('Alias')):
+            if pd.notna(key) and str(key).strip():
+                lookup[str(key).strip().upper()] = emissor_str
+    return lookup
+
+
+def issuer_lookup_from_snapshot(snapshot: dict) -> dict[str, str]:
+    """Fallback: ticker → emissor a partir de posições no snapshot."""
+    lookup: dict[str, str] = {}
+    for data in snapshot.values():
+        for posicoes in data.get('posicoes_por_classe', {}).values():
+            for pos in posicoes:
+                ticker = pos.get('nome') or pos.get('ticker') or pos.get('codigo')
+                emissor = pos.get('emissor')
+                if ticker and emissor:
+                    lookup[str(ticker).strip().upper()] = str(emissor).strip()
+    return lookup
+
+
+def enrich_assets_with_issuers(
+    df_assets: pd.DataFrame,
+    cadastro_lookup: dict[str, str],
+    snapshot_lookup: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """
+    Preenche coluna ``Emissor`` a partir do cadastro (e snapshot como fallback).
+
+    Valores já preenchidos são preservados (override manual).
+    """
+    df = df_assets.copy()
+    if 'Emissor' not in df.columns:
+        df['Emissor'] = pd.NA
+
+    fallback = snapshot_lookup or {}
+    for idx, row in df.iterrows():
+        current = row.get('Emissor')
+        if pd.notna(current) and str(current).strip():
+            continue
+        ticker = str(row.get('Ticker', '')).strip().upper()
+        if not ticker or ticker == 'NAN':
+            continue
+        emissor = cadastro_lookup.get(ticker) or fallback.get(ticker)
+        if emissor:
+            df.at[idx, 'Emissor'] = emissor
+    return df
+
+
 def build_portfolio_snapshot(
     df_positions: pd.DataFrame,
     df_target_allocations: pd.DataFrame,
@@ -747,7 +808,7 @@ def clients_from_snapshot(
 
     officer_filter : string única (match parcial) ou lista de officers (match exato).
     """
-    from persevera_tools.quant_research.allocation_engine import Client
+    from persevera_tools.quant_research.allocation_engine import Client, normalize_issuer
 
     excluded = set(exclude or [])
     clients = []
@@ -799,11 +860,20 @@ def clients_from_snapshot(
                 if ticker:
                     existing[ticker] = existing.get(ticker, 0.0) + pos.get('saldo_brl', 0.0)
 
+        existing_by_issuer: dict[str, float] = {}
+        for emissor, info in data.get('concentracao_emissores_rf', {}).items():
+            key = normalize_issuer(emissor)
+            if key:
+                existing_by_issuer[key] = (
+                    existing_by_issuer.get(key, 0.0) + info.get('saldo_brl', 0.0)
+                )
+
         clients.append(Client(
             code=cod,
             pl=pl,
             cash=cash,
             existing_positions=existing,
+            existing_by_issuer=existing_by_issuer,
             officer=officer,
         ))
 

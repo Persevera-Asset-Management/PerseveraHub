@@ -10,9 +10,12 @@ from persevera_tools.quant_research.allocation_engine import (
 
 from services.position_service import (
     build_portfolio_snapshot,
+    build_ticker_issuer_lookup,
     clients_from_snapshot,
+    enrich_assets_with_issuers,
     enrich_snapshot_with_officers,
     get_emissor_column,
+    issuer_lookup_from_snapshot,
     load_positions,
     load_target_allocations,
 )
@@ -22,6 +25,14 @@ from utils.ui import show_data_freshness
 st.title("Otimizador de Alocação")
 
 ASSET_MODES = ("Cotas (discreto)", "Valor total (contínuo)")
+ASSET_EDITOR_COLUMNS = [
+    "Ticker",
+    "Modo",
+    "Cotas",
+    "PU (R$)",
+    "Valor total (R$)",
+    "Emissor",
+]
 DEFAULT_ASSETS = pd.DataFrame([
     {
         "Ticker": "CRA022008NF",
@@ -29,6 +40,7 @@ DEFAULT_ASSETS = pd.DataFrame([
         "Cotas": 18,
         "PU (R$)": 1059.38,
         "Valor total (R$)": np.nan,
+        "Emissor": pd.NA,
     },
     {
         "Ticker": "M8CREDIT",
@@ -36,8 +48,45 @@ DEFAULT_ASSETS = pd.DataFrame([
         "Cotas": np.nan,
         "PU (R$)": np.nan,
         "Valor total (R$)": 59850.30,
+        "Emissor": pd.NA,
     },
 ])
+
+
+def _coerce_assets_editor_df(state) -> pd.DataFrame:
+    """Normaliza o estado do data_editor (dict ragged ou DataFrame) para colunas fixas."""
+    if state is None:
+        return DEFAULT_ASSETS.copy()
+
+    if isinstance(state, pd.DataFrame):
+        df = state.copy()
+    elif isinstance(state, dict):
+        try:
+            df = pd.DataFrame(state)
+        except ValueError:
+            lengths = [
+                len(v)
+                for v in state.values()
+                if isinstance(v, (list, tuple, pd.Series, np.ndarray))
+            ]
+            n = min(lengths) if lengths else 0
+            trimmed = {}
+            for key, value in state.items():
+                if isinstance(value, (list, tuple, pd.Series, np.ndarray)):
+                    trimmed[key] = list(value)[:n]
+                else:
+                    trimmed[key] = value
+            df = pd.DataFrame(trimmed) if n > 0 else pd.DataFrame(columns=ASSET_EDITOR_COLUMNS)
+    else:
+        try:
+            df = pd.DataFrame(state)
+        except ValueError:
+            return DEFAULT_ASSETS.copy()
+
+    for col in ASSET_EDITOR_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.NA
+    return df[ASSET_EDITOR_COLUMNS].reset_index(drop=True)
 
 
 def _prepare_positions(df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -58,6 +107,13 @@ def _load_allocation_snapshot() -> dict:
     return enrich_snapshot_with_officers(snapshot)
 
 
+def _issuer_from_row(row: pd.Series) -> str | None:
+    emissor = row.get("Emissor")
+    if pd.isna(emissor) or not str(emissor).strip():
+        return None
+    return str(emissor).strip()
+
+
 def _parse_assets(df_assets: pd.DataFrame) -> list[Asset]:
     assets: list[Asset] = []
     for _, row in df_assets.iterrows():
@@ -65,6 +121,7 @@ def _parse_assets(df_assets: pd.DataFrame) -> list[Asset]:
         if not ticker or ticker.lower() == "nan":
             continue
 
+        issuer = _issuer_from_row(row)
         modo = row.get("Modo", ASSET_MODES[0])
         if modo == ASSET_MODES[0]:
             cotas = row.get("Cotas")
@@ -77,6 +134,7 @@ def _parse_assets(df_assets: pd.DataFrame) -> list[Asset]:
                 ticker,
                 total_units=int(cotas),
                 unit_price=float(pu),
+                issuer=issuer,
             ))
         else:
             valor = row.get("Valor total (R$)")
@@ -84,9 +142,35 @@ def _parse_assets(df_assets: pd.DataFrame) -> list[Asset]:
                 raise ValueError(
                     f"Ativo '{ticker}': informe Valor total (R$) para modo contínuo."
                 )
-            assets.append(Asset(ticker, total_value=float(valor)))
+            assets.append(Asset(ticker, total_value=float(valor), issuer=issuer))
 
     return assets
+
+
+def _allocations_to_display_df(result) -> pd.DataFrame:
+    rows = []
+    for a in result.allocations:
+        rows.append({
+            "Cliente": a.client_code,
+            "Ativo": a.ticker,
+            "Emissor": a.issuer,
+            "Cotas/Valor": a.units,
+            "Valor (R$)": round(a.value, 2),
+            "% PL (nova)": round(a.pct_pl * 100, 2),
+            "Exposição Total (%)": round(a.total_exposure * 100, 2),
+            "Emissor Antes (%)": (
+                round(a.issuer_exposure_before_pct * 100, 2)
+                if a.issuer_exposure_before_pct is not None else None
+            ),
+            "Emissor Após (%)": (
+                round(a.issuer_exposure_after_pct * 100, 2)
+                if a.issuer_exposure_after_pct is not None else None
+            ),
+            "Restrição": a.binding_constraint,
+            "Caixa Após (R$)": round(a.cash_after, 2),
+            "Caixa Após (%)": round(a.cash_pct_after * 100, 2),
+        })
+    return pd.DataFrame(rows)
 
 
 with st.sidebar:
@@ -125,6 +209,14 @@ with st.sidebar:
     )
     min_pct = st.number_input("Exposição mínima (% PL)", min_value=0.0, max_value=100.0, value=1.5, step=0.1)
     max_pct = st.number_input("Exposição máxima (% PL)", min_value=0.0, max_value=100.0, value=2.0, step=0.1)
+    max_issuer_pct = st.number_input(
+        "Exposição máx. por emissor (% PL)",
+        min_value=0.0,
+        max_value=100.0,
+        value=5.0,
+        step=0.5,
+        help="Teto de concentração em RF por emissor/devedor. Use 0 para desabilitar.",
+    )
     min_cash_pct_after = st.number_input(
         "Caixa mínimo pós-alocação (% PL)", min_value=0.0, max_value=100.0, value=5.0, step=0.5
     )
@@ -146,20 +238,62 @@ clients_preview = clients_from_snapshot(
 )
 st.caption(f"{len(clients_preview)} clientes no universo selecionado · {len(snapshot)} carteiras no snapshot")
 
+cadastro_issuer_lookup = build_ticker_issuer_lookup()
+snapshot_issuer_lookup = issuer_lookup_from_snapshot(snapshot)
+
+assets_seed = (
+    st.session_state.allocation_assets_editor
+    if "allocation_assets_editor" in st.session_state
+    else DEFAULT_ASSETS.copy()
+)
+editor_seed = enrich_assets_with_issuers(
+    _coerce_assets_editor_df(assets_seed),
+    cadastro_issuer_lookup,
+    snapshot_issuer_lookup,
+)
+
 st.markdown("#### Ativos disponíveis para alocação")
+st.caption(
+    "Emissor é preenchido automaticamente pelo cadastro Fibery; edite manualmente se necessário."
+)
 assets_df = st.data_editor(
-    DEFAULT_ASSETS,
+    editor_seed,
     num_rows="dynamic",
     width="stretch",
+    key="allocation_assets_editor",
     column_config={
         "Ticker": st.column_config.TextColumn("Ticker", required=True),
         "Modo": st.column_config.SelectboxColumn("Modo", options=list(ASSET_MODES), required=True),
         "Cotas": st.column_config.NumberColumn("Cotas", min_value=1, step=1, format="%d"),
         "PU (R$)": st.column_config.NumberColumn("PU (R$)", min_value=0.01, format="%.2f"),
         "Valor total (R$)": st.column_config.NumberColumn("Valor total (R$)", min_value=0.01, format="%.2f"),
+        "Emissor": st.column_config.TextColumn(
+            "Emissor",
+            help="Preenchido pelo cadastro; necessário para o limite por emissor.",
+        ),
     },
     hide_index=True,
 )
+assets_df = enrich_assets_with_issuers(
+    _coerce_assets_editor_df(assets_df),
+    cadastro_issuer_lookup,
+    snapshot_issuer_lookup,
+)
+
+if max_issuer_pct > 0:
+    missing_issuers = [
+        str(r["Ticker"]).strip()
+        for _, r in assets_df.iterrows()
+        if str(r.get("Ticker", "")).strip()
+        and str(r.get("Ticker", "")).strip().lower() != "nan"
+        and not _issuer_from_row(r)
+    ]
+    if missing_issuers:
+        st.warning(
+            "Limite por emissor ativo, mas sem emissor para: "
+            + ", ".join(missing_issuers)
+            + ". Esses ativos ignorarão o teto de emissor."
+        )
 
 run_allocation = st.button("Executar alocação", type="primary")
 
@@ -169,12 +303,20 @@ allocation_context = {
     "objective": objective,
     "min_pct": min_pct,
     "max_pct": max_pct,
+    "max_issuer_pct": max_issuer_pct,
     "min_cash_pct_after": min_cash_pct_after,
     "consider_existing": consider_existing,
     "topup": topup,
     "topup_method": topup_method,
     "assets": tuple(
-        (str(r["Ticker"]).strip(), r["Modo"], r.get("Cotas"), r.get("PU (R$)"), r.get("Valor total (R$)"))
+        (
+            str(r["Ticker"]).strip(),
+            r["Modo"],
+            r.get("Cotas"),
+            r.get("PU (R$)"),
+            r.get("Valor total (R$)"),
+            _issuer_from_row(r),
+        )
         for _, r in assets_df.iterrows()
         if str(r.get("Ticker", "")).strip() and str(r.get("Ticker", "")).strip().lower() != "nan"
     ),
@@ -195,6 +337,7 @@ if run_allocation:
             objective=objective,
             min_pct=min_pct / 100,
             max_pct=max_pct / 100,
+            max_issuer_pct=max_issuer_pct / 100 if max_issuer_pct > 0 else None,
             min_cash_pct_after=min_cash_pct_after / 100,
             consider_existing=consider_existing,
             topup=topup,
@@ -229,15 +372,25 @@ if (
     with kpi_cols[2]:
         st.metric("Linhas de alocação", len(result.allocations))
 
+    if result.warnings:
+        for warning in result.warnings:
+            st.warning(warning)
+
     st.code(result.summary(), language=None)
 
-    df_result = result.to_dataframe()
+    df_result = _allocations_to_display_df(result)
     if not df_result.empty:
         st.dataframe(
             style_table(
                 df_result,
-                numeric_cols_format_as_float=["Cotas/Valor", "Valor (R$)", "Caixa após (R$)"],
-                percent_cols=["% PL (nova)", "Exposição total %", "Caixa após %"],
+                numeric_cols_format_as_float=["Cotas/Valor", "Valor (R$)", "Caixa Após (R$)"],
+                percent_cols=[
+                    "% PL (nova)",
+                    "Exposição Total (%)",
+                    "Emissor Antes (%)",
+                    "Emissor Após (%)",
+                    "Caixa Após (%)",
+                ],
             ),
             hide_index=True,
             width="stretch",
