@@ -55,7 +55,7 @@ else:
             etf_table.sort_values(by='Posição Hoje (%)', ascending=False, inplace=True)
             etf_table.index = etf_table.index.map(lambda x: CTA_DASHBOARD.get(x, x))
 
-            st.write(f"Dado mais recente: {etf_most_recent_date}")
+            st.markdown(f"Dado mais recente: `{etf_most_recent_date}`")
             st.dataframe(style_table(etf_table, numeric_cols_format_as_float=['Posição Hoje (%)', 'Posição Ontem (%)', 'Posição 21 dias atrás (%)']))
 
             # Asset selection for the chart

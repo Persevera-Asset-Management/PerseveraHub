@@ -67,7 +67,7 @@ def build_portfolio_snapshot(
 
         # === Posições individuais agrupadas por ativo (enriquecidas) ===
         group_cols = [
-            'Nome Ativo', 'Nome Ativo Completo',
+            'Nome Ativo', 'Nome Ativo Completo', 'Alias',
             'Classificação do Conjunto', 'Classificação Instrumento', 'Emissor Geral',
         ]
         agg_dict: dict = {
@@ -89,6 +89,7 @@ def build_portfolio_snapshot(
             entry: dict = {
                 'nome': row['Nome Ativo'],
                 'nome_completo': row['Nome Ativo Completo'] or None,
+                'alias': row['Alias'] or None,
                 'instrumento': row['Classificação Instrumento'] or None,
                 'emissor': row['Emissor Geral'] if row['Emissor Geral'] != 'N/A' else None,
                 'saldo_brl': round(float(row['Saldo']), 2),
@@ -235,7 +236,7 @@ if df is not None:
         st.markdown("##### Distribuição por Classe")
         df_positions = df.groupby(
             [pd.Grouper(key='Data Posição', freq='D'), 'Portfolio', 'Nome Ativo',
-             'Nome Ativo Completo', 'Classificação do Conjunto']
+             'Alias', 'Classificação do Conjunto']
         ).agg(**{
             'Quantidade': ('Quantidade', 'sum'),
             'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -351,7 +352,7 @@ if df is not None:
                 df_positions_current['Classificação do Conjunto'] == asset_class
             ]
             df_asset_class_positions = df_asset_class_positions.pivot(
-                index=['Nome Ativo', 'Nome Ativo Completo'], columns='Portfolio', values='Saldo'
+                index=['Nome Ativo', 'Alias'], columns='Portfolio', values='Saldo'
             )
 
             if selected_visualization == 'Financeiro (R$)':

@@ -37,7 +37,7 @@ if data.empty:
 else:
     # Tabela consolidada
     st.subheader("Tabela Consolidada")
-    st.markdown(f"Dado mais recente: ```{data.index.max().date()}```")
+    st.markdown(f"Dado mais recente: `{data.index.max().date()}`")
     consolidated_data = data.iloc[-1].to_frame('value').reset_index()
     consolidated_data = consolidated_data.pivot(index='code', columns='field', values='value')
     consolidated_data.index = consolidated_data.index.map(lambda x: INDICADORES[x])

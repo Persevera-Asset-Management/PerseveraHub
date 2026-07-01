@@ -231,7 +231,7 @@ if custom_start < custom_end:
 performance_table = attach_bucket_index(performance_table, asset_names, asset_buckets)
 stats = attach_bucket_index(stats, asset_names, asset_buckets)
 
-st.markdown("Data mais recente: **{0:%Y-%m-%d}**".format(data_max))
+st.markdown(f"Dado mais recente: `{data_max}`")
 
 incomplete = stats[stats['Anos'] < (LOOKBACK_YEARS - 0.5)]
 if not incomplete.empty:

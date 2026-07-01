@@ -119,7 +119,7 @@ if selected_carteiras:
                     )
 
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
-        st.markdown("Data da Posição: **{0:%Y-%m-%d}**".format(df["Data Posição"].max()))
+        st.markdown(f"Data da Posição: `{df['Data Posição'].max().date()}`")
 
         # =========================================================================
         # SEÇÃO 1 — Indicadores Chave
