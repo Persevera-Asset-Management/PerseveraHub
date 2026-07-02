@@ -6,6 +6,9 @@ DEFAULT_CHART_COLORS = [
     '#19202A', '#B99B7B', '#B3BEBD', '#CDB89B', '#CAD7D8', '#4682B4', '#3E5A6B', '#8B9DC3'
 ]
 
+CHART_BORDER_RADIUS = 8
+CHART_BORDER_WIDTH = 0
+
 _LIGHT_AXIS_COLORS = {
     "gridLineColor": "#E6E6E6",
     "lineColor": "#CCD6EB",
@@ -47,6 +50,8 @@ def _apply_light_theme(options: Dict[str, Any]) -> None:
         "className": "highcharts-light",
         "style": {"color": "#333333"},
     })
+    chart.setdefault("borderWidth", CHART_BORDER_WIDTH)
+    chart.setdefault("borderRadius", CHART_BORDER_RADIUS)
 
     if chart.get("resetZoomButton"):
         chart["resetZoomButton"]["theme"] = {
@@ -117,6 +122,8 @@ def _apply_light_theme(options: Dict[str, Any]) -> None:
         "plotBackgroundColor": "#FFFFFF",
         "className": "highcharts-light",
     })
+    export_chart.setdefault("borderWidth", CHART_BORDER_WIDTH)
+    export_chart.setdefault("borderRadius", CHART_BORDER_RADIUS)
 
 
 def create_highcharts_options(

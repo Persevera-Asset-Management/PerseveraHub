@@ -39,6 +39,9 @@ def render_highcharts_with_fullscreen(chart_options, key=None, height=None):
             #container {{
                 width: 100%;
                 height: {chart_height}px;
+                border-radius: 8px;
+                overflow: hidden;
+                box-sizing: border-box;
             }}
         </style>
     </head>

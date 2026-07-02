@@ -57,7 +57,8 @@ INSTRUMENTOS_RF = [
 _POSITIONS_COLUMNS = [
     "Data Posição", "Portfolio", "Custodiante Acronimo",
     "Nome Ativo", "Nome Ativo Completo", "Alias",
-    "Classificação do Conjunto", "Classificação Instrumento-Relation",
+    "Classificação do Conjunto", "Classificação do Sub-Conjunto", 
+    "Classificação Instrumento-Relation",
     "Nome Emissor", "Nome Devedor",
     "Quantidade", "Valor Unitário", "Saldo",
     "Indexador",
@@ -131,6 +132,7 @@ def _normalize_positions_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates(subset=_POSITIONS_DEDUP_SUBSET, keep='last')
     df = df.drop(columns=['creation-date'])
     df = df.dropna(subset=['Classificação do Conjunto'])
+    df['Classificação do Sub-Conjunto'] = df['Classificação do Sub-Conjunto'].fillna('Sem Classificação')
     df = df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'})
     return df
 

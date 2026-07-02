@@ -313,7 +313,7 @@ p {
 
 div[data-testid="stMetric"] {
     background-color: var(--color-bg-card);
-    border: 1px solid var(--color-border-light);
+    border: none;
     border-radius: var(--border-radius-lg);
     padding: var(--spacing-4);
     box-shadow: 0 2px 4px var(--color-shadow-light);
@@ -371,6 +371,53 @@ div[data-testid="stMetric"]::before {
     right: 0;
     height: 2px;
     background-color: var(--color-primary-medium);
+}
+
+/* ===== EXPANDER COMPONENTS ===== */
+div[data-testid="stExpander"] {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+}
+
+div[data-testid="stExpander"] > details {
+    background-color: var(--color-bg-card) !important;
+    border: none !important;
+    border-radius: var(--border-radius-lg) !important;
+    overflow: hidden;
+}
+
+div[data-testid="stExpander"] > details > summary {
+    background-color: var(--color-bg-card) !important;
+    color: var(--color-text-primary);
+    border-radius: var(--border-radius-lg) !important;
+}
+
+div[data-testid="stExpander"] > details[open] > summary {
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0 !important;
+}
+
+div[data-testid="stExpander"] > details > summary:hover,
+div[data-testid="stExpander"] > details > summary:focus-visible,
+div[data-testid="stExpander"] > details > summary:active,
+div[data-testid="stExpander"] > details[open] > summary {
+    background-color: var(--color-bg-card) !important;
+}
+
+div[data-testid="stExpanderDetails"] {
+    background-color: var(--color-bg-card) !important;
+    color: var(--color-text-primary);
+    border-top: none !important;
+}
+
+div[data-testid="stExpander"] > details[open] [data-testid="stExpanderDetails"] {
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+div[data-testid="stExpander"] details summary p,
+div[data-testid="stExpander"] details summary span {
+    color: var(--color-text-primary);
 }
 
 /* ===== FORM COMPONENTS ===== */

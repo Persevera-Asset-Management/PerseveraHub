@@ -216,6 +216,23 @@ if selected_carteiras:
                     y_axis_title="%",
                 )
                 hct.streamlit_highcharts(chart_portfolio_composition)
+
+                df_portfolio_composition_sub = df.groupby(
+                    [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Sub-Conjunto']
+                ).agg(**{'Saldo': ('Saldo', 'sum')})
+                df_portfolio_composition_current_sub = get_latest_date_data(df_portfolio_composition_sub)
+                df_portfolio_composition_current = df_portfolio_composition_current.reindex(ASSET_CLASSES_ORDER).dropna()
+
+                chart_portfolio_composition = create_chart(
+                    data=df_portfolio_composition_current_sub,
+                    columns=['Saldo'],
+                    names=['Saldo'],
+                    chart_type='donut',
+                    title="Alocação Atual - Sub-Conjunto",
+                    y_axis_title="%",
+                )
+                hct.streamlit_highcharts(chart_portfolio_composition)
+
             
             with cols[1]:
                 if not is_single_carteira:
