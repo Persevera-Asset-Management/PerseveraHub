@@ -207,7 +207,7 @@ if loaded_code:
                         color_negative_positive_cols=["Variação (R$)", "Variação (%)"],
                     ),
                     hide_index=True,
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             row_1 = st.columns(2)
@@ -220,7 +220,7 @@ if loaded_code:
                         date_cols=["date"],
                     ),
                     hide_index=True,
-                    use_container_width=True,
+                    width="stretch",
                 )
             with row_1[1]:
                 if not ytm.empty and ytm.dropna(how="all").shape[1] > 0:
