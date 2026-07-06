@@ -280,8 +280,8 @@ CHARTS_ESTRATEGIA = {
     },
     "valuation_em_equities": {
         "chart_config": {
-            "columns": ["br_ibovespa", "br_smll", "china_csi300", "south_africa_top40", "mexico_bmv", "chile_ipsa", "india_nifty50"],
-            "names": ["Ibovespa", "SMLL", "CSI 300", "South Africa Top 40", "BMV", "IPSA", "Nifty 50"],
+            "columns": ["br_ibovespa", "br_smll", "china_csi300", "south_korea_kospi", "mexico_bmv", "colombia_colcap", "taiwan_twse"],
+            "names": ["Ibovespa", "SMLL", "China (CSI 300)", "South Korea (KOSPI)", "México (BMV)", "Colombia (COLCAP)", "Taiwan (TWSE)"],
             "chart_type": "line",
             "title": "Emergentes",
             "y_axis_title": "P/E",
