@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from datetime import timedelta, date
+from datetime import date
 
 import streamlit as st
 import streamlit_highcharts as hct
@@ -63,6 +63,20 @@ def value_on_date(series, target_date):
     if subset.empty:
         return np.nan
     return subset.iloc[-1]
+
+
+def last_business_day_of_previous_month(reference_date):
+    ref = pd.Timestamp(reference_date)
+    prev_month_last_cal = ref.replace(day=1) - pd.Timedelta(days=1)
+    return pd.bdate_range(end=prev_month_last_cal, periods=1)[0].date()
+
+
+def default_variation_dates(max_date, min_date):
+    end_default = last_business_day_of_previous_month(max_date)
+    end_default = min(max(end_default, min_date), max_date)
+    start_default = last_business_day_of_previous_month(end_default)
+    start_default = min(max(start_default, min_date), end_default)
+    return start_default, end_default
 
 
 def compute_price_variation(prices, start_date, end_date):
@@ -131,7 +145,7 @@ if loaded_code:
         else:
             min_date = prices.dropna(how="all").index.min().date()
             max_date = prices.index.max().date()
-            default_start = max(min_date, (pd.Timestamp(max_date) - timedelta(days=30)).date())
+            default_start, default_end = default_variation_dates(max_date, min_date)
 
             if st.session_state.get("precificacao_dates_code") != loaded_code:
                 st.session_state.precificacao_dates_code = loaded_code
@@ -141,7 +155,7 @@ if loaded_code:
             if "precificacao_start_picker" not in st.session_state:
                 st.session_state.precificacao_start_picker = default_start
             if "precificacao_end_picker" not in st.session_state:
-                st.session_state.precificacao_end_picker = max_date
+                st.session_state.precificacao_end_picker = default_end
 
             start_val = max(
                 min_date,
