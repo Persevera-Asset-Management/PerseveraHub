@@ -13,7 +13,7 @@ st.title("Agregador de Carteiras")
 with st.sidebar:
     st.header("Parâmetros")
     selected_date = st.date_input("Data", format="DD/MM/YYYY", value=pd.to_datetime(date.today()), min_value=datetime(2024, 1, 1), max_value=pd.to_datetime(date.today()))
-    selected_carteiras = st.multiselect("Carteiras selecionadas", options=sorted(CODIGOS_CARTEIRAS_ADM.keys()), default=sorted(CODIGOS_CARTEIRAS_ADM.keys()))
+    selected_carteiras = st.multiselect("Carteiras selecionadas", options=CODIGOS_CARTEIRAS_ADM, default=CODIGOS_CARTEIRAS_ADM)
     btn_run = st.button("Executar")
 
 for key in ('df'):

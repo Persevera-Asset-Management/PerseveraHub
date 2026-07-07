@@ -386,7 +386,7 @@ def load_portfolio_info() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=_CACHE_TTL)
-def load_active_carteiras_adm() -> dict:
+def load_active_carteiras_adm_old() -> dict:
     """
     Carrega carteiras administradas ativas do Fibery.
 
@@ -413,9 +413,32 @@ def load_active_carteiras_adm() -> dict:
     return df.to_dict("index")
 
 
+@st.cache_data(ttl=_CACHE_TTL)
+def load_active_carteiras_adm() -> list[str]:
+    """
+    Carrega códigos de carteiras administradas ativas do Fibery.
+
+    Filtra mandatos ativos na tabela Codinome Relatório e retorna as chaves
+    de match ordenadas alfabeticamente.
+
+    Returns:
+        Lista de códigos de carteira (Chave Match).
+    """
+    df = read_fibery(
+        table_name="Inv-Asset Allocation/Codinome Relatório",
+        where_filter=["=", ["Inv-Asset Allocation/Mandato Ativo"], True],
+        include_fibery_fields=False,
+    )
+
+    df.dropna(subset=["Chave Match"], inplace=True)
+
+    track_data_load("active_carteiras_adm")
+    return sorted(df["Chave Match"].tolist())
+
+
 def active_carteira_codes() -> set[str]:
     """Retorna os códigos das carteiras administradas ativas."""
-    return set(load_active_carteiras_adm().keys())
+    return set(load_active_carteiras_adm())
 
 
 @st.cache_data(ttl=_CACHE_TTL)

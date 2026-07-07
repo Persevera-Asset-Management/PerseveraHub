@@ -27,7 +27,7 @@ with st.sidebar:
     st.header("Parâmetros")
     selected_carteiras = st.multiselect(
         "Carteiras selecionadas",
-        options=sorted(CODIGOS_CARTEIRAS_ADM.keys()),
+        options=CODIGOS_CARTEIRAS_ADM,
         default=None,
         placeholder="Selecione uma ou mais carteiras..."
     )

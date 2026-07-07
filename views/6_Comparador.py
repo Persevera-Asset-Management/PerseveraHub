@@ -23,7 +23,7 @@ with st.sidebar:
     st.header("Parâmetros")
     selected_portfolio = st.selectbox(
         "Portfolio",
-        options=sorted(CODIGOS_CARTEIRAS_ADM.keys()),
+        options=CODIGOS_CARTEIRAS_ADM,
         index=None,
         placeholder="Selecione um portfolio...",
     )

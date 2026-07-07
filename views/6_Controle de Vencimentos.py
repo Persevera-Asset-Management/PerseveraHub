@@ -83,9 +83,7 @@ with st.spinner("Carregando dados...", show_time=True):
 show_data_freshness("positions", label="Posições", ttl_minutes=60)
 
 df_base = prepare_base_df(st.session_state.df)
-portfolio_options = sorted(
-    set(CODIGOS_CARTEIRAS_ADM.keys()) & set(df_base["Portfolio"].dropna().unique())
-)
+portfolio_options = set(CODIGOS_CARTEIRAS_ADM) & set(df_base["Portfolio"].dropna().unique())
 
 with st.sidebar:
     st.header("Filtros")
