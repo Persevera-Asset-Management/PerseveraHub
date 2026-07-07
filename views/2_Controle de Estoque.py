@@ -15,7 +15,7 @@ from services.position_service import (
 
 st.title("Controle de Estoque")
 
-for key in ('df', 'df_assets', 'df_issuers'):
+for key in ('df_cd_raw', 'df_assets', 'df_issuers'):
     st.session_state.setdefault(key, None)
 
 # Definição dos parâmetros
@@ -34,7 +34,7 @@ with st.sidebar:
 
 if btn_run:
     with st.spinner("Carregando dados...", show_time=True):
-        st.session_state.df = load_portfolio_from_comdinheiro(
+        st.session_state.df_cd_raw = load_portfolio_from_comdinheiro(
             portfolios=tuple(sorted(selected_carteiras)),
             date_report=selected_date.strftime('%Y-%m-%d')
         )
@@ -43,13 +43,13 @@ if btn_run:
         
         st.rerun()
 
-df_cd = st.session_state.df
+df_cd_raw = st.session_state.df_cd_raw
 df_assets = st.session_state.df_assets
 df_issuers = st.session_state.df_issuers
 
-if df_cd is not None and df_assets is not None and df_issuers is not None:
+if df_cd_raw is not None and df_assets is not None and df_issuers is not None:
     try:
-        df_cd = prepare_comdinheiro_portfolio_positions_df(df_cd)
+        df_cd = prepare_comdinheiro_portfolio_positions_df(df_cd_raw)
 
         df_assets = get_emissor_column(df_assets)
         df = df_cd.merge(
@@ -69,7 +69,8 @@ if df_cd is not None and df_assets is not None and df_issuers is not None:
         saldo_carteiras = df.groupby('Carteira').agg({'Saldo Bruto': 'sum'}).rename(columns={'Saldo Bruto': 'Saldo Total'})
         df = df.merge(saldo_carteiras, right_index=True, left_on='Carteira', how='left')
         df['Percentual'] = df['Saldo Bruto'] / df['Saldo Total'] * 100
-        df = df[df['Tipo de Ativo'].isin(['cri', 'cra', 'debenture', 'cdca', 'cpr'])]
+        # df = df[df['Tipo de Ativo'].isin(['cri', 'cra', 'debenture', 'cdca', 'cpr', 'bonds'])]
+        df = df[~df['Tipo de Ativo'].isin(['fundo', 'acao', 'generico', 'caixa', 'caixaB', 'vgbl', 'pgbl', 'fundo_offshore', 'coe', 'oc'])]
 
         df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
 

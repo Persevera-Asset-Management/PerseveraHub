@@ -191,6 +191,19 @@ _COMDINHEIRO_TICKER_STRIP_SUBSTRINGS = [
     'DEB:',
 ]
 
+# Prefixo de ativos offshore no Comdinheiro (ex.: US:DBMF, US:FWB:US02079KAD90).
+_COMDINHEIRO_OFFSHORE_TICKER_PREFIX = 'US:'
+
+
+def _normalize_comdinheiro_tickers(tickers: pd.Series) -> pd.Series:
+    """Remove sufixos de precificação/série e normaliza tickers offshore do Comdinheiro."""
+    strip_pattern = r'|'.join(_COMDINHEIRO_TICKER_STRIP_SUBSTRINGS)
+    out = tickers.str.replace(strip_pattern, '', regex=True)
+    out = out.str.replace(r'_@.*$', '', regex=True)
+    offshore = out.str.startswith(_COMDINHEIRO_OFFSHORE_TICKER_PREFIX)
+    out = out.where(~offshore, out.str.split(':').str[-1])
+    return out
+
 
 def prepare_comdinheiro_portfolio_positions_df(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -203,9 +216,7 @@ def prepare_comdinheiro_portfolio_positions_df(df: pd.DataFrame) -> pd.DataFrame
         Cópia com nomes amigáveis e sufixos de precificação/série removidos do ticker.
     """
     out = df.rename(columns=_COMDINHEIRO_PORTFOLIO_COLUMN_MAP).copy()
-    strip_pattern = r'|'.join(_COMDINHEIRO_TICKER_STRIP_SUBSTRINGS)
-    out['Ticker'] = out['Ticker'].str.replace(strip_pattern, '', regex=True)
-    out['Ticker'] = out['Ticker'].str.replace(r'_@.*$', '', regex=True)
+    out['Ticker'] = _normalize_comdinheiro_tickers(out['Ticker'])
     return out
 
 
