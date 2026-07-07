@@ -191,7 +191,7 @@ _COMDINHEIRO_TICKER_STRIP_SUBSTRINGS = [
     'DEB:',
 ]
 
-# Prefixo de ativos offshore no Comdinheiro (ex.: US:DBMF, US:FWB:US02079KAD90).
+# Prefixo de ativos offshore no Comdinheiro (ex.: US:DBMF, us:FWB:US02079KAD90).
 _COMDINHEIRO_OFFSHORE_TICKER_PREFIX = 'US:'
 
 
@@ -200,7 +200,7 @@ def _normalize_comdinheiro_tickers(tickers: pd.Series) -> pd.Series:
     strip_pattern = r'|'.join(_COMDINHEIRO_TICKER_STRIP_SUBSTRINGS)
     out = tickers.str.replace(strip_pattern, '', regex=True)
     out = out.str.replace(r'_@.*$', '', regex=True)
-    offshore = out.str.startswith(_COMDINHEIRO_OFFSHORE_TICKER_PREFIX)
+    offshore = out.str.upper().str.startswith(_COMDINHEIRO_OFFSHORE_TICKER_PREFIX)
     out = out.where(~offshore, out.str.split(':').str[-1])
     return out
 
