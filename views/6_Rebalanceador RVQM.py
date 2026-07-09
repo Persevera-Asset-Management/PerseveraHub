@@ -8,10 +8,15 @@ import requests
 from utils.table import style_table
 
 from services.position_service import (
+    load_assets,
     load_equities_portfolio,
     load_portfolios_rvqm,
     load_positions,
 )
+
+RVQM_INSTRUMENTS = ("Ação", "BDR")
+STANDARD_LOT_SIZE = 100
+FRACTIONAL_LOT_SIZE = 1
 
 st.title("RVQM · Rebalanceador")
 
@@ -63,8 +68,15 @@ def parse_google_number(value: object) -> float:
 
     return pd.to_numeric(text, errors="coerce")
 
+def instrument_lot_size(instrument: object) -> int:
+    if instrument == "BDR":
+        return FRACTIONAL_LOT_SIZE
+    return STANDARD_LOT_SIZE
+
 def prepare_equity_positions(positions: pd.DataFrame) -> pd.DataFrame:
-    _empty = pd.DataFrame(columns=["Ativo", "code_key", "Nome Ativo", "Quantidade"])
+    _empty = pd.DataFrame(
+        columns=["Ativo", "code_key", "Nome Ativo", "Quantidade", "Classificação Instrumento"]
+    )
 
     if positions.empty:
         return _empty
@@ -78,7 +90,7 @@ def prepare_equity_positions(positions: pd.DataFrame) -> pd.DataFrame:
     latest_date = positions["Data Posição"].max()
     equity_positions = positions[
         (positions["Data Posição"] == latest_date)
-        & (positions[instrument_column] == "Ação")
+        & (positions[instrument_column].isin(RVQM_INSTRUMENTS))
     ].copy()
 
     if equity_positions.empty:
@@ -88,58 +100,78 @@ def prepare_equity_positions(positions: pd.DataFrame) -> pd.DataFrame:
     equity_positions["code_key"] = equity_positions["Nome Ativo"]
 
     return (
-        equity_positions.groupby(["Ativo", "code_key", "Nome Ativo"], dropna=False)
+        equity_positions.groupby(
+            ["Ativo", "code_key", "Nome Ativo", instrument_column],
+            dropna=False,
+        )
         .agg(Quantidade=("Quantidade", "sum"))
         .reset_index()
+        .rename(columns={instrument_column: "Classificação Instrumento"})
     )
 
-def compute_lot_orders(qty_raw: pd.Series, prices: pd.Series) -> pd.Series:
+def compute_lot_orders(
+    qty_raw: pd.Series,
+    prices: pd.Series,
+    lot_sizes: pd.Series | None = None,
+) -> pd.Series:
     """
     Greedy portfolio-level lot optimization.
 
-    Floors each raw quantity toward zero to the nearest standard lot (×100),
-    then upgrades orders to improve portfolio tracking error subject to the
+    Floors each raw quantity toward zero to the nearest tradable lot, then
+    upgrades orders to improve portfolio tracking error subject to the
     net-cash constraint:
-      1. Sell upgrades with abs(frac) > 50 are executed first — they free cash
-         and reduce deviation simultaneously.
-      2. Buy upgrades with abs(frac) > 50 are executed in descending fractional
-         order (highest residual first) while net cash allows.
+      1. Sell upgrades with abs(frac) > lot_size / 2 are executed first —
+         they free cash and reduce deviation simultaneously.
+      2. Buy upgrades with abs(frac) > lot_size / 2 are executed in
+         descending fractional order (highest residual first) while net cash
+         allows.
 
     Args:
         qty_raw: Raw (float) quantity per stock — positive = buy, negative = sell.
                  NaN-safe: stocks with NaN or non-positive price receive pd.NA.
         prices:  Last price per stock (must be aligned with qty_raw index).
+        lot_sizes: Tradable lot size per stock (e.g. 100 for Ação, 1 for BDR).
+                   Defaults to 100 for all rows when omitted.
 
     Returns:
-        Int64 Series of lot quantities (all values are multiples of 100 or pd.NA).
+        Int64 Series of order quantities (multiples of each row's lot size or pd.NA).
     """
     valid = qty_raw.notna() & prices.notna() & prices.gt(0)
 
     qty = np.where(valid, qty_raw.astype(float), 0.0)
     price = np.where(valid, prices.astype(float), 0.0)
+    if lot_sizes is None:
+        lots = np.full(len(qty_raw), float(STANDARD_LOT_SIZE))
+    else:
+        lots = (
+            lot_sizes.reindex(qty_raw.index)
+            .fillna(STANDARD_LOT_SIZE)
+            .astype(float)
+            .values
+        )
 
-    # Step 1: Floor toward zero — +2.7 lots → +200, −2.7 lots → −200
-    lot = np.sign(qty) * np.floor(np.abs(qty) / 100) * 100
-    frac = qty - lot  # residual, same sign as qty, abs in [0, 100)
+    # Step 1: Floor toward zero — e.g. +270 with lot 100 → +200, +47.8 with lot 1 → +47
+    lot = np.sign(qty) * np.floor(np.abs(qty) / lots) * lots
+    frac = qty - lot  # residual, same sign as qty, abs in [0, lot_size)
 
     # Step 2: Net cash after floor orders
     # Sells produce positive cash inflow; buys consume cash.
     net_cash = float(-(lot * price).sum())
 
-    # Step 3: Sell upgrades — execute all where abs(frac) > 50
+    # Step 3: Sell upgrades — execute all where abs(frac) > lot_size / 2
     # They free cash AND reduce tracking deviation.
-    sell_upgrade = (qty < 0) & (np.abs(frac) > 50)
+    sell_upgrade = (qty < 0) & (np.abs(frac) > (lots / 2.0))
     for i in np.where(sell_upgrade)[0]:
-        lot[i] -= 100
-        net_cash += 100.0 * price[i]
+        lot[i] -= lots[i]
+        net_cash += lots[i] * price[i]
 
-    # Step 4: Buy upgrades — execute where abs(frac) > 50, highest frac first
-    buy_upgrade = (qty > 0) & (frac > 50)
+    # Step 4: Buy upgrades — execute where abs(frac) > lot_size / 2, highest frac first
+    buy_upgrade = (qty > 0) & (frac > (lots / 2.0))
     buy_ix = np.where(buy_upgrade)[0]
     for i in buy_ix[np.argsort(-frac[buy_ix])]:
-        cost = 100.0 * price[i]
+        cost = lots[i] * price[i]
         if net_cash >= cost:
-            lot[i] += 100
+            lot[i] += lots[i]
             net_cash -= cost
 
     # Build Int64 result, preserving pd.NA for stocks without a valid price
@@ -219,6 +251,11 @@ with st.spinner("Carregando posições do portfolio..."):
         st.error("Selecione um portfolio na barra lateral.")
         st.stop()
 
+with st.spinner("Carregando taxonomia de ativos..."):
+    assets_taxonomy = load_assets()[["Name", "Classificação Instrumento"]].rename(
+        columns={"Name": "code_key"}
+    )
+
 with st.spinner("Carregando dados de mercado do Google Sheets..."):
     try:
         market_data = load_google_sheet_market_data()
@@ -266,7 +303,7 @@ equity_position_account = rvqm_row['Nr Conta'].iloc[0]
 
 if equity_positions.empty:
     st.info(
-        f"Nenhuma posição em Ações encontrada para {selected_portfolio}. "
+        f"Nenhuma posição em Ações ou BDRs encontrada para {selected_portfolio}. "
         "Gerando ordens de abertura com base na carteira alvo."
     )
 
@@ -282,7 +319,24 @@ current_market_data = (
         on="code_key",
         suffixes=("", "_market"),
     )
+    .merge(
+        assets_taxonomy,
+        how="left",
+        on="code_key",
+        suffixes=("", "_taxonomy"),
+    )
 )
+
+current_market_data["Classificação Instrumento"] = (
+    current_market_data["Classificação Instrumento"]
+    .fillna(current_market_data["Classificação Instrumento_taxonomy"])
+    .fillna("Ação")
+)
+current_market_data = current_market_data.drop(
+    columns=["Classificação Instrumento_taxonomy"],
+    errors="ignore",
+)
+current_market_data["Lote"] = current_market_data["Classificação Instrumento"].map(instrument_lot_size)
 
 if positions_carteira.empty:
     if portfolio_total_balance_override == 0:
@@ -325,6 +379,7 @@ qty_raw = pd.Series(
 current_market_data["Quantidade Compra/Venda"] = compute_lot_orders(
     qty_raw,
     current_market_data["LAST_PRICE"],
+    current_market_data["Lote"],
 )
 qty_after = (
     current_market_data["Quantidade"]
@@ -348,14 +403,14 @@ st.markdown(
     f"{selected_portfolio} &nbsp;·&nbsp; "
     f"{equity_position_custodian} &nbsp;·&nbsp; "
     f"{equity_position_account} &nbsp;·&nbsp; "
-    f"{len(equity_positions)} ações &nbsp;·&nbsp; "
+    f"{len(equity_positions)} ativos &nbsp;·&nbsp; "
     f"posição em {positions_carteira['Data Posição'].max().strftime('%d/%m/%Y')}"
     f"</p>",
     unsafe_allow_html=True,
 )
 
 metric_cols = st.columns(4)
-metric_cols[0].metric("Ações no Portfolio RVQM", len(equity_positions))
+metric_cols[0].metric("Ativos no Portfolio RVQM", len(equity_positions))
 metric_cols[1].metric(
     "Saldo Total" + (" (override)" if portfolio_total_balance_override > 0 else ""),
     f"R$ {portfolio_total_balance:,.0f}",
@@ -366,6 +421,7 @@ metric_cols[3].metric("Saldo Alvo RVQM", f"R$ {target_equity_balance:,.0f}")
 display_columns = [
     "TIME",
     "Nome Ativo",
+    "Classificação Instrumento",
     "LAST_PRICE",
     "Quantidade",
     "Saldo Atual",
@@ -398,7 +454,7 @@ st.dataframe(
         numeric_cols_format_as_int=["Quantidade", "Quantidade Compra/Venda"],
         currency_cols=["Saldo Atual", "Saldo Alvo", "Valor Compra/Venda"],
         color_negative_positive_cols=["Valor Compra/Venda", "Quantidade Compra/Venda"],
-        left_align_cols=["Nome Ativo", "Ticker Bloomberg"],
+        left_align_cols=["Nome Ativo", "Ticker Bloomberg", "Classificação Instrumento"],
         center_align_cols=["Horário", "Operação"],
     ),
     width="stretch",
