@@ -253,7 +253,7 @@ def load_issuers() -> pd.DataFrame:
     )
 
     df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
-    df = df[["Nome Emissor", "Status do Emissor"]]
+    df = df[["Name", "Nome Emissor", "Status do Emissor"]]
     track_data_load("issuers")
     return df
 
@@ -541,7 +541,8 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame com coluna 'Emissor' adicionada.
     """
     df = df.copy()
-    df['Emissor'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
+    df['Emissor Geral'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
+    df['Identificador do Emissor Geral'] = df['Identificador do Devedor'].fillna(df['Identificador do Emissor'])
     return df
 
 

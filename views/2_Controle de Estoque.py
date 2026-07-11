@@ -53,15 +53,15 @@ if df_cd_raw is not None and df_assets is not None and df_issuers is not None:
 
         df_assets = get_emissor_column(df_assets)
         df = df_cd.merge(
-            df_assets[['Name', 'Alias', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Emissor']],
+            df_assets[['Name', 'Alias', 'Indexador', 'Data Vencimento', 'Nome Emissor', 'Nome Devedor', 'Emissor Geral', 'Identificador do Emissor Geral']],
             left_on='Ticker',
             right_on='Name',
             how='left'
         )
 
         df = df.merge(
-            df_issuers.set_index('Nome Emissor'),
-            left_on='Emissor',
+            df_issuers.set_index('Name').rename(columns={'Nome Emissor': 'Nome Emissor Geral'}),
+            left_on='Identificador do Emissor Geral',
             right_index=True,
             how='left',
         )
