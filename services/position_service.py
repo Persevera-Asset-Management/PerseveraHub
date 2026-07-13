@@ -532,17 +532,36 @@ def aggregate_positions_by_classification(
 
 def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adiciona coluna 'Emissor' preenchendo Nome Devedor ou Nome Emissor.
-    
+    Adiciona colunas de emissor preenchendo Nome Devedor ou Nome Emissor.
+
+    Quando disponíveis, também preenche ``Identificador do Emissor Geral``
+    a partir de ``Identificador do Devedor`` ou ``Identificador do Emissor``
+    (presentes no cadastro de ativos, mas não nas posições).
+
     Args:
         df: DataFrame com colunas 'Nome Devedor' e 'Nome Emissor'.
-    
+
     Returns:
-        DataFrame com coluna 'Emissor' adicionada.
+        DataFrame com colunas 'Emissor', 'Emissor Geral' e, se aplicável,
+        'Identificador do Emissor Geral'.
     """
     df = df.copy()
     df['Emissor Geral'] = df['Nome Devedor'].fillna(df['Nome Emissor'])
-    df['Identificador do Emissor Geral'] = df['Identificador do Devedor'].fillna(df['Identificador do Emissor'])
+    df['Emissor'] = df['Emissor Geral']
+
+    if 'Identificador do Devedor' in df.columns or 'Identificador do Emissor' in df.columns:
+        devedor_id = (
+            df['Identificador do Devedor']
+            if 'Identificador do Devedor' in df.columns
+            else pd.Series(pd.NA, index=df.index)
+        )
+        emissor_id = (
+            df['Identificador do Emissor']
+            if 'Identificador do Emissor' in df.columns
+            else pd.Series(pd.NA, index=df.index)
+        )
+        df['Identificador do Emissor Geral'] = devedor_id.fillna(emissor_id)
+
     return df
 
 
