@@ -94,7 +94,6 @@ def _prepare_positions(df_raw: pd.DataFrame) -> pd.DataFrame:
     df.replace(" ", np.nan, inplace=True)
     df.dropna(subset=["Nome Ativo", "Classificação do Conjunto"], inplace=True)
     df = get_emissor_column(df)
-    df.rename(columns={"Emissor": "Emissor Geral"}, inplace=True)
     return df
 
 

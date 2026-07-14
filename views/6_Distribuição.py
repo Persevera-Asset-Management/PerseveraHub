@@ -220,7 +220,6 @@ df = df_raw.copy()
 df.replace(' ', np.nan, inplace=True)
 df.dropna(subset=['Nome Ativo', 'Classificação do Conjunto'], inplace=True)
 df = get_emissor_column(df)
-df.rename(columns={'Emissor': 'Emissor Geral'}, inplace=True)
 df_target_allocations = st.session_state.df_target_allocations
 
 with st.sidebar:
