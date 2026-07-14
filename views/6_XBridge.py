@@ -201,8 +201,16 @@ if st.session_state.df_assets is None or st.session_state.df_issuers is None:
 
 try:
     df_assets = get_emissor_column(st.session_state.df_assets)
-    df_issuers = st.session_state.df_issuers.copy()
-    df_assets = df_assets.merge(df_issuers, left_on='Emissor', right_on='Nome Emissor', how='left')
+    df_issuers = st.session_state.df_issuers[["Nome Emissor", "Status do Emissor"]].drop_duplicates(
+        subset=["Nome Emissor"],
+        keep="first",
+    )
+    df_assets = df_assets.merge(
+        df_issuers,
+        left_on="Emissor",
+        right_on="Nome Emissor",
+        how="left",
+    )
 
     df_assets["Ticker Match"] = df_assets["Name"].map(normalize_text)
     asset_columns = [col for col in ASSET_COLUMNS if col in df_assets.columns]
