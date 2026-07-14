@@ -9,79 +9,58 @@ from utils.chart_helpers import create_chart
 from utils.table import style_table
 
 from persevera_tools.fixed_income import get_emissions, calculate_spread
+from persevera_tools.data import get_series
 
-st.title("Emissões e Spreads")
 
-@st.cache_data(ttl=3600)
-def load_emissions(start_date):
+st.title("Spreads de Crédito")
+
+@st.cache_data(ttl=7200)
+def load_data(codes, start_date):
     try:
-        return get_emissions(start_date=start_date, selected_fields=['code', 'empresa', 'data_emissao', 'data_vencimento', 'indice', 'juros_criterio_novo_taxa', 'valor_nominal_na_emissao', 'quantidade_emitida'])
+        fields = [
+            'mean',
+            'median',
+            'weighted_mean',
+            'count_above_mean',
+            'count_under_mean',
+            'count_yield_under_neg50bp',
+            'count_yield_neg50_0bp',
+            'count_yield_0_50bp',
+            'count_yield_50_75bp',
+            'count_yield_75_100bp',
+            'count_yield_100_150bp',
+            'count_yield_150_250bp',
+            'count_yield_above_250bp',
+            'volume_above_mean',
+            'volume_under_mean'
+        ]        
+        return get_series(codes, start_date=start_date, field=fields)
     except Exception as e:
-        st.error(f"Error loading emissions: {str(e)}")
+        st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
+
 
 with st.sidebar:
     st.header("Parâmetros")
     start_date = st.date_input("Data Inicial", pd.to_datetime(date.today() - timedelta(days=4*365)), format="DD/MM/YYYY")
     start_date_str = start_date.strftime('%Y-%m-%d')
 
-with st.spinner("Carregando dados de emissões...", show_time=True):
-    data = load_emissions(start_date=start_date_str)
-    
-with st.spinner("Calculando spread CDI+...", show_time=True):
-    spread_di = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=True)
+with st.spinner("Carregando dados de spreads...", show_time=True):
+    codes = ['persevera_anbima_debentures_spread_di', 'persevera_anbima_debentures_spread_ipca_incent']
+    data_spreads = load_data(codes, start_date=start_date_str)
 
-with st.spinner("Calculando spread IPCA+...", show_time=True):
-    spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=True)
-
-if (data.empty or
-    spread_di.empty or
-    spread_ipca_incent.empty
-):
+if data_spreads.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
-    # Create tabs for different regions
-    tabs = st.tabs(["Emissões", "Spread CDI+", "Spread IPCA+"])
-    
-    # Tab 1: Emissões
+    tabs = st.tabs(["CDI+", "IPCA+"])
+    # Tab 1: Spread CDI+
     with tabs[0]:
-        st.header("Emissões")
-        df_emissions = data.reset_index().groupby([pd.Grouper(key="data_emissao", freq="MS"), 'indice'])['volume_emissao'].sum().reset_index().pivot(
-            index='data_emissao', columns='indice', values='volume_emissao'
-        )
-
-        chart_emissions_options = create_chart(
-            data=df_emissions,
-            columns=df_emissions.columns.tolist(),
-            names=df_emissions.columns.tolist(),
-            chart_type='column',
-            stacking='normal',
-            title="Emissões de Debentures",
-            y_axis_title="Volume Emitido (R$)",
-            decimal_precision=0
-        )
-        hct.streamlit_highcharts(chart_emissions_options)
-
-        st.subheader("Detalhamento das Emissões Registradas")
-        st.dataframe(
-            style_table(
-                data.sort_index(ascending=False).reset_index(),
-                column_names=['Data de Emissão', 'Ticker', 'Nome', 'Data de Vencimento', 'Índice', 'Juros (%)', 'Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido'],
-                date_cols=['Data de Emissão', 'Data de Vencimento'],
-                percent_cols=['Juros (%)'],
-                currency_cols=['Valor Nominal na Emissão', 'Quantidade Emitida', 'Volume Emitido'],
-            ),
-            hide_index=True
-        )
-
-    # Tab 2: Spread CDI+
-    with tabs[1]:
-        st.header("CDI+")
+        st.subheader("CDI+")
 
         row_1 = st.columns(2)
         with row_1[0]:
             chart_spread_cdi = create_chart(
-                data=spread_di,
+                data=data_spreads["persevera_anbima_debentures_spread_di"],
                 columns=["median", "mean", "weighted_mean"],
                 names=["Mediana", "Média", "Média Ponderada"],
                 chart_type='line',
@@ -93,7 +72,7 @@ else:
 
         with row_1[1]:
             chart_distribution_cdi = create_chart(
-                data=spread_di,
+                data=data_spreads["persevera_anbima_debentures_spread_di"],
                 columns=['count_yield_0_50bp', 'count_yield_50_75bp', 'count_yield_75_100bp',
                          'count_yield_100_150bp', 'count_yield_150_250bp',
                          'count_yield_above_250bp'],
@@ -109,7 +88,7 @@ else:
         row_2 = st.columns(2)
         with row_2[0]:
             chart_average_count_cdi = create_chart(
-                data=spread_di,
+                data=data_spreads["persevera_anbima_debentures_spread_di"],
                 columns=['count_above_mean', 'count_under_mean'],
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',
@@ -122,7 +101,7 @@ else:
 
         with row_2[1]:
             chart_average_volume_cdi = create_chart(
-                data=spread_di,
+                data=data_spreads["persevera_anbima_debentures_spread_di"],
                 columns=['volume_above_mean', 'volume_under_mean'],
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',
@@ -134,14 +113,14 @@ else:
             hct.streamlit_highcharts(chart_average_volume_cdi)
 
     # Tab 3: Spread IPCA
-    with tabs[2]:
+    with tabs[1]:
         # Incentivado
-        st.header("IPCA+ Incentivado")
+        st.subheader("IPCA+ Incentivado")
 
         row_1 = st.columns(2)
         with row_1[0]:
             chart_spread_ipca_incent = create_chart(
-                data=spread_ipca_incent,
+                data=data_spreads["persevera_anbima_debentures_spread_ipca_incent"],
                 columns=["median", "mean", "weighted_mean"],
                 names=["Mediana", "Média", "Média Ponderada"],
                 chart_type='line',
@@ -153,7 +132,7 @@ else:
 
         with row_1[1]:
             chart_distribution_ipca_incent = create_chart(
-                data=spread_ipca_incent,
+                data=data_spreads["persevera_anbima_debentures_spread_ipca_incent"],
                 columns=['count_yield_under_neg50bp', 'count_yield_neg50_0bp',
                          'count_yield_0_50bp', 'count_yield_50_75bp', 'count_yield_75_100bp',
                          'count_yield_100_150bp', 'count_yield_150_250bp',
@@ -170,7 +149,7 @@ else:
         row_2 = st.columns(2)
         with row_2[0]:
             chart_average_count_ipca_incent = create_chart(
-                data=spread_ipca_incent,
+                data=data_spreads["persevera_anbima_debentures_spread_ipca_incent"],
                 columns=['count_above_mean', 'count_under_mean'],
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',
@@ -183,7 +162,7 @@ else:
 
         with row_2[1]:
             chart_average_volume_ipca_incent = create_chart(
-                data=spread_ipca_incent,
+                data=data_spreads["persevera_anbima_debentures_spread_ipca_incent"],
                 columns=['volume_above_mean', 'volume_under_mean'],
                 names=["Acima da Média", "Abaixo da Média"],
                 chart_type='area',

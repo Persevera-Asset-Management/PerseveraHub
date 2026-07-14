@@ -15,7 +15,15 @@ st.title("Reunião · Brasil Asset III")
 @st.cache_data(ttl=3600)
 def load_data(codes, start_date):
     try:
-        return get_series(codes, start_date=start_date, field='close')
+        return get_series(codes, start_date=start_date, field="close")
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=3600)
+def load_spreads(codes, start_date):
+    try:
+        return get_series(codes, start_date=start_date, field=["median", "mean", "weighted_mean"])
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
@@ -33,14 +41,9 @@ with st.sidebar:
 
 with st.spinner("Carregando dados...", show_time=True):
     data = load_data(CODES, start_date=start_date_str)
+    spreads = load_spreads(["persevera_anbima_debentures_spread_di", "persevera_anbima_debentures_spread_ipca_incent"], start_date=start_date_str)
 
-with st.spinner("Calculando spread CDI+...", show_time=True):
-    spread_cdi = calculate_spread("DI", deb_incent_lei_12431=False, start_date=start_date_str, calculate_distribution=False)
-
-with st.spinner("Calculando spread IPCA+ Incentivado...", show_time=True):
-    spread_ipca_incent = calculate_spread("IPCA", deb_incent_lei_12431=True, start_date=start_date_str, calculate_distribution=False)
-
-if data.empty:
+if data.empty or spreads.empty:
     st.warning("Não foi possível carregar os dados. Verifique sua conexão ou tente novamente mais tarde.")
 else:
     # Organize charts by context and group
@@ -51,27 +54,27 @@ else:
     
     # Tab 1: Títulos Públicos
     with tabs[0]:
-        st.header("Títulos Públicos")
+        st.subheader("Títulos Públicos")
         render_chart_group_with_context(data, chart_configs, "Títulos Públicos", "Curvas de Juros", charts_by_context)
 
     # Tab 2: Renda Variável
     with tabs[1]:
-        st.header("Renda Variável")
+        st.subheader("Renda Variável")
         render_chart_group_with_context(data, chart_configs, "Renda Variável", "Índices", charts_by_context)
 
     # Tab 3: Moedas
     with tabs[2]:
-        st.header("Moedas")
+        st.subheader("Moedas")
         render_chart_group_with_context(data, chart_configs, "Moedas", "Índices e Taxas de Câmbio", charts_by_context)
 
     # Tab 4: Crédito Privado
     with tabs[3]:
-        st.header("Crédito Privado")
+        st.subheader("Crédito Privado")
 
         row_1 = st.columns(2)
         with row_1[0]:
             chart_spread_cdi_options = create_chart(
-                data=spread_cdi,
+                data=spreads["persevera_anbima_debentures_spread_di"],
                 columns=["median", "mean", "weighted_mean"],
                 names=["Mediana", "Média", "Média Ponderada"],
                 chart_type='line',
@@ -83,7 +86,7 @@ else:
 
         with row_1[1]:
             chart_spread_ipca_incent_options = create_chart(
-                data=spread_ipca_incent,
+                data=spreads["persevera_anbima_debentures_spread_ipca_incent"],
                 columns=["median", "mean", "weighted_mean"],
                 names=["Mediana", "Média", "Média Ponderada"],
                 chart_type='line',
