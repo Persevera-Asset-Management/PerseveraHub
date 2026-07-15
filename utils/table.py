@@ -87,6 +87,9 @@ def style_table(
 
     styled_obj = df_styled.style.format(formatters)
 
+    # Force white cell backgrounds (Glide grid); highlights below override this
+    styled_obj = styled_obj.set_properties(**{"background-color": "#ffffff"})
+
     # Conditional row highlighting
     if highlight_row_by_column and highlight_row_if_value_equals is not None and highlight_row_by_column in df_styled.columns:
         def highlight_matching_rows(row):

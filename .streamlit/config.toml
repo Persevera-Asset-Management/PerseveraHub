@@ -1,11 +1,13 @@
 [theme]
 base = "light"
-primaryColor = "#2C74B3"
+primaryColor = "#0d2340"
 backgroundColor = "#f2f2f2"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#262730"
+textColor = "#192626"
 font = "Roboto"
 showSidebarBorder = true
+dataframeBorderColor = "#e8e4dc"
+dataframeHeaderBackgroundColor = "#ebe4d8"
 
 [theme.sidebar]
 backgroundColor = "#e0ecfc"

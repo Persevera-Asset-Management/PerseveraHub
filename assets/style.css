@@ -34,23 +34,21 @@ body {
     --color-text-muted: #949694;
     --color-text-on-dark: #ffffff;
     --color-text-on-light: var(--color-text-primary);
-    --color-text-heading-dark: #192626;
-    --color-text-heading-medium: #0d2340;
+    --color-text-heading-dark: var(--color-text-primary);
+    --color-text-heading-medium: var(--color-text-secondary);
 
     /* Background Colors */
     --color-bg-main: #c0b096;
-    --color-bg-secondary: #b2a491;
+    --color-bg-secondary: var(--color-primary-lighter);
     --color-bg-header-sidebar: var(--color-primary-dark);
-    --color-bg-light-gray: #b2a491;
-    --color-bg-lighter-gray: #c0b096;
     --color-bg-card: #ffffff;
     --color-bg-overlay: rgba(25, 38, 38, 0.5);
 
     /* Border Colors */
-    --color-border-default: #b59b76;
-    --color-border-light: #b2a491;
-    --color-border-medium: #a8b8bd;
-    --color-border-dark: #949694;
+    --color-border-default: var(--color-primary-light);
+    --color-border-light: var(--color-primary-lighter);
+    --color-border-medium: var(--color-primary-accent);
+    --color-border-dark: var(--color-text-muted);
 
     /* State Colors */
     --color-success: #10b981;
@@ -69,9 +67,8 @@ body {
     --font-family-secondary: 'Roboto Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
     
-    --font-weight-light: 300;
+    /* Loaded weights: Fahkwang 600; Roboto Condensed 400/700 */
     --font-weight-regular: 400;
-    --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
 
@@ -128,13 +125,6 @@ body {
     --metric-font-size-value: var(--font-size-2xl);
     --metric-font-size-delta: var(--font-size-base);
     --metric-color-value: var(--color-primary-medium);
-
-    /* Breakpoints */
-    --breakpoint-sm: 640px;
-    --breakpoint-md: 768px;
-    --breakpoint-lg: 1024px;
-    --breakpoint-xl: 1280px;
-    --breakpoint-2xl: 1536px;
 }
 
 /* ===== REDUCED MOTION SUPPORT ===== */
@@ -245,7 +235,7 @@ p {
 
 .stAppHeader .rc-overflow-item {
     font-family: var(--font-family-secondary);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-regular);
     font-size: var(--font-size-sm);
 }
 
@@ -260,41 +250,46 @@ p {
 }
 
 /* ===== BUTTON COMPONENTS ===== */
-.stButton > button {
-    background-color: var(--color-primary-lighter) !important;
-    color: var(--color-text-on-dark) !important;
+.stButton > button,
+.stDownloadButton > button {
+    background-color: transparent !important;
+    color: var(--color-primary-medium) !important;
     border-radius: var(--border-radius-md);
-    border: none;
+    border: 1.5px solid var(--color-primary-medium) !important;
     padding: var(--spacing-2) var(--spacing-4);
-    font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
     font-family: var(--font-family-secondary);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
     position: relative;
     overflow: hidden;
 }
 
-.stButton > button:hover {
+.stButton > button:hover,
+.stDownloadButton > button:hover {
     background-color: var(--color-primary-light) !important;
-    color: var(--color-text-on-dark) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px var(--color-shadow-medium);
+    color: var(--color-primary-dark) !important;
+    border-color: var(--color-primary-light) !important;
+    box-shadow: 0 2px 6px var(--color-shadow-light);
 }
 
-.stButton > button:active {
-    background-color: var(--color-primary-light) !important;
-    color: var(--color-text-on-dark) !important;
-    transform: translateY(0);
-    box-shadow: 0 2px 4px var(--color-shadow-medium);
-}
-
-.stButton > button:disabled {
+.stButton > button:active,
+.stDownloadButton > button:active {
     background-color: var(--color-primary-lighter) !important;
-    color: var(--color-text-on-dark) !important;
+    color: var(--color-primary-dark) !important;
+    border-color: var(--color-primary-lighter) !important;
+    box-shadow: none;
+}
+
+.stButton > button:disabled,
+.stDownloadButton > button:disabled {
+    background-color: transparent !important;
+    color: var(--color-text-muted) !important;
+    border-color: var(--color-border-dark) !important;
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
+    box-shadow: none;
 }
 
 /* ===== METRICS COMPONENTS ===== */
@@ -307,7 +302,7 @@ p {
 
 [data-testid="stMetricDelta"] {
     font-size: var(--metric-font-size-delta);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-regular);
     margin-top: var(--spacing-1);
 }
 
@@ -317,15 +312,13 @@ div[data-testid="stMetric"] {
     border-radius: var(--border-radius-lg);
     padding: var(--spacing-4);
     box-shadow: 0 2px 4px var(--color-shadow-light);
-    transition: all var(--transition-normal);
+    transition: box-shadow var(--transition-normal);
     position: relative;
     overflow: hidden;
 }
 
 div[data-testid="stMetric"]:hover {
-    box-shadow: 0 8px 16px var(--color-shadow-medium);
-    transform: translateY(-2px);
-    border-color: var(--color-border-medium);
+    box-shadow: 0 4px 10px var(--color-shadow-medium);
 }
 
 div[data-testid="stMetric"]::before {
@@ -339,38 +332,59 @@ div[data-testid="stMetric"]::before {
 }
 
 /* ===== TABS COMPONENTS ===== */
+.stTabs [data-baseweb="tab-list"] {
+    gap: var(--spacing-1);
+    border-bottom: 2px solid var(--color-border-default);
+    background-color: transparent;
+}
+
 .stTabs [data-baseweb="tab"] {
-    background-color: var(--color-bg-light-gray);
-    color: var(--color-primary-dark);
-    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border-radius: 0;
     padding: var(--spacing-3) var(--spacing-4);
-    border: 1px solid var(--color-border-default);
-    border-bottom: none;
-    font-weight: var(--font-weight-medium);
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-weight: var(--font-weight-regular);
     font-family: var(--font-family-secondary);
-    transition: all var(--transition-fast);
+    font-size: var(--font-size-sm);
+    transition: color var(--transition-fast), border-color var(--transition-fast);
     position: relative;
 }
 
 .stTabs [data-baseweb="tab"]:hover {
-    background-color: var(--color-bg-lighter-gray);
+    background-color: transparent;
     color: var(--color-primary-medium);
+    border-bottom-color: var(--color-primary-accent);
+}
+
+.stTabs [data-baseweb="tab"]:focus-visible {
+    outline: 2px solid var(--color-primary-light);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-xs);
 }
 
 .stTabs [aria-selected="true"] {
-    background-color: var(--color-primary-light);
-    color: var(--color-text-on-dark);
-    box-shadow: 0 2px 4px var(--color-shadow-light);
+    background-color: transparent;
+    color: var(--color-primary-medium);
+    font-weight: var(--font-weight-bold);
+    border-bottom-color: var(--color-primary-medium);
+    box-shadow: none;
 }
 
 .stTabs [aria-selected="true"]::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: var(--color-primary-medium);
+    display: none;
+}
+
+/* Nested tabs: quieter second level */
+.stTabs .stTabs [data-baseweb="tab"] {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-xs);
+}
+
+.stTabs .stTabs [data-baseweb="tab-list"] {
+    border-bottom-color: var(--color-border-light);
 }
 
 /* ===== EXPANDER COMPONENTS ===== */
@@ -472,46 +486,41 @@ div[data-testid="stExpander"] details summary span {
     padding: var(--spacing-4) !important;
 }
 
-/* ===== UTILITY CLASSES ===== */
-.card-container {
-    background-color: var(--color-bg-card);
-    border: 1px solid var(--color-border-light);
+/* ===== DATAFRAME & WIDGET CHROME ===== */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrameResizable"] {
+    border: none;
     border-radius: var(--border-radius-lg);
-    padding: var(--spacing-6);
-    box-shadow: 0 2px 8px var(--color-shadow-light);
-    transition: all var(--transition-normal);
-}
-
-.card-container:hover {
-    box-shadow: 0 4px 12px var(--color-shadow-medium);
-    transform: translateY(-1px);
-}
-
-/* Loading States */
-.loading {
-    position: relative;
     overflow: hidden;
+    box-shadow: 0 2px 8px var(--color-shadow-light);
+    background-color: var(--color-bg-card);
 }
 
-.loading::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
-    );
-    animation: loading 1.5s infinite;
+[data-testid="stDataFrame"] [data-testid="stElementToolbar"],
+[data-testid="stDataFrameResizable"] [data-testid="stElementToolbar"] {
+    background-color: transparent;
+    gap: var(--spacing-1);
 }
 
-@keyframes loading {
-    0% { left: -100%; }
-    100% { left: 100%; }
+[data-testid="stDataFrame"] [data-testid="stElementToolbarButton"],
+[data-testid="stDataFrameResizable"] [data-testid="stElementToolbarButton"] {
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-secondary);
+}
+
+[data-testid="stDataFrame"] [data-testid="stElementToolbarButton"]:hover,
+[data-testid="stDataFrameResizable"] [data-testid="stElementToolbarButton"]:hover {
+    background-color: rgba(181, 155, 118, 0.2);
+    color: var(--color-primary-dark);
+}
+
+[data-testid="stWidgetLabel"] p,
+[data-testid="stWidgetLabel"] label,
+label[data-testid="stWidgetLabel"] {
+    font-family: var(--font-family-secondary);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -523,10 +532,6 @@ div[data-testid="stExpander"] details summary span {
     
     div[data-testid="stMetric"] {
         padding: var(--spacing-3);
-    }
-    
-    .card-container {
-        padding: var(--spacing-4);
     }
 }
 
@@ -541,7 +546,11 @@ div[data-testid="stExpander"] details summary span {
     
     .stTabs [data-baseweb="tab"] {
         padding: var(--spacing-2) var(--spacing-3);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-xs);
+    }
+
+    .stTabs .stTabs [data-baseweb="tab"] {
+        padding: var(--spacing-1) var(--spacing-2);
     }
 }
 
@@ -556,9 +565,10 @@ div[data-testid="stExpander"] details summary span {
         background: white !important;
         color: black !important;
     }
-    
-    .card-container {
+
+    [data-testid="stDataFrame"],
+    [data-testid="stDataFrameResizable"],
+    div[data-testid="stMetric"] {
         box-shadow: none !important;
-        border: 1px solid #ccc !important;
     }
 }

@@ -125,8 +125,8 @@ weights_df = equities_portfolio.pivot(index='date', columns='code', values='weig
 weights_df = weights_df.div(weights_df.sum(axis=1), axis=0).fillna(0)
 weights_df = weights_df.reindex(prices.index).ffill()
 
-returns_portfolio = weights_df.mul(prices.pct_change(), axis=0).sum(axis=1)
-returns_df = pd.concat([returns_portfolio, indicators.pct_change().fillna(0)], axis=1)
+returns_portfolio = weights_df.mul(prices.pct_change(fill_method=None), axis=0).sum(axis=1)
+returns_df = pd.concat([returns_portfolio, indicators.pct_change(fill_method=None).fillna(0)], axis=1)
 returns_df.columns = ['Carteira', 'Ibovespa', 'SMLL', 'CDI']
 
 # =============================================================================
