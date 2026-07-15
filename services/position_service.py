@@ -831,15 +831,24 @@ def enrich_snapshot_with_officers(
     snapshot: dict,
     df_portfolio_info: pd.DataFrame | None = None,
 ) -> dict:
-    """Adiciona ``officer_atual`` a cada portfolio do snapshot."""
+    """Adiciona ``officer_atual`` e ``tipo_cliente`` a cada portfolio do snapshot."""
     if df_portfolio_info is None:
         df_portfolio_info = load_portfolio_info()
 
-    officers = (
+    portfolio_meta = (
         df_portfolio_info.dropna(subset=['Name'])
         .drop_duplicates(subset=['Name'])
-        .set_index('Name')['Officer Atual']
-        .to_dict()
+        .set_index('Name')
+    )
+    officers = (
+        portfolio_meta['Officer Atual'].to_dict()
+        if 'Officer Atual' in portfolio_meta.columns
+        else {}
+    )
+    tipos_cliente = (
+        portfolio_meta['Tipo Cliente'].to_dict()
+        if 'Tipo Cliente' in portfolio_meta.columns
+        else {}
     )
 
     enriched: dict = {}
@@ -848,6 +857,9 @@ def enrich_snapshot_with_officers(
         officer = officers.get(code)
         if officer is not None and pd.notna(officer):
             entry['officer_atual'] = officer
+        tipo = tipos_cliente.get(code)
+        if tipo is not None and pd.notna(tipo):
+            entry['tipo_cliente'] = str(tipo).strip()
         enriched[code] = entry
     return enriched
 
@@ -855,6 +867,7 @@ def enrich_snapshot_with_officers(
 def clients_from_snapshot(
     snapshot: dict,
     officer_filter: str | list[str] | None = None,
+    tipo_cliente_filter: list[str] | None = None,
     exclude: list[str] | None = None,
 ) -> list:
     """
@@ -863,6 +876,7 @@ def clients_from_snapshot(
     Espelha ``load_snapshot`` do allocation_engine, mas aceita dict em memória.
 
     officer_filter : string única (match parcial) ou lista de officers (match exato).
+    tipo_cliente_filter : lista de tipos (ex.: ``["PF", "PJ"]``); vazio/None = todos.
     """
     from persevera_tools.quant_research.allocation_engine import Client, normalize_issuer
 
@@ -877,6 +891,7 @@ def clients_from_snapshot(
         partial_match = False
 
     allowed_officers = {str(o) for o in officer_filters}
+    allowed_tipos = {str(t).strip() for t in (tipo_cliente_filter or []) if str(t).strip()}
 
     for cod, data in snapshot.items():
         pl = data.get('patrimonio_brl', 0)
@@ -896,6 +911,11 @@ def clients_from_snapshot(
                 if not any(f.lower() in officer_str.lower() for f in officer_filters):
                     continue
             elif officer_str not in allowed_officers:
+                continue
+
+        if allowed_tipos:
+            tipo = data.get('tipo_cliente')
+            if tipo is None or str(tipo).strip() not in allowed_tipos:
                 continue
 
         cash = (

@@ -7,7 +7,6 @@ textColor = "#192626"
 font = "Roboto"
 showSidebarBorder = true
 dataframeBorderColor = "#e8e4dc"
-dataframeHeaderBackgroundColor = "#ebe4d8"
 
 [theme.sidebar]
 backgroundColor = "#e0ecfc"

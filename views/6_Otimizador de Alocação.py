@@ -188,6 +188,13 @@ with st.sidebar:
         help="Deixe vazio para incluir todos os officers.",
     )
 
+    selected_tipos_cliente = st.multiselect(
+        "Tipo de cliente",
+        options=["PF", "PJ"],
+        default=[],
+        help="Deixe vazio para incluir todos os tipos. Fundo e PIC não entram nesta lista.",
+    )
+
     portfolio_codes = sorted(snapshot.keys())
     exclude = st.multiselect(
         "Excluir carteiras",
@@ -233,6 +240,7 @@ show_data_freshness("positions", label="Posições", ttl_minutes=60)
 clients_preview = clients_from_snapshot(
     snapshot,
     officer_filter=selected_officers or None,
+    tipo_cliente_filter=selected_tipos_cliente or None,
     exclude=exclude or None,
 )
 st.caption(f"{len(clients_preview)} clientes no universo selecionado · {len(snapshot)} carteiras no snapshot")
@@ -298,6 +306,7 @@ run_allocation = st.button("Executar alocação", type="primary")
 
 allocation_context = {
     "officer_filter": tuple(sorted(selected_officers)),
+    "tipo_cliente_filter": tuple(sorted(selected_tipos_cliente)),
     "exclude": tuple(sorted(exclude)),
     "objective": objective,
     "min_pct": min_pct,
