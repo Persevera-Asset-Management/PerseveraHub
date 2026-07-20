@@ -1,8 +1,8 @@
 import pandas as pd
-from pandas.io.formats.style import Styler
-from typing import List, Dict, Any, Optional, Union, Tuple, Literal
-from dateutil.relativedelta import relativedelta
 import numpy as np
+from pandas.io.formats.style import Styler
+from dateutil.relativedelta import relativedelta
+from typing import List, Dict, Any, Optional, Union, Tuple, Literal
 
 
 def style_table(

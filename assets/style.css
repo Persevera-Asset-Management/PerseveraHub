@@ -491,7 +491,6 @@ div[data-testid="stExpander"] details summary span {
 [data-testid="stDataFrameResizable"] {
     border: none;
     border-radius: var(--border-radius-lg);
-    overflow: hidden;
     box-shadow: 0 2px 8px var(--color-shadow-light);
     background-color: var(--color-bg-card);
 }
