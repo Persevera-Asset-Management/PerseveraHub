@@ -158,7 +158,7 @@ def find_asset_status_column(df_assets: pd.DataFrame) -> str | None:
 def load_data():
     """Carrega todos os dados necessários para a página."""
     with st.spinner("Carregando dados...", show_time=True):
-        st.session_state.df_assets = load_assets()
+        st.session_state.df_assets = load_assets(instrumentos=("CRI", "CRA", "Debênture", "CDCA"))
         st.session_state.df_issuers = load_issuers()
 
 for key in ("df_assets", "df_issuers"):

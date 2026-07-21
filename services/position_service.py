@@ -3,6 +3,7 @@ import numpy as np
 import streamlit as st
 from datetime import datetime, timedelta
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 from utils.ui import track_data_load
@@ -159,6 +160,54 @@ def load_portfolio_from_comdinheiro(portfolios: tuple, date_report: str) -> pd.D
     return df
 
 
+@st.cache_data(ttl=_CACHE_TTL)
+def _load_historical_positions_one(portfolio: str, start_date: str, end_date: str) -> pd.DataFrame:
+    """Busca posições históricas de uma única carteira (unidade de cache)."""
+    provider = ComdinheiroProvider()
+    return provider.get_data(
+        category='comdinheiro',
+        data_type='portfolio_historical_positions',
+        portfolios=[portfolio],
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+def load_historical_positions_from_comdinheiro(portfolios: tuple, start_date: str, end_date: str) -> pd.DataFrame:
+    """
+    Carrega posições históricas do ComDinheiro.
+
+    Faz fetch por carteira (cache individual) e, com várias carteiras, em paralelo.
+    Assim, adicionar uma carteira à seleção não refetcha as que já estão em cache.
+
+    Args:
+        portfolios: Tuple de portfolios.
+        start_date: Data de início.
+        end_date: Data fim.
+
+    Returns:
+        DataFrame com as posições históricas do portfolio.
+    """
+    if not portfolios:
+        return pd.DataFrame()
+
+    frames: list[pd.DataFrame] = []
+    max_workers = min(4, len(portfolios))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(_load_historical_positions_one, portfolio, start_date, end_date): portfolio
+            for portfolio in portfolios
+        }
+        for future in as_completed(futures):
+            chunk = future.result()
+            if chunk is not None and not chunk.empty:
+                frames.append(chunk)
+
+    track_data_load("portfolio_historical_positions_comdinheiro")
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
+
 _COMDINHEIRO_PORTFOLIO_COLUMN_MAP = {
     'date': 'Data',
     'carteira': 'Carteira',
@@ -220,20 +269,60 @@ def prepare_comdinheiro_portfolio_positions_df(df: pd.DataFrame) -> pd.DataFrame
     return out
 
 
+def prepare_comdinheiro_historical_positions_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prepara posições históricas do ComDinheiro (sem coluna `ticker` nativa).
+
+    O endpoint histórico retorna `date`, `carteira`, `ativo`, `descricao`, `saldo_bruto`.
+    Usa `ativo` como base do ticker e aplica a mesma normalização do snapshot.
+
+    Args:
+        df: DataFrame retornado por `load_historical_positions_from_comdinheiro`.
+
+    Returns:
+        DataFrame com colunas amigáveis e `Ticker` normalizado.
+    """
+    rename_map = {
+        col: _COMDINHEIRO_PORTFOLIO_COLUMN_MAP[col]
+        for col in df.columns
+        if col in _COMDINHEIRO_PORTFOLIO_COLUMN_MAP
+    }
+    out = df.rename(columns=rename_map).copy()
+    if 'Data' in out.columns:
+        out['Data'] = pd.to_datetime(out['Data'])
+    ticker_source = out['Ticker'] if 'Ticker' in out.columns else out['Ativo']
+    out['Ticker'] = _normalize_comdinheiro_tickers(ticker_source.astype(str))
+    return out
+
+
 @st.cache_data(ttl=_CACHE_TTL)
-def load_assets() -> pd.DataFrame:
+def load_assets(
+    instrumentos: tuple[str, ...] | None = None,
+) -> pd.DataFrame:
     """
     Carrega ativos do Fibery.
 
+    Args:
+        instrumentos: Se informado, filtra por Classificação Instrumento no Fibery
+            (ex: ``("Ação", "BDR")``). ``None`` retorna todos os ativos.
+
     Returns:
-        DataFrame com as ativos.
+        DataFrame com os ativos.
     """
-    
-    df = read_fibery(
-        table_name="Inv-Taxonomia/Ativos",
-        include_fibery_fields=False,
-    )
-    df = df.drop_duplicates(subset=['Name'])
+    read_kwargs: dict = {
+        "table_name": "Inv-Taxonomia/Ativos",
+        "include_fibery_fields": False,
+    }
+    if instrumentos:
+        read_kwargs["where_filter"] = [
+            "q/in",
+            ["Inv-Taxonomia/Classificação Instrumento", "Inv-Taxonomia/Name"],
+            "$instrumentos",
+        ]
+        read_kwargs["params"] = {"$instrumentos": list(instrumentos)}
+
+    df = read_fibery(**read_kwargs)
+    df = df.drop_duplicates(subset=["Name"])
     track_data_load("assets")
     return df
 

@@ -8,16 +8,13 @@ from services.financial_data_service import (
     SafeFinancialDataService,
     SOURCE_TO_PROVIDER,
 )
-from persevera_tools.db.fibery import read_fibery
+from services.position_service import load_assets
 
 st.title('Download de Dados')
 
 def load_cnpjs():
-    df = read_fibery(
-        table_name="Inv-Taxonomia/Ativos",
-        include_fibery_fields=False
-    )
-    cnpjs = df[np.isin(df["Classificação Instrumento"], ["Fundo de Investimento", "Previdência Privada"])]["Name"].drop_duplicates().tolist()
+    df = load_assets(("Fundo de Investimento", "Previdência Privada"))
+    cnpjs = df["Name"].drop_duplicates().tolist()
     return cnpjs
 
 def create_download_button(
