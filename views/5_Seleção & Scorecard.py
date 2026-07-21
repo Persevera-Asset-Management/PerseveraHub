@@ -248,6 +248,39 @@ def build_labels(cnpj_list: list, mapping: dict) -> dict:
     counts = Counter(raw.values())
     return {c: (f"{n} ({c})" if counts[n] > 1 else n) for c, n in raw.items()}
 
+def cumulative_return_pct(nav_df: pd.DataFrame) -> pd.DataFrame:
+    """Cumulative return (%) from the first row; NaNs before inception stay NaN."""
+    if nav_df.empty or len(nav_df) < 2:
+        return pd.DataFrame(index=nav_df.index)
+    rets = nav_df.ffill().pct_change(fill_method=None)
+    cum = (1 + rets).cumprod()
+    cum.iloc[0] = 1.0
+    return (cum - 1) * 100
+
+def common_start_date(nav_df: pd.DataFrame) -> pd.Timestamp | None:
+    """Earliest date on which every column has a valid observation."""
+    if nav_df.empty:
+        return None
+    starts = [nav_df[c].first_valid_index() for c in nav_df.columns]
+    starts = [s for s in starts if s is not None]
+    return max(starts) if starts else None
+
+def render_perf_chart(data: pd.DataFrame, columns: list, key: str) -> None:
+    valid = [c for c in columns if c in data.columns]
+    if not valid or data[valid].dropna(how="all").empty:
+        st.info("Dados insuficientes para exibir o gráfico.")
+        return
+    chart_obj = create_chart(
+        data=data,
+        columns=valid,
+        names=valid,
+        chart_type="line",
+        title="",
+        y_axis_title="%",
+        enable_fullscreen_on_dblclick=True,
+    )
+    render_chart(chart_obj, key=key)
+
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
 with st.sidebar:
@@ -445,29 +478,75 @@ with chart_col1:
 with chart_col2:
     show_cdi = st.checkbox("Incluir CDI", value=True, key="show_cdi")
 
-chart_series = selected_for_chart[:]
-nav_chart = nav_lb[selected_for_chart].copy() if selected_for_chart else pd.DataFrame(index=nav_lb.index)
-
-if show_cdi and not cdi.empty:
-    cdi_aligned = cdi.reindex(nav_lb.index, method="ffill")
-    nav_chart = nav_chart.join(cdi_aligned, how="left")
-    chart_series = selected_for_chart + ["CDI"]
-
-if not nav_chart.empty and chart_series:
-    nav_chart = nav_chart.ffill().dropna(how="all")
-    cum_ret = ((1 + nav_chart.pct_change().fillna(0)).cumprod() - 1) * 100
-    valid_cols = [c for c in chart_series if c in cum_ret.columns]
-
-    if valid_cols:
-        chart_obj = create_chart(
-            data=cum_ret,
-            columns=valid_cols,
-            names=valid_cols,
-            chart_type="line",
-            title="",
-            y_axis_title="%",
-            enable_fullscreen_on_dblclick=True,
-        )
-        render_chart(chart_obj, key="scorecard_perf_chart")
-else:
+if not selected_for_chart:
     st.info("Selecione fundos para exibir o gráfico de performance.")
+else:
+    cdi_aligned = (
+        cdi.reindex(nav_lb.index, method="ffill")
+        if show_cdi and not cdi.empty
+        else None
+    )
+
+    tab_labels = ["Comparativo"] + selected_for_chart
+    tabs = st.tabs(tab_labels)
+
+    # ── Comparativo: common start across selected funds (+ CDI if shown) ──
+    with tabs[0]:
+        funds_nav = nav_lb[selected_for_chart].copy()
+        common_cols = list(selected_for_chart)
+        if cdi_aligned is not None:
+            funds_nav = funds_nav.join(cdi_aligned, how="left")
+            common_cols = selected_for_chart + ["CDI"]
+
+        start = common_start_date(funds_nav[selected_for_chart])
+        if start is None:
+            st.info("Dados insuficientes para o comparativo.")
+        else:
+            sliced = funds_nav.loc[start:, common_cols].dropna(how="all")
+            # Drop rows where any fund is still missing (align to full overlap)
+            sliced = sliced.dropna(subset=selected_for_chart, how="any")
+            if cdi_aligned is not None and "CDI" in sliced.columns:
+                sliced["CDI"] = sliced["CDI"].ffill()
+
+            if len(sliced) < 2:
+                st.info("Período comum insuficiente entre os fundos selecionados.")
+            else:
+                st.caption(
+                    f"Período comum a partir de **{start.strftime('%d/%m/%Y')}** "
+                    "(início do fundo mais recente entre os selecionados)."
+                )
+                render_perf_chart(
+                    cumulative_return_pct(sliced),
+                    common_cols,
+                    key="scorecard_perf_common",
+                )
+
+    # ── Individual: rebase from each fund's own inception ──
+    for i, label in enumerate(selected_for_chart):
+        with tabs[i + 1]:
+            series = nav_lb[[label]].copy()
+            first = series[label].first_valid_index()
+            if first is None:
+                st.info(f"Sem dados de NAV para {label}.")
+                continue
+
+            indiv = series.loc[first:].copy()
+            cols = [label]
+            if cdi_aligned is not None:
+                indiv = indiv.join(cdi_aligned.loc[first:], how="left")
+                indiv["CDI"] = indiv["CDI"].ffill()
+                cols = [label, "CDI"]
+
+            indiv = indiv.dropna(subset=[label])
+            if len(indiv) < 2:
+                st.info(f"Dados insuficientes para {label}.")
+                continue
+
+            st.caption(
+                f"Desde a inception em **{first.strftime('%d/%m/%Y')}**."
+            )
+            render_perf_chart(
+                cumulative_return_pct(indiv[cols]),
+                cols,
+                key=f"scorecard_perf_indiv_{i}",
+            )
