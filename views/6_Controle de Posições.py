@@ -14,11 +14,14 @@ from services.position_service import (
     load_target_allocations,
     load_accounts,
     load_instruments_fgc,
+    load_issuers,
     get_latest_date_data,
     get_emissor_column,
     INSTRUMENTOS_RF,
     ASSET_CLASSES_ORDER,
 )
+
+EMISSOR_STATUS_ALERTAS = ("Não Aprovável", "Reprovado")
 
 st.title("Controle de Posições")
 
@@ -38,6 +41,7 @@ def load_data(carteiras):
         df_positions = load_positions()
         st.session_state.df_positions = df_positions
         st.session_state.instruments_fgc = load_instruments_fgc()
+        st.session_state.df_issuers = load_issuers()
         st.session_state.df_target_allocations = load_target_allocations(include_limits=True)
         st.session_state.df_accounts = load_accounts()
         st.session_state.df = df_positions[df_positions['Portfolio'].isin(carteiras)]
@@ -50,6 +54,7 @@ if selected_carteiras:
     df_target_allocations = st.session_state.df_target_allocations
     df_accounts = st.session_state.df_accounts
     instruments_fgc = st.session_state.instruments_fgc
+    df_issuers = st.session_state.df_issuers
     is_single_carteira = len(selected_carteiras) == 1
 
     try:
@@ -195,7 +200,7 @@ if selected_carteiras:
         # =========================================================================
         # SEÇÃO 2 — Gráficos
         # =========================================================================
-        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos", "Monitor de FGC"])
+        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos", "Monitor de FGC", "Alertas"])
 
         with tabs[0]: # Alocação Atual
 
@@ -478,6 +483,90 @@ if selected_carteiras:
                     hct.streamlit_highcharts(chart_portfolio_positions_fgc)
             else:
                 st.info("Cliente não possui ativos cobertos pelo FGC")
+
+        with tabs[7]: # Alertas
+            df_alertas_rf = df[df['Classificação Instrumento'].isin(INSTRUMENTOS_RF)].copy()
+            df_alertas_rf = get_emissor_column(df_alertas_rf)
+
+            df_alertas_posicoes = df_alertas_rf.groupby(
+                [
+                    pd.Grouper(key='Data Posição', freq='D'),
+                    'Nome Ativo', 'Alias', 'Classificação do Conjunto',
+                    'Classificação Instrumento', 'Data Vencimento', 'Emissor',
+                ]
+            ).agg(**{
+                'Quantidade': ('Quantidade', 'sum'),
+                'Valor Unitário': ('Valor Unitário', 'mean'),
+                'Saldo': ('Saldo', 'sum'),
+            })
+            df_alertas_current = get_latest_date_data(df_alertas_posicoes).reset_index()
+            df_alertas_current = df_alertas_current[df_alertas_current['Saldo'] > 0].copy()
+
+            if df_alertas_current.empty:
+                st.info("Cliente não possui posições de Renda Fixa para monitorar.")
+            else:
+                df_issuers_status = df_issuers[['Nome Emissor', 'Status do Emissor']].drop_duplicates(
+                    subset=['Nome Emissor'],
+                    keep='first',
+                )
+                df_alertas_current = df_alertas_current.merge(
+                    df_issuers_status,
+                    left_on='Emissor',
+                    right_on='Nome Emissor',
+                    how='left',
+                )
+                df_alertas_current['Status do Emissor'] = (
+                    df_alertas_current['Status do Emissor'].fillna('Sem Classificação')
+                )
+                df_alertas_current['Em Alerta'] = df_alertas_current['Status do Emissor'].isin(
+                    EMISSOR_STATUS_ALERTAS
+                )
+
+                total_saldo_carteira = df_portfolio_positions_current['Saldo'].sum()
+                df_alertas_current['% PL'] = (
+                    df_alertas_current['Saldo'] / total_saldo_carteira * 100
+                    if total_saldo_carteira > 0 else 0
+                )
+
+                df_em_alerta = df_alertas_current[df_alertas_current['Em Alerta']].copy()
+                df_em_alerta = df_em_alerta.sort_values(by='Saldo', ascending=False)
+
+                saldo_alerta = df_em_alerta['Saldo'].sum()
+                pct_alerta = (
+                    saldo_alerta / total_saldo_carteira * 100 if total_saldo_carteira > 0 else 0
+                )
+                emissores_alerta = df_em_alerta['Emissor'].nunique()
+
+                if df_em_alerta.empty:
+                    st.success(
+                        "Nenhuma posição de Renda Fixa sob alerta."
+                    )
+                else:
+                    cols = st.columns([1, 4])
+                    with cols[0]:
+
+                        st.metric("Posições sob alerta", value=len(df_em_alerta), delta=f"{emissores_alerta} emissores", delta_color="off", delta_arrow="off")
+                        st.metric("Saldo sob alerta", f"R$ {saldo_alerta:,.2f}", delta=f"{pct_alerta:.1f}% do PL", delta_color="off", delta_arrow="off")
+
+                    alert_cols = [
+                        'Nome Ativo', 'Alias', 'Classificação Instrumento', 'Emissor',
+                        'Status do Emissor', 'Data Vencimento', 'Saldo', '% PL',
+                    ]
+
+                    with cols[1]:
+                        st.dataframe(
+                            style_table(
+                                df_em_alerta[alert_cols].set_index('Nome Ativo'),
+                                date_cols=['Data Vencimento'],
+                                numeric_cols_format_as_float=['Valor Unitário', 'Saldo', '% PL'],
+                                numeric_cols_format_as_int=['Quantidade'],
+                                highlight_row_by_column='Status do Emissor',
+                                highlight_row_if_value_equals='Reprovado',
+                                highlight_color='#f8d7da',
+                                left_align_cols=['Alias', 'Emissor', 'Status do Emissor'],
+                            ),
+                            hide_index=False,
+                        )
 
     except KeyError as e:
         st.error(f"Erro ao acessar dados: campo {e} não encontrado")

@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from dateutil.relativedelta import relativedelta
+
+from services.position_service import load_assets
+
 from persevera_tools.data import get_funds_data, get_series
 from persevera_tools.db.fibery import read_fibery
 from persevera_tools.quant_research.metrics import (
@@ -101,11 +104,8 @@ METRICS = {
 @st.cache_data(ttl=3600)
 def load_taxonomy() -> pd.DataFrame:
     try:
-        df = read_fibery(table_name="Inv-Taxonomia/Ativos", include_fibery_fields=False)
-        mask = df["Classificação Instrumento"].isin(
-            ["Fundo de Investimento", "Previdência Privada"]
-        )
-        return df[mask][["Name", "Nome Completo"]].drop_duplicates()
+        df = load_assets(instrumentos=("Fundo de Investimento", "Previdência Privada"))
+        return df[["Name", "Nome Completo"]].drop_duplicates()
     except Exception:
         return pd.DataFrame(columns=["Name", "Nome Completo"])
 
