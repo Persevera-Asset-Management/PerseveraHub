@@ -257,6 +257,7 @@ try:
 
     with tabs[0]:
         only_with_offer = st.checkbox("Apenas com OFFER disponível", value=True)
+        only_isentos = st.checkbox("Apenas Isentos", value=False)
         df_display = df_approved.copy()
         if only_with_offer:
             has_offer = (
@@ -264,6 +265,8 @@ try:
                 | df_display["Qtd. OFFER"].fillna(0).gt(0)
             )
             df_display = df_display[has_offer]
+        if only_isentos:
+            df_display = df_display[df_display["Isento"]]
 
         if df_display.empty:
             st.info("Nenhum ativo aprovado encontrado com os filtros aplicados.")

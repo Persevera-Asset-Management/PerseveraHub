@@ -90,6 +90,9 @@ if selected_carteiras:
             df_portfolio_positions_current['Saldo'] / df_portfolio_positions_current['Saldo'].sum() * 100
         )
 
+        with st.expander("Resumo do Cliente", expanded=False):
+            pass # TODO: Adicionar resumo do cliente
+
         with st.expander("Composição Completa", expanded=False):
             st.dataframe(
                 style_table(

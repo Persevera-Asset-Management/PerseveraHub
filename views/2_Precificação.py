@@ -117,14 +117,17 @@ def load_data(code):
 
 if "precificacao_code" not in st.session_state:
     st.session_state.precificacao_code = None
+if "precificacao_code_input" not in st.session_state:
+    st.session_state.precificacao_code_input = st.session_state.precificacao_code or ""
 
 with st.sidebar:
     st.header("Parâmetros")
-    code = st.text_input(
-        "Código do Ativo",
-        value=st.session_state.precificacao_code or "",
-    )
-    btn_load = st.button("Carregar Dados")
+    with st.form("precificacao_form"):
+        code = st.text_input(
+            "Código do Ativo",
+            key="precificacao_code_input",
+        )
+        btn_load = st.form_submit_button("Carregar Dados")
 
 if btn_load and code.strip():
     with st.spinner("Carregando dados...", show_time=True):
