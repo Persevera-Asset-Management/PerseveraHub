@@ -195,6 +195,21 @@ with st.sidebar:
         help="Deixe vazio para incluir todos os tipos. Fundo e PIC não entram nesta lista.",
     )
 
+    custodian_options = sorted({
+        custodiante
+        for data in snapshot.values()
+        for custodiante in (data.get("custodiantes") or [])
+    })
+    selected_custodians = st.multiselect(
+        "Instituição (custodiante)",
+        options=custodian_options,
+        default=[],
+        help=(
+            "Deixe vazio para incluir todas as instituições. "
+            "Considera o custodiante das posições atuais do cliente."
+        ),
+    )
+
     portfolio_codes = sorted(snapshot.keys())
     exclude = st.multiselect(
         "Excluir carteiras",
@@ -242,6 +257,7 @@ clients_preview = clients_from_snapshot(
     officer_filter=selected_officers or None,
     tipo_cliente_filter=selected_tipos_cliente or None,
     exclude=exclude or None,
+    custodian_filter=selected_custodians or None,
 )
 st.caption(f"{len(clients_preview)} clientes no universo selecionado · {len(snapshot)} carteiras no snapshot")
 
@@ -308,6 +324,7 @@ allocation_context = {
     "officer_filter": tuple(sorted(selected_officers)),
     "tipo_cliente_filter": tuple(sorted(selected_tipos_cliente)),
     "exclude": tuple(sorted(exclude)),
+    "custodian_filter": tuple(sorted(selected_custodians)),
     "objective": objective,
     "min_pct": min_pct,
     "max_pct": max_pct,

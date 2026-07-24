@@ -113,6 +113,7 @@ def compute_lot_orders(
     qty_raw: pd.Series,
     prices: pd.Series,
     lot_sizes: pd.Series | None = None,
+    full_exit: pd.Series | None = None,
 ) -> pd.Series:
     """
     Greedy portfolio-level lot optimization.
@@ -126,12 +127,20 @@ def compute_lot_orders(
          descending fractional order (highest residual first) while net cash
          allows.
 
+    Rows flagged via `full_exit` skip lot rounding entirely: the order is set
+    to the exact raw quantity so the resulting position is exactly zero,
+    never selling more shares than currently held (e.g. holding 690 shares
+    with a 100-share lot must generate a sell of exactly 690, not 700).
+
     Args:
         qty_raw: Raw (float) quantity per stock — positive = buy, negative = sell.
                  NaN-safe: stocks with NaN or non-positive price receive pd.NA.
         prices:  Last price per stock (must be aligned with qty_raw index).
         lot_sizes: Tradable lot size per stock (e.g. 100 for Ação, 1 for BDR).
                    Defaults to 100 for all rows when omitted.
+        full_exit: Boolean Series aligned with qty_raw. True marks rows whose
+                   target position is zero (full liquidation), which bypass
+                   lot rounding to avoid over/under-selling the held quantity.
 
     Returns:
         Int64 Series of order quantities (multiples of each row's lot size or pd.NA).
@@ -149,10 +158,23 @@ def compute_lot_orders(
             .astype(float)
             .values
         )
+    if full_exit is None:
+        full_exit_mask = np.zeros(len(qty_raw), dtype=bool)
+    else:
+        full_exit_mask = (
+            full_exit.reindex(qty_raw.index).fillna(False).astype(bool).values
+        )
 
     # Step 1: Floor toward zero — e.g. +270 with lot 100 → +200, +47.8 with lot 1 → +47
     lot = np.sign(qty) * np.floor(np.abs(qty) / lots) * lots
     frac = qty - lot  # residual, same sign as qty, abs in [0, lot_size)
+
+    # Full-exit rows: sell/buy the exact raw quantity so the position lands
+    # precisely on zero, ignoring lot-size rounding (and thus excluding them
+    # from the upgrade steps below, since their residual is now zero).
+    exit_ix = np.where(full_exit_mask & valid.values & (qty != 0))[0]
+    lot[exit_ix] = qty[exit_ix]
+    frac[exit_ix] = 0.0
 
     # Step 2: Net cash after floor orders
     # Sells produce positive cash inflow; buys consume cash.
@@ -380,6 +402,7 @@ current_market_data["Quantidade Compra/Venda"] = compute_lot_orders(
     qty_raw,
     current_market_data["LAST_PRICE"],
     current_market_data["Lote"],
+    full_exit=current_market_data["Peso Alvo (%)"].eq(0),
 )
 qty_after = (
     current_market_data["Quantidade"]

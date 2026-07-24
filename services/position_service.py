@@ -746,6 +746,7 @@ def build_portfolio_snapshot(
     - vencimentos_rf: saldo de RF segmentado por prazo de vencimento
     - posicoes_por_classe: posições individuais enriquecidas com instrumento, emissor,
       indexador e vencimento
+    - custodiantes: lista de custodiantes (acrônimo) com posição atual no portfolio
     """
     codes_in_positions = set(df_positions["Portfolio"].dropna().unique())
 
@@ -894,6 +895,15 @@ def build_portfolio_snapshot(
             if info['gap_pp'] is not None and abs(info['gap_pp']) >= 2.0
         ]
 
+        if 'Custodiante Acronimo' in df_port.columns:
+            custodiantes = sorted({
+                str(c).strip()
+                for c in df_port['Custodiante Acronimo'].dropna().unique()
+                if str(c).strip()
+            })
+        else:
+            custodiantes = []
+
         metricas = {
             'n_ativos': int(len(df_pos)),
             'maior_posicao_nome': maior_nome,
@@ -911,6 +921,7 @@ def build_portfolio_snapshot(
             'concentracao_emissores_rf': concentracao_emissores_rf,
             'vencimentos_rf': vencimentos_rf,
             'posicoes_por_classe': posicoes_por_classe,
+            'custodiantes': custodiantes,
         }
 
     return snapshot
@@ -958,6 +969,7 @@ def clients_from_snapshot(
     officer_filter: str | list[str] | None = None,
     tipo_cliente_filter: list[str] | None = None,
     exclude: list[str] | None = None,
+    custodian_filter: list[str] | None = None,
 ) -> list:
     """
     Converte snapshot de portfólios em lista de ``Client`` para o AllocationEngine.
@@ -966,6 +978,9 @@ def clients_from_snapshot(
 
     officer_filter : string única (match parcial) ou lista de officers (match exato).
     tipo_cliente_filter : lista de tipos (ex.: ``["PF", "PJ"]``); vazio/None = todos.
+    custodian_filter : lista de custodiantes (ex.: ``["XPCV", "BTG CTVM"]``); inclui o
+        cliente se ele tiver posição em ao menos um dos custodiantes selecionados.
+        Baseado em ``custodiantes`` do snapshot (posições atuais). Vazio/None = todos.
     """
     from persevera_tools.quant_research.allocation_engine import Client, normalize_issuer
 
@@ -981,6 +996,7 @@ def clients_from_snapshot(
 
     allowed_officers = {str(o) for o in officer_filters}
     allowed_tipos = {str(t).strip() for t in (tipo_cliente_filter or []) if str(t).strip()}
+    allowed_custodians = {str(c).strip() for c in (custodian_filter or []) if str(c).strip()}
 
     for cod, data in snapshot.items():
         pl = data.get('patrimonio_brl', 0)
@@ -1005,6 +1021,11 @@ def clients_from_snapshot(
         if allowed_tipos:
             tipo = data.get('tipo_cliente')
             if tipo is None or str(tipo).strip() not in allowed_tipos:
+                continue
+
+        if allowed_custodians:
+            custodiantes = {str(c).strip() for c in (data.get('custodiantes') or [])}
+            if not (custodiantes & allowed_custodians):
                 continue
 
         cash = (
