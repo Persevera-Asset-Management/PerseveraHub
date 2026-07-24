@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 
-from utils.table import style_table
+from utils.table import style_table_aggrid
+from st_aggrid import AgGrid
 from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
 from services.position_service import (
@@ -85,14 +86,26 @@ if df_cd_raw is not None and df_assets is not None and df_issuers is not None:
         ]].copy()
         df_clean.drop_duplicates(inplace=True)
 
-        st.dataframe(style_table(
-            df_clean,
-            date_cols=['Data Vencimento'],
-            currency_cols=['Saldo Bruto', 'Preço Unitário'],
-            numeric_cols_format_as_float=['Quantidade'],
-            percent_cols=['Percentual'],
-        ),
-        hide_index=True)
+        # st.dataframe(style_table(
+        #     df_clean,
+        #     date_cols=['Data Vencimento'],
+        #     currency_cols=['Saldo Bruto', 'Preço Unitário'],
+        #     numeric_cols_format_as_float=['Quantidade'],
+        #     percent_cols=['Percentual'],
+        # ),
+        # hide_index=True)
+
+        AgGrid(
+            **style_table_aggrid(
+                df_clean,
+                date_cols=['Data Vencimento'],
+                currency_cols=['Saldo Bruto', 'Preço Unitário'],
+                numeric_cols_format_as_float=['Quantidade'],
+                percent_cols=['Percentual'],
+                auto_size_columns="fit_grid_width",
+            ),
+            key="inventory_grid",
+        )
 
     except Exception as e:
         st.error(f"Error: {str(e)}")

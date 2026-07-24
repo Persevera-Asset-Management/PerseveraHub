@@ -3,7 +3,8 @@ import numpy as np
 import streamlit as st
 
 from utils.ui import show_data_freshness
-from utils.table import style_table
+from utils.table import style_table, style_table_aggrid
+from st_aggrid import AgGrid
 
 from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 from services.position_service import (
@@ -130,8 +131,9 @@ for col, threshold in zip(kpi_cols, KPI_THRESHOLDS):
     )
 
 st.subheader("Detalhamento por Ativo")
-st.dataframe(
-    style_table(
+
+AgGrid(
+    **style_table_aggrid(
         df_maturity.reset_index()[
             [
                 "Portfolio",
@@ -145,10 +147,13 @@ st.dataframe(
                 "Valor Unitário",
                 "Saldo",
             ]
-        ].set_index(["Portfolio", "Nome Ativo"]),
+        ],
         date_cols=["Data Vencimento"],
         numeric_cols_format_as_float=["Valor Unitário", "Saldo"],
         numeric_cols_format_as_int=["Quantidade", "Dias para Vencimento"],
         highlight_row_if_value_lower={"Dias para Vencimento": alert_threshold},
-    )
+        auto_size_columns="fit_grid_width",
+        pinned_left_cols=["Portfolio", "Nome Ativo"],
+    ),
+    key="maturity_grid",
 )

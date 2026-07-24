@@ -1,8 +1,9 @@
 import pandas as pd
 import streamlit as st
 import streamlit_highcharts as hct
+from st_aggrid import AgGrid
 
-from utils.table import style_table
+from utils.table import style_table_aggrid
 from utils.chart_helpers import create_chart, render_chart
 
 from services.position_service import get_emissor_column, load_assets, load_issuers
@@ -59,7 +60,7 @@ DISPLAY_COLUMNS = [
     "Vencimento XBridge",
     "Data Vencimento",
     "Isento",
-    "Rating",
+    # "Rating",
     "Qtd. BID",
     "Vol. BID",
     "BID Mercado",
@@ -113,16 +114,18 @@ def type_xbridge_columns(df: pd.DataFrame) -> pd.DataFrame:
     df["Vencimento"] = pd.to_datetime(df["Vencimento"], format="%d/%m/%y", errors="coerce")
     return df
 
-def display_table(df: pd.DataFrame, columns: list[str]):
-    """Renderiza tabela com formatação compatível com os tipos tratados."""
+def display_table_aggrid(df: pd.DataFrame, columns: list[str], **aggrid_kwargs):
+    """Formata colunas visíveis e retorna kwargs para AgGrid(**...)."""
     visible_columns = [col for col in columns if col in df.columns]
-    return style_table(
+    return style_table_aggrid(
         df[visible_columns],
         date_cols=[col for col in DATE_COLUMNS if col in visible_columns],
         percent_cols=[col for col in PERCENT_COLUMNS if col in visible_columns],
         numeric_cols_format_as_float=[col for col in FLOAT_COLUMNS if col in visible_columns],
         numeric_cols_format_as_int=[col for col in INTEGER_COLUMNS if col in visible_columns],
         left_align_cols=["Ticker", "Emissor / Risco", "Alias", "Emissor"],
+        pinned_left_cols=["Ticker"],
+        **aggrid_kwargs,
     )
 
 def read_xbridge_csv(uploaded_file) -> pd.DataFrame:
@@ -255,7 +258,7 @@ try:
 
     tabs = st.tabs(["Aprovados", "Não cadastrados", "Cadastrados não aprovados", "Base cruzada"])
 
-    with tabs[0]:
+    with tabs[0]:   # Aprovados
         only_with_offer = st.checkbox("Apenas com OFFER disponível", value=True)
         only_isentos = st.checkbox("Apenas Isentos", value=False)
         df_display = df_approved.copy()
@@ -290,10 +293,9 @@ try:
             subtabs = st.tabs(tab_labels)
 
             with subtabs[0]:
-                st.dataframe(
-                    display_table(df_display, DISPLAY_COLUMNS),
-                    hide_index=True,
-                    width="stretch",
+                AgGrid(
+                    **display_table_aggrid(df_display, DISPLAY_COLUMNS),
+                    key="xbridge_approved_grid_all",
                 )
 
             for i, label in enumerate(summary["label"].tolist(), start=1):
@@ -303,20 +305,22 @@ try:
                         mask = df_display["Indexador XBridge"].isna()
                     else:
                         mask = df_display["Indexador XBridge"].astype(str).eq(str(xbridge_val))
-                    st.dataframe(
-                        display_table(df_display[mask].sort_values("OFFER Mercado", ascending=False), DISPLAY_COLUMNS),
-                        hide_index=True,
-                        width="stretch",
+                    AgGrid(
+                        **display_table_aggrid(
+                            df_display[mask].sort_values("OFFER Mercado", ascending=False),
+                            DISPLAY_COLUMNS,
+                        ),
+                        key=f"xbridge_approved_grid_{i}",
                     )
 
-    with tabs[1]:
+    with tabs[1]:   # Não cadastrados
         missing_columns = [
             "Ticker",
             "Emissor / Risco",
             "Indexador XBridge",
             "Vencimento XBridge",
             "Isento",
-            "Rating",
+            # "Rating",
             "Qtd. BID",
             "Vol. BID",
             "BID Mercado",
@@ -325,23 +329,24 @@ try:
             "Vol. OFFER",
             "Tax. Mín. / Tax. Máx.",
         ]
-        st.dataframe(
-            display_table(df_missing, missing_columns),
-            hide_index=True,
-            width="stretch",
+        AgGrid(
+            **display_table_aggrid(df_missing, missing_columns),
+            key="xbridge_missing_grid",
         )
 
-    with tabs[2]:
-        st.dataframe(
-            display_table(df_registered_not_approved, DISPLAY_COLUMNS),
-            hide_index=True,
-            width="stretch",
+    with tabs[2]:   # Cadastrados não aprovados
+        AgGrid(
+            **display_table_aggrid(df_registered_not_approved, DISPLAY_COLUMNS),
+            key="xbridge_registered_not_approved_grid",
         )
 
-    with tabs[3]:
-        st.dataframe(
-            style_table(
-                df[[col for col in ["Status Cadastro", *DISPLAY_COLUMNS] if col in df.columns]],
+    with tabs[3]:   # Base cruzada
+        cross_base_columns = [col for col in ["Status Cadastro", *DISPLAY_COLUMNS] if col in df.columns]
+        cross_base_df = df[cross_base_columns]
+
+        AgGrid(
+            **style_table_aggrid(
+                cross_base_df,
                 date_cols=["Vencimento XBridge", "Data Vencimento"],
                 percent_cols=["BID Mercado", "OFFER Mercado"],
                 numeric_cols_format_as_float=["Duration", "Vol. BID", "Vol. OFFER"],
@@ -350,9 +355,9 @@ try:
                 highlight_row_if_value_equals="Não cadastrado",
                 highlight_color="#ffc7ce",
                 left_align_cols=["Ticker", "Emissor / Risco", "Alias", "Emissor"],
+                pinned_left_cols=["Status Cadastro", "Ticker"],
             ),
-            hide_index=True,
-            width="stretch",
+            key="xbridge_cross_base_grid",
         )
 
 except Exception as exc:
