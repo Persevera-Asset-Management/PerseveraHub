@@ -716,7 +716,7 @@ def style_table_aggrid(
         "gridOptions": grid_options,
         "height": height,
         "allow_unsafe_jscode": True,
-        "theme": "material",
+        "theme": "balham",
         "show_toolbar": show_toolbar,
         "show_search": show_search,
         "show_download_button": show_download_button,
