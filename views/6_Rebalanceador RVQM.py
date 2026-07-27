@@ -12,6 +12,7 @@ from services.position_service import (
     load_equities_portfolio,
     load_portfolios_rvqm,
     load_positions,
+    resolve_portfolio_strategy,
 )
 
 RVQM_INSTRUMENTS = ("Ação", "BDR")
@@ -252,6 +253,24 @@ if not selected_portfolio:
     st.info("Selecione um portfolio na barra lateral.")
     st.stop()
 
+rvqm_row = portfolios_rvqm[portfolios_rvqm['Portfolio'] == selected_portfolio]
+if rvqm_row.empty:
+    st.error(f"Portfolio '{selected_portfolio}' não encontrado na tabela de clientes.")
+    st.stop()
+
+try:
+    strategy_tipo = resolve_portfolio_strategy(selected_portfolio, portfolios_rvqm)
+except ValueError as e:
+    st.error(str(e))
+    st.stop()
+
+equity_position_to_total_portfolio = rvqm_row['Percentual do PL'].iloc[0]
+equity_position_custodian = rvqm_row['Custodiante'].iloc[0]
+equity_position_account = rvqm_row['Nr Conta'].iloc[0]
+
+with st.sidebar:
+    st.caption(f"Estratégia: **{strategy_tipo}**")
+
 # =============================================================================
 # Carregamento de dados
 # =============================================================================
@@ -260,18 +279,14 @@ if st.button("Atualizar BLP Relay", type="primary"):
     load_google_sheet_market_data.clear()
     st.toast("Cache do BLP Relay limpo. Buscando dados atualizados...")
 
-with st.spinner("Carregando composição da carteira..."):
-    equities_portfolio = load_equities_portfolio()
+with st.spinner(f"Carregando composição da carteira {strategy_tipo}..."):
+    equities_portfolio = load_equities_portfolio(tipo=strategy_tipo)
 
 with st.spinner("Carregando posições..."):
     df_positions = load_positions()
 
 with st.spinner("Carregando posições do portfolio..."):
-    if selected_portfolio:
-        positions_carteira = df_positions[df_positions["Portfolio"] == selected_portfolio]
-    else:
-        st.error("Selecione um portfolio na barra lateral.")
-        st.stop()
+    positions_carteira = df_positions[df_positions["Portfolio"] == selected_portfolio]
 
 with st.spinner("Carregando taxonomia de ativos..."):
     assets_taxonomy = load_assets()[["Name", "Classificação Instrumento"]].rename(
@@ -286,7 +301,7 @@ with st.spinner("Carregando dados de mercado do Google Sheets..."):
         st.stop()
 
 if equities_portfolio.empty:
-    st.warning("Nenhuma composição de carteira disponível para exibir.")
+    st.warning(f"Nenhuma composição de carteira {strategy_tipo} disponível para exibir.")
     st.stop()
 
 if market_data.empty:
@@ -313,15 +328,6 @@ current_portfolio['weight_pct'] = current_portfolio['weight'] / total_weight * 1
 current_portfolio["code_key"] = current_portfolio["code"]
 
 equity_positions = prepare_equity_positions(positions_carteira)
-
-rvqm_row = portfolios_rvqm[portfolios_rvqm['Portfolio'] == selected_portfolio]
-if rvqm_row.empty:
-    st.error(f"Portfolio '{selected_portfolio}' não encontrado na tabela de clientes RVQM.")
-    st.stop()
-
-equity_position_to_total_portfolio = rvqm_row['Percentual do PL'].iloc[0]
-equity_position_custodian = rvqm_row['Custodiante'].iloc[0]
-equity_position_account = rvqm_row['Nr Conta'].iloc[0]
 
 if equity_positions.empty:
     st.info(
@@ -424,6 +430,7 @@ current_market_data = current_market_data.sort_values("Valor Compra/Venda", asce
 st.markdown(
     f"<p style='color:#888; font-size:0.85rem; margin-bottom:6px;'>"
     f"{selected_portfolio} &nbsp;·&nbsp; "
+    f"{strategy_tipo} &nbsp;·&nbsp; "
     f"{equity_position_custodian} &nbsp;·&nbsp; "
     f"{equity_position_account} &nbsp;·&nbsp; "
     f"{len(equity_positions)} ativos &nbsp;·&nbsp; "
@@ -433,13 +440,13 @@ st.markdown(
 )
 
 metric_cols = st.columns(4)
-metric_cols[0].metric("Ativos no Portfolio RVQM", len(equity_positions))
+metric_cols[0].metric(f"Ativos no Portfolio {strategy_tipo}", len(equity_positions))
 metric_cols[1].metric(
     "Saldo Total" + (" (override)" if portfolio_total_balance_override > 0 else ""),
     f"R$ {portfolio_total_balance:,.0f}",
 )
 metric_cols[2].metric("Percentual do PL", f"{equity_position_to_total_portfolio*100:.1f}%")
-metric_cols[3].metric("Saldo Alvo RVQM", f"R$ {target_equity_balance:,.0f}")
+metric_cols[3].metric(f"Saldo Alvo {strategy_tipo}", f"R$ {target_equity_balance:,.0f}")
 
 display_columns = [
     "TIME",
@@ -495,7 +502,7 @@ if missing_prices:
 missing_targets = current_market_data[current_market_data["weight_pct"].isna()]["Nome Ativo"].tolist()
 if missing_targets:
     st.info(
-        "Ativos sem peso alvo na carteira RVQM atual: "
+        f"Ativos sem peso alvo na carteira {strategy_tipo} atual: "
         + ", ".join(missing_targets)
     )
 

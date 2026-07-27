@@ -57,12 +57,16 @@ def merge_prices(base_prices: pd.DataFrame, extra_tickers: list, start_date) -> 
 def build_adherence_payload(
     raw_hist: pd.DataFrame,
     prices: pd.DataFrame,
-    strategy_weights: pd.DataFrame,
-    strategy_returns: pd.Series,
+    strategy_weights_by_tipo: dict[str, pd.DataFrame],
+    strategy_returns_by_tipo: dict[str, pd.Series],
+    portfolio_tipo_map: dict[str, str],
     start_ts,
     end_ts,
 ) -> dict:
-    """Processa raw ComDinheiro → pesos, retornos e summary (cacheável)."""
+    """Processa raw ComDinheiro → pesos, retornos e summary (cacheável).
+
+    Cada carteira é comparada à estratégia do seu próprio Tipo (RVQM/MAGO).
+    """
     RVQM_INSTRUMENTS = ("Ação", "BDR")
     hist_positions = prepare_comdinheiro_historical_positions_df(raw_hist)
     equity_positions = filter_equity_sleeve(hist_positions, load_assets(RVQM_INSTRUMENTS))
@@ -73,7 +77,14 @@ def build_adherence_payload(
     client_tickers = sorted(
         {ticker for weights in client_weights.values() for ticker in weights.columns}
     )
-    price_start = min(strategy_weights.index.min(), equity_positions["Data"].min())
+    strategy_starts = [
+        weights.index.min()
+        for weights in strategy_weights_by_tipo.values()
+        if not weights.empty
+    ]
+    if not strategy_starts:
+        return {"status": "empty_prices"}
+    price_start = min(min(strategy_starts), equity_positions["Data"].min())
     adherence_prices = merge_prices(prices, client_tickers, start_date=price_start)
     if adherence_prices.empty:
         return {"status": "empty_prices"}
@@ -82,23 +93,42 @@ def build_adherence_payload(
         name: calculate_portfolio_twr(weights, adherence_prices, lag_weights=True)
         for name, weights in client_weights.items()
     }
-    strategy_period = strategy_returns.loc[
-        (strategy_returns.index >= start_ts) & (strategy_returns.index <= end_ts)
-    ]
+
+    strategy_by_portfolio: dict[str, str] = {}
+    strategy_returns_by_portfolio: dict[str, pd.Series] = {}
+    strategy_weights_by_portfolio: dict[str, pd.DataFrame] = {}
+    strategy_period_by_tipo: dict[str, pd.Series] = {}
+
+    for name in client_returns:
+        tipo = portfolio_tipo_map.get(name)
+        if not tipo or tipo not in strategy_returns_by_tipo:
+            return {"status": "missing_strategy", "portfolio": name, "tipo": tipo}
+        strategy_by_portfolio[name] = tipo
+        strat_rets = strategy_returns_by_tipo[tipo]
+        strategy_returns_by_portfolio[name] = strat_rets.loc[
+            (strat_rets.index >= start_ts) & (strat_rets.index <= end_ts)
+        ]
+        strategy_weights_by_portfolio[name] = strategy_weights_by_tipo[tipo]
+        if tipo not in strategy_period_by_tipo:
+            strategy_period_by_tipo[tipo] = strategy_returns_by_portfolio[name]
+
     client_period = {
         name: rets.loc[(rets.index >= start_ts) & (rets.index <= end_ts)]
         for name, rets in client_returns.items()
     }
     summary = build_adherence_summary(
         client_period,
-        strategy_period,
+        strategy_returns_by_portfolio,
         client_weights,
-        strategy_weights,
+        strategy_weights_by_portfolio,
+        strategy_by_portfolio=strategy_by_portfolio,
     )
     return {
         "status": "ok",
         "client_weights": client_weights,
-        "strategy_period": strategy_period,
+        "strategy_period_by_tipo": strategy_period_by_tipo,
+        "strategy_returns_by_portfolio": strategy_returns_by_portfolio,
+        "strategy_by_portfolio": strategy_by_portfolio,
         "client_period": client_period,
         "summary": summary,
     }
@@ -129,12 +159,30 @@ def color_returns_cell(val):
 # =============================================================================
 
 with st.spinner("Carregando composição da carteira..."):
-    equities_portfolio = load_equities_portfolio()
-    securities_list = tuple(sorted(equities_portfolio["code"].dropna().unique().tolist()))
-    data_start = equities_portfolio["date"].min()
+    equities_all = load_equities_portfolio()
+    strategy_options = sorted(
+        t for t in equities_all["tipo"].dropna().astype(str).str.strip().unique().tolist() if t
+    )
+    if not strategy_options:
+        st.warning("Nenhuma estratégia disponível na carteira-modelo.")
+        st.stop()
 
-if len(securities_list) == 0:
-    st.warning("Nenhum dado disponível para exibir.")
+default_strategy_idx = strategy_options.index("RVQM") if "RVQM" in strategy_options else 0
+with st.sidebar:
+    st.header("Estratégia")
+    selected_strategy = st.selectbox(
+        "Carteira-modelo",
+        options=strategy_options,
+        index=default_strategy_idx,
+        help="Define qual estratégia é exibida na análise de composição e performance.",
+    )
+
+equities_portfolio = equities_all[equities_all["tipo"] == selected_strategy].copy()
+securities_list = tuple(sorted(equities_all["code"].dropna().unique().tolist()))
+data_start = equities_all["date"].min()
+
+if equities_portfolio.empty or len(securities_list) == 0:
+    st.warning(f"Nenhum dado disponível para a estratégia {selected_strategy}.")
     st.stop()
 
 with st.spinner("Carregando preços e indicadores..."):
@@ -176,6 +224,7 @@ current_portfolio['weight_pct'] = current_portfolio['weight'] / total_weight * 1
 
 st.markdown(
     f"<p style='color:#888; font-size:0.85rem; margin-bottom:6px;'>"
+    f"{selected_strategy} &nbsp;·&nbsp; "
     f"{len(current_portfolio)} ativos &nbsp;·&nbsp; {current_date.strftime('%d/%m/%Y')}"
     f"</p>",
     unsafe_allow_html=True,
@@ -201,6 +250,19 @@ weights_df = weights_df.reindex(prices.index).ffill()
 returns_portfolio = calculate_portfolio_twr(weights_df, prices, lag_weights=True)
 returns_df = pd.concat([returns_portfolio, indicators.pct_change(fill_method=None).fillna(0)], axis=1)
 returns_df.columns = ['Carteira', 'Ibovespa', 'SMLL', 'CDI']
+
+# Pré-calcula retornos/pesos de todas as estratégias para a aderência por Tipo.
+strategy_weights_by_tipo: dict[str, pd.DataFrame] = {}
+strategy_returns_by_tipo: dict[str, pd.Series] = {}
+for tipo in strategy_options:
+    tipo_portfolio = equities_all[equities_all["tipo"] == tipo]
+    if tipo_portfolio.empty:
+        continue
+    tipo_weights = pivot_model_weights(tipo_portfolio).reindex(prices.index).ffill()
+    strategy_weights_by_tipo[tipo] = tipo_weights
+    strategy_returns_by_tipo[tipo] = calculate_portfolio_twr(
+        tipo_weights, prices, lag_weights=True
+    )
 
 # =============================================================================
 # Histórico de Alocações (só materializa se solicitado)
@@ -338,7 +400,7 @@ st.divider()
 st.markdown("### Aderência · Carteiras Investidas")
 st.caption(
     "TWR diário ponderado por saldo da sleeve de ações/BDRs, com pesos de t−1. "
-    "Comparado à carteira-modelo RVQM na mesma metodologia."
+    "Cada carteira é comparada automaticamente à estratégia do seu Tipo (RVQM/MAGO)."
 )
 
 for key in (
@@ -352,9 +414,17 @@ for key in (
 # Lazy: clientes RVQM só quando a seção de aderência é montada (após o bloco da estratégia).
 try:
     portfolios_rvqm = load_portfolios_rvqm()
+    portfolio_tipo_map = (
+        portfolios_rvqm.dropna(subset=["Portfolio"])
+        .assign(Tipo=lambda d: d["Tipo"].astype(str).str.strip())
+        .set_index("Portfolio")["Tipo"]
+        .to_dict()
+    )
     portfolio_options = sorted(portfolios_rvqm["Portfolio"].dropna().unique().tolist())
 except Exception as e:
     st.error(f"Erro ao carregar clientes RVQM: {e}")
+    portfolios_rvqm = pd.DataFrame()
+    portfolio_tipo_map = {}
     portfolio_options = []
 
 adherence_cols = st.columns([3, 1])
@@ -363,6 +433,7 @@ with adherence_cols[0]:
         "Carteiras",
         options=portfolio_options,
         default=portfolio_options[:1] if portfolio_options else [],
+        format_func=lambda p: f"{p} ({portfolio_tipo_map.get(p, '?')})",
         key="rvqm_adherence_selected",
     )
 with adherence_cols[1]:
@@ -449,8 +520,9 @@ if btn_adherence or needs_result_refresh:
                     payload = build_adherence_payload(
                         raw_hist=raw_sliced,
                         prices=prices,
-                        strategy_weights=weights_df,
-                        strategy_returns=returns_df["Carteira"],
+                        strategy_weights_by_tipo=strategy_weights_by_tipo,
+                        strategy_returns_by_tipo=strategy_returns_by_tipo,
+                        portfolio_tipo_map=portfolio_tipo_map,
                         start_ts=start_ts,
                         end_ts=end_ts,
                     )
@@ -481,11 +553,18 @@ elif status == "empty_sleeve":
     st.warning("Nenhuma posição de Ação/BDR identificada após o filtro da sleeve RVQM.")
 elif status == "empty_prices":
     st.warning("Não foi possível carregar preços para calcular o TWR das carteiras.")
+elif status == "missing_strategy":
+    missing_portfolio = (result or {}).get("portfolio", "?")
+    missing_tipo = (result or {}).get("tipo") or "não definido"
+    st.warning(
+        f"Carteira {missing_portfolio} com Tipo '{missing_tipo}' sem carteira-modelo correspondente."
+    )
 elif status != "ok":
     st.warning("Não foi possível calcular a aderência.")
 else:
     summary = result["summary"]
-    strategy_period = result["strategy_period"]
+    strategy_period_by_tipo = result["strategy_period_by_tipo"]
+    strategy_returns_by_portfolio = result["strategy_returns_by_portfolio"]
     client_period = result["client_period"]
     client_weights = result["client_weights"]
 
@@ -496,16 +575,16 @@ else:
         display_summary["correlation"] = display_summary["correlation"] * 100
         display_summary["hit_ratio"] = display_summary["hit_ratio"] * 100
         display_summary["active_share"] = display_summary["active_share"] * 100
-        display_summary = display_summary.rename(
-            columns={
-                "excess_return": "Excess Return (%)",
-                "tracking_error": "Tracking Error (% a.a.)",
-                "correlation": "Correlação (%)",
-                "hit_ratio": "Hit Ratio (%)",
-                "active_share": "Active Share (%)",
-                "obs": "Obs.",
-            }
-        )
+        rename_map = {
+            "excess_return": "Excess Return (%)",
+            "tracking_error": "Tracking Error (% a.a.)",
+            "correlation": "Correlação (%)",
+            "hit_ratio": "Hit Ratio (%)",
+            "active_share": "Active Share (%)",
+            "obs": "Obs.",
+            "estrategia": "Estratégia",
+        }
+        display_summary = display_summary.rename(columns=rename_map)
 
         st.dataframe(
             style_table(
@@ -524,7 +603,12 @@ else:
 
     row_1 = st.columns(2)
     with row_1[0]:
-        cumulative_adherence = pd.DataFrame({"Estratégia RVQM": strategy_period})
+        cumulative_adherence = pd.DataFrame(
+            {
+                f"Estratégia {tipo}": period
+                for tipo, period in strategy_period_by_tipo.items()
+            }
+        )
         for name, rets in client_period.items():
             cumulative_adherence[name] = rets.reindex(cumulative_adherence.index)
         cumulative_adherence = cumulative_adherence.dropna(how="all")
@@ -548,12 +632,13 @@ else:
             {
                 name: (
                     1
-                    + rets.reindex(strategy_period.index)
-                    .sub(strategy_period)
+                    + rets.reindex(strategy_returns_by_portfolio[name].index)
+                    .sub(strategy_returns_by_portfolio[name])
                     .fillna(0)
                 ).cumprod()
                 - 1
                 for name, rets in client_period.items()
+                if name in strategy_returns_by_portfolio
             }
         )
         if not excess_df.empty:

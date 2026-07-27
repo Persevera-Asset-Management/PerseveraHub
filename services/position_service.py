@@ -545,30 +545,65 @@ def active_carteira_codes() -> set[str]:
 @st.cache_data(ttl=_CACHE_TTL)
 def load_portfolios_rvqm() -> pd.DataFrame:
     """
-    Carrega portfólios com carteira RVQM ativa do Fibery.
-    
+    Carrega portfólios com carteira de equities ativa do Fibery (RVQM/MAGO).
+
     Returns:
-        DataFrame com os portfólios com carteira RVQM ativa.
+        DataFrame com Portfolio, conta, custodiante e Tipo da estratégia.
     """
     df = read_fibery(table_name="Inv-Asset Allocation/Clientes com Carteira RVQM", include_fibery_fields=False)
-    df = df[df["Carteira Ativa"]]
-    df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL"]]
+    df = df[df["Carteira Ativa"]].copy()
+    df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL", "Tipo"]]
+    df["Tipo"] = df["Tipo"].astype(str).str.strip()
     return df
 
 
 @st.cache_data(ttl=_CACHE_TTL)
-def load_equities_portfolio() -> pd.DataFrame:
+def load_equities_portfolio(tipo: str | None = None) -> pd.DataFrame:
     """
-    Carrega portfólio de ações do Fibery.
-    
+    Carrega carteira-modelo de equities do Fibery (RVQM/MAGO).
+
+    Args:
+        tipo: Se informado (ex.: ``"RVQM"`` ou ``"MAGO"``), filtra pela estratégia.
+            ``None`` retorna todas as composições, com a coluna ``tipo``.
+
     Returns:
-        DataFrame com o portfólio de ações.
+        DataFrame com date, code, weight e tipo.
     """
     df = read_fibery(table_name="Inv-Asset Allocation/Carteira RVQM", include_fibery_fields=False)
-    df = df[["Data de Implementação", "Ativo", "Peso"]].copy()
-    df['Data de Implementação'] = pd.to_datetime(df['Data de Implementação'])
-    df = df.rename(columns={'Ativo': 'code', 'Data de Implementação': 'date', 'Peso': 'weight'})
+    df = df[["Data de Implementação", "Ativo", "Peso", "Tipo"]].copy()
+    df["Data de Implementação"] = pd.to_datetime(df["Data de Implementação"])
+    df = df.rename(
+        columns={
+            "Ativo": "code",
+            "Data de Implementação": "date",
+            "Peso": "weight",
+            "Tipo": "tipo",
+        }
+    )
+    df["tipo"] = df["tipo"].astype(str).str.strip()
+    if tipo is not None:
+        df = df[df["tipo"] == str(tipo).strip()].copy()
     return df
+
+
+def resolve_portfolio_strategy(
+    portfolio: str,
+    portfolios_rvqm: pd.DataFrame | None = None,
+) -> str:
+    """
+    Infere a estratégia (RVQM/MAGO) aderida pelo portfolio/cliente.
+
+    Raises:
+        ValueError: Se o portfolio não existir ou não tiver Tipo preenchido.
+    """
+    clients = portfolios_rvqm if portfolios_rvqm is not None else load_portfolios_rvqm()
+    row = clients.loc[clients["Portfolio"] == portfolio]
+    if row.empty:
+        raise ValueError(f"Portfolio '{portfolio}' não encontrado na tabela de clientes.")
+    tipo = row["Tipo"].iloc[0]
+    if pd.isna(tipo) or not str(tipo).strip():
+        raise ValueError(f"Portfolio '{portfolio}' sem Tipo de estratégia definido no Fibery.")
+    return str(tipo).strip()
 
 
 @st.cache_data(ttl=_CACHE_TTL)

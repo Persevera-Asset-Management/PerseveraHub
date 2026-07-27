@@ -175,33 +175,50 @@ def calculate_adherence_metrics(
 
 def build_adherence_summary(
     portfolio_returns: dict[str, pd.Series],
-    strategy_returns: pd.Series,
+    strategy_returns: pd.Series | dict[str, pd.Series],
     portfolio_weights: dict[str, pd.DataFrame],
-    strategy_weights: pd.DataFrame,
+    strategy_weights: pd.DataFrame | dict[str, pd.DataFrame],
+    *,
+    strategy_by_portfolio: dict[str, str] | None = None,
 ) -> pd.DataFrame:
-    """Monta tabela resumo de aderência por carteira."""
+    """
+    Monta tabela resumo de aderência por carteira.
+
+    ``strategy_returns`` / ``strategy_weights`` podem ser únicos (todas as carteiras
+    vs a mesma estratégia) ou dicts indexados pelo nome da carteira.
+    """
     rows = []
     for name, rets in portfolio_returns.items():
-        metrics = calculate_adherence_metrics(rets, strategy_returns)
+        strat_rets = (
+            strategy_returns[name]
+            if isinstance(strategy_returns, dict)
+            else strategy_returns
+        )
+        strat_weights = (
+            strategy_weights[name]
+            if isinstance(strategy_weights, dict)
+            else strategy_weights
+        )
+        metrics = calculate_adherence_metrics(rets, strat_rets)
         weights = portfolio_weights.get(name, pd.DataFrame())
-        metrics["active_share"] = calculate_active_share(weights, strategy_weights)
+        metrics["active_share"] = calculate_active_share(weights, strat_weights)
         metrics["carteira"] = name
+        if strategy_by_portfolio is not None:
+            metrics["estrategia"] = strategy_by_portfolio.get(name, "")
         rows.append(metrics)
 
+    base_cols = [
+        "excess_return",
+        "tracking_error",
+        "correlation",
+        "hit_ratio",
+        "active_share",
+        "obs",
+    ]
     if not rows:
-        return pd.DataFrame(
-            columns=[
-                "carteira",
-                "excess_return",
-                "tracking_error",
-                "correlation",
-                "hit_ratio",
-                "active_share",
-                "obs",
-            ]
-        )
+        cols = (["carteira", "estrategia"] + base_cols) if strategy_by_portfolio is not None else (["carteira"] + base_cols)
+        return pd.DataFrame(columns=cols)
 
     summary = pd.DataFrame(rows).set_index("carteira")
-    return summary[
-        ["excess_return", "tracking_error", "correlation", "hit_ratio", "active_share", "obs"]
-    ]
+    out_cols = (["estrategia"] + base_cols) if "estrategia" in summary.columns else base_cols
+    return summary[out_cols]
