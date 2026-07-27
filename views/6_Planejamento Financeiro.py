@@ -1,8 +1,12 @@
 import streamlit as st
 import streamlit_highcharts as hct
+from st_aggrid import AgGrid
+
 import pandas as pd
 import numpy as np
 import datetime
+
+from utils.table import style_table_aggrid
 from utils.chart_helpers import create_chart
 from utils.table import style_table
 from persevera_tools.quant_research.sma import simular_patrimonio, goal_seek
@@ -315,14 +319,15 @@ with tab_anual:
     }, inplace=True)
 
     # df_anual['Idade'] = df_anual['Idade'].apply(lambda x: f"{int(idade_atual)}" if x == int(idade_atual) else int(idade_atual))
-    df_anual.set_index("Idade", inplace=True)
-    
-    st.dataframe(
-        style_table(
+
+    AgGrid(
+        **style_table_aggrid(
             df_anual,
             numeric_cols_format_as_float=["Patrimônio Inicial Ano", "Patrimônio Final Ano", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado", "Imposto Pago Acumulado"],
-            percent_cols=["Inflação Acumulada"]
-        )
+            percent_cols=["Inflação Acumulada"],
+            pinned_left_cols=["Idade"],
+        ),
+        key="memoria_anual_grid",
     )
 
 with tab_mensal:
@@ -346,13 +351,14 @@ with tab_mensal:
     ]]
     df_memoria_mensal["Data"] = df_memoria_mensal["Data"].dt.strftime("%Y-%m-%d")
     df_memoria_mensal["Idade"] = df_memoria_mensal.apply(lambda x: f"{int(x['Idade Anos'])} anos e {int(x['Idade Meses'])} meses", axis=1)
-    df_memoria_mensal.set_index(["Data", "Idade"], inplace=True)
     df_memoria_mensal.drop(columns=["Idade Anos", "Idade Meses"], inplace=True)
 
-    st.dataframe(
-        style_table(
+    AgGrid(
+        **style_table_aggrid(
             df_memoria_mensal,
+            percent_cols=["Inflação Acumulada"],
             numeric_cols_format_as_float=["Patrimônio Inicial Mês", "Rendimento Mensal", "Aporte Mensal Ajustado", "Resgate Mensal Ajustado", "Imposto Pago Mensal", "Patrimônio Final Mês", "Rendimento Acumulado", "Resgate Acumulado", "Aporte Acumulado", "Imposto Pago Acumulado"],
-            percent_cols=["Inflação Acumulada"]
-        )
+            pinned_left_cols=["Data", "Idade"],
+        ),
+        key="memoria_mensal_grid",
     )
