@@ -1,12 +1,14 @@
 import streamlit as st
 import streamlit_highcharts as hct
+from st_aggrid import AgGrid
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
 
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import show_data_freshness
-from utils.table import style_table
+from utils.table import style_table, style_table_aggrid
 from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
 from services.position_service import (
@@ -17,6 +19,11 @@ from services.position_service import (
     load_issuers,
     get_latest_date_data,
     get_emissor_column,
+    enrich_dataframe_with_duration,
+    weighted_average_duration,
+    weighted_average_duration_by_category,
+    RF_DURATION_CATEGORIES,
+    RF_DURATION_CATEGORY_LABELS,
     INSTRUMENTOS_RF,
     ASSET_CLASSES_ORDER,
 )
@@ -168,7 +175,25 @@ if selected_carteiras:
                 maior_posicao_rf_pct = 0.0
                 maior_posicao_rf_alias = ""
 
-            kpi_cols = st.columns(4)
+            df_rf_duration = df_emissores_rf.groupby(
+                [
+                    pd.Grouper(key='Data Posição', freq='D'),
+                    'Nome Ativo', 'Alias', 'Classificação do Conjunto',
+                    'Classificação Instrumento', 'Data Vencimento', 'Indexador',
+                ]
+            ).agg(**{'Saldo': ('Saldo', 'sum')})
+            df_rf_duration_current = get_latest_date_data(df_rf_duration).reset_index()
+            df_rf_duration_current = df_rf_duration_current[df_rf_duration_current['Saldo'] > 0]
+            df_rf_duration_current = enrich_dataframe_with_duration(
+                df_rf_duration_current,
+                settlement_date=df['Data Posição'].max(),
+            )
+            duration_media_rf = weighted_average_duration(df_rf_duration_current)
+            duration_by_category = weighted_average_duration_by_category(df_rf_duration_current)
+            n_duration_ok = int(df_rf_duration_current['Duration'].notna().sum())
+            n_duration_total = len(df_rf_duration_current)
+
+            kpi_cols = st.columns(5)
             with kpi_cols[0]:
                 st.metric(
                     "Posição em Liquidez", f"{pct_caixa:.1f}%", height="stretch",
@@ -199,11 +224,24 @@ if selected_carteiras:
                     delta_color="off",
                     delta_arrow="off",
                 )
+            with kpi_cols[4]:
+                duration_label = (
+                    f"{duration_media_rf:.2f} anos" if duration_media_rf is not None else "—"
+                )
+                st.metric(
+                    "Duration Média RF",
+                    duration_label,
+                    height="stretch",
+                    delta=f"{n_duration_ok}/{n_duration_total} ativos com duration",
+                    delta_color="off",
+                    delta_arrow="off",
+                )
+
 
         # =========================================================================
         # SEÇÃO 2 — Gráficos
         # =========================================================================
-        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos", "Monitor de FGC", "Alertas"])
+        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos & Duration", "Monitor de FGC", "Alertas"])
 
         with tabs[0]: # Alocação Atual
 
@@ -360,13 +398,14 @@ if selected_carteiras:
             )
             hct.streamlit_highcharts(chart_portfolio_positions_custodiante)
 
-        with tabs[5]: # Vencimentos
+        with tabs[5]: # Vencimentos & Duration
             cols = st.columns(2)
             with cols[0]:
                 df_data_vencimento_rf = df.copy()
                 df_data_vencimento_rf = df_data_vencimento_rf.groupby(
                     [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
-                    'Classificação do Conjunto', 'Classificação Instrumento', 'Data Vencimento', 'Nome Emissor']
+                    'Classificação do Conjunto', 'Classificação Instrumento',
+                    'Data Vencimento', 'Nome Emissor', 'Indexador']
                 ).agg(**{
                     'Quantidade': ('Quantidade', 'sum'),
                     'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -382,18 +421,64 @@ if selected_carteiras:
                     df_data_vencimento_rf_current['Data Vencimento'].values.astype('datetime64[D]')
                 ) / 252
 
-                st.dataframe(
-                    style_table(
+                df_data_vencimento_rf_current = enrich_dataframe_with_duration(
+                    df_data_vencimento_rf_current.reset_index(),
+                    settlement_date=df['Data Posição'].max(),
+                ).set_index('Nome Ativo')
+
+                duration_media_tab = weighted_average_duration(df_data_vencimento_rf_current)
+                duration_by_cat_tab = weighted_average_duration_by_category(df_data_vencimento_rf_current)
+                n_ok = int(df_data_vencimento_rf_current['Duration'].notna().sum())
+                n_total = len(
+                    df_data_vencimento_rf_current[
+                        df_data_vencimento_rf_current['Classificação Instrumento'].isin(INSTRUMENTOS_RF)
+                    ]
+                )
+                if duration_media_tab is not None:
+                    by_cat_parts = []
+                    for category in RF_DURATION_CATEGORIES:
+                        value = duration_by_cat_tab.get(category)
+                        label = RF_DURATION_CATEGORY_LABELS[category]
+                        if pd.notna(value):
+                            by_cat_parts.append(f"{label}: **{value:.2f}**")
+                        else:
+                            by_cat_parts.append(f"{label}: —")
+                    st.caption(
+                        f"Duration média ponderada (RF): **{duration_media_tab:.2f} anos** "
+                        f"· {n_ok}/{n_total} ativos com duration"
+                    )
+                    st.caption(" · ".join(by_cat_parts) + " (anos)")
+                else:
+                    st.caption("Duration média ponderada (RF): sem dados suficientes")
+
+                # st.dataframe(
+                #     style_table(
+                #         df_data_vencimento_rf_current[[
+                #             'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
+                #             'Data Vencimento', 'Duration', 'Duration Fonte',
+                #             'Quantidade', 'Valor Unitário', 'Saldo'
+                #         ]],
+                #         date_cols=['Data Vencimento'],
+                #         numeric_cols_format_as_float=['Valor Unitário', 'Saldo', 'Duration'],
+                #         numeric_cols_format_as_int=['Quantidade'],
+                #     )
+                # )
+
+                AgGrid(
+                    **style_table_aggrid(
                         df_data_vencimento_rf_current[[
                             'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
-                            'Data Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
-                        ]],
+                            'Data Vencimento', 'Duration', 'Duration Fonte',
+                            'Quantidade', 'Valor Unitário', 'Saldo'
+                        ]].reset_index(),
+                        pinned_left_cols=['Nome Ativo'],
                         date_cols=['Data Vencimento'],
-                        numeric_cols_format_as_float=['Valor Unitário', 'Saldo'],
+                        numeric_cols_format_as_float=['Valor Unitário', 'Saldo', 'Duration'],
                         numeric_cols_format_as_int=['Quantidade'],
-                    )
+                        auto_size_columns='fit_cell_contents'
+                    ),
+                    key="data_vencimento_rf_current_grid",
                 )
-
             with cols[1]:
                 # Distribuição por vencimento
                 maturity_bins = [0, 1, 2, 3, 5, 7, 10, np.inf]

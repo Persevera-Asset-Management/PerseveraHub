@@ -11,6 +11,7 @@ from utils.ui import track_data_load
 from persevera_tools.data.providers import ComdinheiroProvider
 from persevera_tools.db.fibery import read_fibery
 from persevera_tools.db import read_sql
+from persevera_tools.fixed_income import calculate_duration
 
 
 # =============================================================================
@@ -55,6 +56,20 @@ INSTRUMENTOS_RF = [
     'Títulos Públicos Federais',
     'Debênture',
 ]
+
+# Instrumentos tipicamente bullet (juros + principal no vencimento).
+INSTRUMENTOS_RF_BULLET = {
+    'CDB',
+    'LC',
+    'LCA',
+    'LCD',
+    'LCI',
+    'LF',
+    'LFS',
+    'LH',
+    'LIG',
+    'Título Público',    # Por enquanto, não tem duration
+}
 
 _POSITIONS_COLUMNS = [
     "Data Posição", "Portfolio", "Custodiante Acronimo",
@@ -443,8 +458,12 @@ def load_accounts() -> pd.DataFrame:
     Returns:
         DataFrame com as contas e informações de titularidade.
     """
-    df = read_fibery(table_name="Ops-InstFin/Conta", include_fibery_fields=False)
-    df = df[df["Status Habilitação"] == "Sob Gestão"]
+    df = read_fibery(
+        table_name="Ops-InstFin/Conta",
+        include_fibery_fields=False,
+        where_filter=["=", ["Ops-InstFin/Status Habilitação", "enum/name"], "$status"],
+        params={"$status": "Sob Gestão"},
+    )
     df = df[["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]]
     df = df.dropna(subset=["Portfolio"])
     df["Nome Completo"] = df["Titularidade Principal"].str.split("|").str[1].str.strip()
@@ -550,10 +569,18 @@ def load_portfolios_rvqm() -> pd.DataFrame:
     Returns:
         DataFrame com Portfolio, conta, custodiante e Tipo da estratégia.
     """
-    df = read_fibery(table_name="Inv-Asset Allocation/Clientes com Carteira RVQM", include_fibery_fields=False)
+    df = read_fibery(
+        table_name="Inv-Asset Allocation/Clientes com Carteira RVQM",
+        include_fibery_fields=False
+    )
     df = df[df["Carteira Ativa"]].copy()
     df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL", "Tipo"]]
-    df["Tipo"] = df["Tipo"].astype(str).str.strip()
+    df["Tipo"] = (
+        df["Tipo"]
+        .astype("string")
+        .str.strip()
+        .replace({"": pd.NA, "nan": pd.NA, "None": pd.NA, "<NA>": pd.NA})
+    )
     return df
 
 
@@ -580,7 +607,12 @@ def load_equities_portfolio(tipo: str | None = None) -> pd.DataFrame:
             "Tipo": "tipo",
         }
     )
-    df["tipo"] = df["tipo"].astype(str).str.strip()
+    df["tipo"] = (
+        df["tipo"]
+        .astype("string")
+        .str.strip()
+        .replace({"": pd.NA, "nan": pd.NA, "None": pd.NA, "<NA>": pd.NA})
+    )
     if tipo is not None:
         df = df[df["tipo"] == str(tipo).strip()].copy()
     return df
@@ -601,7 +633,7 @@ def resolve_portfolio_strategy(
     if row.empty:
         raise ValueError(f"Portfolio '{portfolio}' não encontrado na tabela de clientes.")
     tipo = row["Tipo"].iloc[0]
-    if pd.isna(tipo) or not str(tipo).strip():
+    if pd.isna(tipo) or not str(tipo).strip() or str(tipo).strip().lower() in {"nan", "none", "<na>"}:
         raise ValueError(f"Portfolio '{portfolio}' sem Tipo de estratégia definido no Fibery.")
     return str(tipo).strip()
 
@@ -719,6 +751,224 @@ def get_emissor_column(df: pd.DataFrame) -> pd.DataFrame:
         df['Identificador do Emissor Geral'] = devedor_id.fillna(emissor_id)
 
     return df
+
+
+def _map_indexador_to_indice(indexador) -> str:
+    """Mapeia Indexador da posição para a convenção de day-count da duration."""
+    if pd.isna(indexador):
+        return 'DI'
+    text = str(indexador).strip().upper()
+    if not text:
+        return 'DI'
+    if 'DI' in text or 'CDI' in text:
+        return 'DI'
+    return 'IPCA'
+
+
+def _coupon_rate_for_instrumento(instrumento) -> float | None:
+    """
+    Define cupom para o fallback analítico.
+
+    Bullets (CDB/LCI/...) usam coupon_rate=0 → duration = prazo até o vencimento.
+    Demais instrumentos deixam None para ANBIMA / YTM do banco.
+    """
+    if pd.isna(instrumento):
+        return None
+    if str(instrumento).strip() in INSTRUMENTOS_RF_BULLET:
+        return 0.0
+    return None
+
+
+@st.cache_data(ttl=_CACHE_TTL)
+def _calculate_durations_cached(
+    codes: tuple[str, ...],
+    maturity_dates: tuple[str, ...],
+    indices: tuple[str, ...],
+    coupon_rates: tuple[float | None, ...],
+    settlement_date: str | None,
+) -> pd.DataFrame:
+    """Cacheia o cálculo em lote de duration por código.
+
+    Duration ANBIMA vem em dias úteis; convertemos para anos (/252) para
+    ficar na mesma unidade do fallback analítico (``calculated``).
+    """
+    maturity_by_code = dict(zip(codes, maturity_dates))
+    indice_by_code = dict(zip(codes, indices))
+    coupon_by_code = {
+        code: rate for code, rate in zip(codes, coupon_rates) if rate is not None
+    }
+
+    result = calculate_duration(
+        list(codes),
+        maturity_date=maturity_by_code,
+        settlement_date=settlement_date,
+        coupon_rate=coupon_by_code or None,
+        indice=indice_by_code,
+        use_anbima=True,
+    )
+    if isinstance(result, dict):
+        result = pd.DataFrame([result], index=[codes[0]])
+
+    anbima_mask = result['source'] == 'anbima'
+    if anbima_mask.any():
+        result.loc[anbima_mask, 'macaulay_duration'] = (
+            result.loc[anbima_mask, 'macaulay_duration'] / 252.0
+        )
+    return result
+
+
+def enrich_dataframe_with_duration(
+    df: pd.DataFrame,
+    *,
+    code_col: str = 'Nome Ativo',
+    maturity_col: str = 'Data Vencimento',
+    indexador_col: str = 'Indexador',
+    instrumento_col: str = 'Classificação Instrumento',
+    settlement_date=None,
+) -> pd.DataFrame:
+    """
+    Acrescenta duration (Macaulay) às linhas de renda fixa do DataFrame.
+
+    Calcula uma vez por ``Nome Ativo`` (código) e faz merge de volta. Instrumentos
+    fora de ``INSTRUMENTOS_RF`` ou sem vencimento ficam com NaN.
+
+    Colunas adicionadas:
+        - Duration: Macaulay duration em anos (ANBIMA convertida de DU/252)
+        - Duration Fonte: ``anbima``, ``calculated`` ou ``no_data``
+        - Years to Maturity: prazo residual usado no fallback (quando disponível)
+    """
+    out = df.copy()
+    out['Duration'] = np.nan
+    out['Duration Fonte'] = pd.NA
+    out['Years to Maturity'] = np.nan
+
+    if out.empty or code_col not in out.columns or maturity_col not in out.columns:
+        return out
+
+    mask_rf = out[instrumento_col].isin(INSTRUMENTOS_RF) if instrumento_col in out.columns else True
+    mask_maturity = out[maturity_col].notna()
+    mask_code = out[code_col].notna() & (out[code_col].astype(str).str.strip() != '')
+    eligible = out.loc[mask_rf & mask_maturity & mask_code].copy()
+    if eligible.empty:
+        return out
+
+    eligible['_code'] = eligible[code_col].astype(str).str.strip()
+    eligible['_maturity'] = pd.to_datetime(eligible[maturity_col], errors='coerce')
+    eligible = eligible[eligible['_maturity'].notna()]
+    if eligible.empty:
+        return out
+
+    if indexador_col in eligible.columns:
+        eligible['_indice'] = eligible[indexador_col].map(_map_indexador_to_indice)
+    else:
+        eligible['_indice'] = 'DI'
+
+    if instrumento_col in eligible.columns:
+        eligible['_coupon'] = eligible[instrumento_col].map(_coupon_rate_for_instrumento)
+    else:
+        eligible['_coupon'] = None
+
+    unique = (
+        eligible
+        .sort_values('_maturity')
+        .drop_duplicates(subset=['_code'], keep='first')
+    )
+
+    settlement = None
+    if settlement_date is not None and pd.notna(settlement_date):
+        settlement = pd.Timestamp(settlement_date).strftime('%Y-%m-%d')
+
+    try:
+        durations = _calculate_durations_cached(
+            tuple(unique['_code'].tolist()),
+            tuple(unique['_maturity'].dt.strftime('%Y-%m-%d').tolist()),
+            tuple(unique['_indice'].tolist()),
+            tuple(None if pd.isna(v) else float(v) for v in unique['_coupon'].tolist()),
+            settlement,
+        )
+    except Exception:
+        return out
+
+    duration_map = durations['macaulay_duration'] if 'macaulay_duration' in durations.columns else pd.Series(dtype=float)
+    source_map = durations['source'] if 'source' in durations.columns else pd.Series(dtype=object)
+    ytm_map = (
+        durations['years_to_maturity']
+        if 'years_to_maturity' in durations.columns
+        else pd.Series(dtype=float)
+    )
+
+    codes = out[code_col].astype(str).str.strip()
+    out['Duration'] = codes.map(duration_map)
+    out['Duration Fonte'] = codes.map(source_map)
+    out['Years to Maturity'] = codes.map(ytm_map)
+    # Não atribuir duration a não-RF (map por código poderia contaminar se houvesse colisão).
+    if instrumento_col in out.columns:
+        non_rf = ~out[instrumento_col].isin(INSTRUMENTOS_RF)
+        out.loc[non_rf, 'Duration'] = np.nan
+        out.loc[non_rf, 'Duration Fonte'] = pd.NA
+        out.loc[non_rf, 'Years to Maturity'] = np.nan
+    return out
+
+
+def weighted_average_duration(
+    df: pd.DataFrame,
+    *,
+    duration_col: str = 'Duration',
+    weight_col: str = 'Saldo',
+) -> float | None:
+    """Duration média ponderada pelo saldo; ignora linhas sem duration válida."""
+    if df.empty or duration_col not in df.columns or weight_col not in df.columns:
+        return None
+    valid = df[df[duration_col].notna() & df[weight_col].notna()].copy()
+    if valid.empty:
+        return None
+    weights = valid[weight_col].astype(float)
+    total = weights.sum()
+    if total <= 0:
+        return None
+    return float((valid[duration_col].astype(float) * weights).sum() / total)
+
+
+RF_DURATION_CATEGORIES = (
+    'Renda Fixa Pós-Fixada',
+    'Renda Fixa Pré-Fixada',
+    'Renda Fixa Atrelada à Inflação',
+)
+
+RF_DURATION_CATEGORY_LABELS = {
+    'Renda Fixa Pós-Fixada': 'Pós-Fixada',
+    'Renda Fixa Pré-Fixada': 'Pré-Fixada',
+    'Renda Fixa Atrelada à Inflação': 'Inflação',
+}
+
+
+def weighted_average_duration_by_category(
+    df: pd.DataFrame,
+    *,
+    category_col: str = 'Classificação do Conjunto',
+    duration_col: str = 'Duration',
+    weight_col: str = 'Saldo',
+    categories: tuple[str, ...] = RF_DURATION_CATEGORIES,
+) -> pd.Series:
+    """
+    Duration média ponderada por categoria de RF.
+
+    Returns:
+        Series indexada pelas categorias (na ordem de ``categories``), com
+        ``None``/NaN quando a categoria não tem duration válida.
+    """
+    result = pd.Series(index=list(categories), dtype=float)
+    if df.empty or category_col not in df.columns:
+        return result
+
+    for category in categories:
+        subset = df[df[category_col] == category]
+        result[category] = weighted_average_duration(
+            subset,
+            duration_col=duration_col,
+            weight_col=weight_col,
+        )
+    return result
 
 
 @st.cache_data(ttl=_CACHE_TTL)
