@@ -10,6 +10,7 @@ from utils.ui import track_data_load
 
 from persevera_tools.data.providers import ComdinheiroProvider
 from persevera_tools.db.fibery import read_fibery
+from persevera_tools.db import read_sql
 
 
 # =============================================================================
@@ -568,6 +569,37 @@ def load_equities_portfolio() -> pd.DataFrame:
     df['Data de Implementação'] = pd.to_datetime(df['Data de Implementação'])
     df = df.rename(columns={'Ativo': 'code', 'Data de Implementação': 'date', 'Peso': 'weight'})
     return df
+
+
+@st.cache_data(ttl=_CACHE_TTL)
+def load_indicator_catalog() -> list[str]:
+    try:
+        query = """
+        SELECT DISTINCT code
+        FROM indicadores
+        ORDER BY code
+        """
+        result = read_sql(query)
+        if isinstance(result, pd.DataFrame):
+            col = "code" if "code" in result.columns else result.columns[0]
+            return result[col].dropna().astype(str).tolist()
+        return [str(c) for c in result] if result else []
+    except Exception as e:
+        st.error(f"Erro ao carregar códigos das séries: {str(e)}")
+        return []
+
+
+@st.cache_data(ttl=_CACHE_TTL)
+def load_funds_catalog() -> pd.DataFrame:
+    try:
+        df = load_assets(("Fundo de Investimento", "Previdência Privada"))
+        cols = [c for c in ["Name", "Nome Completo"] if c in df.columns]
+        if not cols:
+            return pd.DataFrame(columns=["Name", "Nome Completo"])
+        return df[cols].drop_duplicates().sort_values(cols[0]).reset_index(drop=True)
+    except Exception as e:
+        st.error(f"Erro ao carregar catálogo de fundos: {e}")
+        return pd.DataFrame(columns=["Name", "Nome Completo"])
 
 
 # =============================================================================

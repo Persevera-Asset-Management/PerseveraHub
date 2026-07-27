@@ -7,7 +7,7 @@ import io
 from utils.chart_helpers import create_chart, render_chart
 from utils.data_transformers import apply_transformations, TRANSFORMERS
 from persevera_tools.data import get_series
-from persevera_tools.db import read_sql
+from services.position_service import load_indicator_catalog
 
 CHART_TYPE_OPTIONS = {
     "Linha": "line",
@@ -178,7 +178,7 @@ def parse_pasted_data(pasted_text: str, has_header: bool, x_col_name_input: str)
 
 
 with st.spinner("Carregando códigos das séries...", show_time=True):
-    indicators_codes = load_indicator_codes()
+    indicators_codes = load_indicator_catalog()
 
 # --- Sidebar ---
 with st.sidebar:
