@@ -125,6 +125,7 @@ def display_table_aggrid(df: pd.DataFrame, columns: list[str], **aggrid_kwargs):
         numeric_cols_format_as_int=[col for col in INTEGER_COLUMNS if col in visible_columns],
         left_align_cols=["Ticker", "Emissor / Risco", "Alias", "Emissor"],
         pinned_left_cols=["Ticker"],
+        auto_size_columns="fit_cell_contents",
         **aggrid_kwargs,
     )
 

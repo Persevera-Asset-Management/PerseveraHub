@@ -480,6 +480,31 @@ def style_table_aggrid(
             ensureDomOrder=True,
         )
 
+    # --- CSV export: return raw underlying values so numbers are not truncated
+    # by the display valueFormatter and so the CSV engine doesn't need to quote
+    # values that contain the comma thousands-separator.  For percent columns we
+    # multiply by 100 to match what the user sees on screen (the raw value
+    # stored in the grid is the fraction, e.g. 0.1234, but the display shows
+    # 12.34%).  All other columns just emit params.value as-is.
+    _percent_cols_json = json.dumps(list(percent_cols) if percent_cols else [])
+    gb.configure_grid_options(
+        defaultCsvExportParams={
+            "columnSeparator": ";",
+            "suppressQuotes": True,
+            "processCellCallback": JsCode(
+                "function(params) {"
+                f"  var pctCols = {_percent_cols_json};"
+                "  if (params.value === null || params.value === undefined) { return ''; }"
+                "  if (pctCols.indexOf(params.column.getColId()) !== -1) {"
+                "    var v = Number(params.value);"
+                "    return isNaN(v) ? params.value : v * 100;"
+                "  }"
+                "  return params.value;"
+                "}"
+            )
+        }
+    )
+
     # `from_dataframe` already sets autoSizeStrategy={"type": "fitGridWidth"};
     # override here so callers can opt into content-based auto-sizing (or
     # opt out entirely) instead.
