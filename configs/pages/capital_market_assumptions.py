@@ -17,6 +17,8 @@ CAPITAL_MARKET_ASSUMPTIONS = {
         "anbima_ida_ipca": "Debêntures IPCA (IDA IPCA)",
         "br_b3_corporate_bond_incentivized_ipca_aaa_index": "Debêntures Incentivadas AAA IPCA (B3)",
         "br_b3_corporate_bond_incentivized_ipca_ultra_quality_index": "Debêntures Incentivadas Ultra Quality IPCA (B3)",
+
+        "br_teva_fii_papel_index": "FII Papel (Teva)",
     },
     "Renda Variável": {
         "br_ibovespa": "Bolsa Brasileira (Ibovespa)",
@@ -30,6 +32,7 @@ CAPITAL_MARKET_ASSUMPTIONS = {
         "gold_100oz_futures": "Ouro (sem variação cambial)",
         "bitcoin_usd": "Bitcoin",
         "usd_brl": "Real (USD/BRL)",
+        "br_teva_fii_tijolo_index": "FII Tijolo (Teva)",
     },
 }
 
