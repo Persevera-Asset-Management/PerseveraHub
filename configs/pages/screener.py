@@ -10,8 +10,9 @@ def load_factor_definitions() -> pd.DataFrame:
         df = read_fibery(
             table_name="Inv-Rsrch-Quant/Definições dos Fatores",
             include_fibery_fields=False,
+            where_filter=["=", ["workflow/state", "enum/name"], "$state"],
+            params={"$state": "Ativo"},
         )
-        df = df[df["state"] == "Ativo"]
         return df[["Name", "Alias", "Descrição", "Maior Melhor", "Estilo"]]
     except Exception as e:
         st.error(f"Error loading factor definitions: {str(e)}")
