@@ -97,7 +97,7 @@ BENCHMARKS = ['CDI', 'Ibovespa', 'SMLL']
 RETURN_COLS = ['day', 'mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m', 'custom']
 
 
-def _normalize_nav_index(nav: pd.DataFrame) -> pd.DataFrame:
+def _normalize_nav_index(nav: pd.DataFrame, ffill: bool = True) -> pd.DataFrame:
     nav_levels = nav.copy()
     if isinstance(nav_levels.index, pd.MultiIndex):
         if 'date' not in nav_levels.index.names:
@@ -105,7 +105,8 @@ def _normalize_nav_index(nav: pd.DataFrame) -> pd.DataFrame:
         nav_levels.index = pd.to_datetime(nav_levels.index.get_level_values('date'))
     else:
         nav_levels.index = pd.to_datetime(nav_levels.index)
-    return nav_levels.sort_index().ffill()
+    nav_levels = nav_levels.sort_index()
+    return nav_levels.ffill() if ffill else nav_levels
 
 
 def _custom_period_return(nav_levels: pd.DataFrame, start_date, end_date) -> pd.Series:
@@ -115,6 +116,12 @@ def _custom_period_return(nav_levels: pd.DataFrame, start_date, end_date) -> pd.
     with np.errstate(divide='ignore', invalid='ignore'):
         custom_ret = custom_period.iloc[-1] / custom_period.iloc[0] - 1.0
     return custom_ret.where(np.isfinite(custom_ret)) * 100
+
+
+def _last_nav_dates(nav: pd.DataFrame) -> pd.Series:
+    """Last non-null NAV date per fund (no ffill, so lagging peers keep their own date)."""
+    nav_raw = _normalize_nav_index(nav, ffill=False)
+    return nav_raw.apply(lambda s: s.last_valid_index())
 
 
 def _fund_type(name) -> str:
@@ -127,7 +134,7 @@ def _fund_type(name) -> str:
 
 @st.cache_data(ttl=3600)
 def build_peer_performance_table(nav, total_equity, start_date, end_date):
-    """Enrich utils performance returns with peer-group ranks, PL and type."""
+    """Enrich utils performance returns with peer-group ranks, PL, last NAV date and type."""
     if nav is None or nav.empty:
         return pd.DataFrame()
 
@@ -160,10 +167,12 @@ def build_peer_performance_table(nav, total_equity, start_date, end_date):
     if total_equity is not None and not total_equity.empty:
         pl_series = total_equity.ffill().iloc[-1].reindex(df_result.index)
 
-    df_result = df_result.assign(**ranks, PL=pl_series)
+    ultima_cota = _last_nav_dates(nav).reindex(df_result.index)
+
+    df_result = df_result.assign(**ranks, PL=pl_series, ultima_cota=ultima_cota)
     df_result['type'] = df_result.index.map(_fund_type)
 
-    col_order = ['type', 'PL'] + RETURN_COLS + [f'{key}_rank' for key in RETURN_COLS]
+    col_order = ['type', 'PL', 'ultima_cota'] + RETURN_COLS + [f'{key}_rank' for key in RETURN_COLS]
     return df_result[col_order].reset_index()
 
 @st.cache_data(ttl=3600)
@@ -386,6 +395,8 @@ if not performance_table_data.empty:
         rank_cols_identifier='rank',
         numeric_cols_format_as_int=['PL'],
         numeric_cols_format_as_float=RETURN_COLS,
+        date_cols=['ultima_cota'],
+        date_format='%d/%m/%Y',
         highlight_quartile=RETURN_COLS,
         quartile_exclude_row_by_column='type',
         quartile_exclude_row_if_value_is=['Benchmark'],
