@@ -85,7 +85,13 @@ if selected_carteiras:
 
         # Composição Completa
         df_portfolio_positions = df.groupby(
-            [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias', 'Classificação do Conjunto']
+            [
+                pd.Grouper(key='Data Posição', freq='D'),
+                'Nome Ativo',
+                'Alias',
+                'Classificação do Conjunto',
+                'Classificação do Sub-Conjunto',
+            ]
         ).agg(**{
             'Quantidade': ('Quantidade', 'sum'),
             'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -262,23 +268,6 @@ if selected_carteiras:
                     y_axis_title="%",
                 )
                 hct.streamlit_highcharts(chart_portfolio_composition)
-
-                df_portfolio_composition_sub = df.groupby(
-                    [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Sub-Conjunto']
-                ).agg(**{'Saldo': ('Saldo', 'sum')})
-                df_portfolio_composition_current_sub = get_latest_date_data(df_portfolio_composition_sub)
-                df_portfolio_composition_current = df_portfolio_composition_current.reindex(ASSET_CLASSES_ORDER).dropna()
-
-                chart_portfolio_composition = create_chart(
-                    data=df_portfolio_composition_current_sub,
-                    columns=['Saldo'],
-                    names=['Saldo'],
-                    chart_type='donut',
-                    title="Alocação Atual - Sub-Conjunto",
-                    y_axis_title="%",
-                )
-                hct.streamlit_highcharts(chart_portfolio_composition)
-
             
             with cols[1]:
                 if not is_single_carteira:
@@ -332,6 +321,43 @@ if selected_carteiras:
                 outer_inner_size="55%",
                 center_hole_size="30%",
                 outer_parent_column='Classificação do Conjunto',  # Liga anel externo ao interno
+                enable_fullscreen_on_dblclick=True,
+            )
+
+            render_chart(options_nested)
+
+            df_portfolio_composition_sub = df.groupby(
+                [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Sub-Conjunto']
+            ).agg(**{'Saldo': ('Saldo', 'sum')})
+            df_portfolio_composition_current_sub = get_latest_date_data(df_portfolio_composition_sub)
+            df_portfolio_composition_current_sub = df_portfolio_composition_current_sub.sort_values(
+                by='Saldo', ascending=False
+            )
+
+            df_inner_chart = df_portfolio_composition_current_sub.reset_index()
+            df_outer_chart = df_portfolio_positions_current.reset_index()
+            category_order = {cat: i for i, cat in enumerate(df_inner_chart['Classificação do Sub-Conjunto'])}
+            df_outer_chart['_cat_order'] = df_outer_chart['Classificação do Sub-Conjunto'].map(category_order)
+            df_outer_chart = df_outer_chart.sort_values(
+                by=['_cat_order', 'Saldo'],
+                ascending=[True, False]  # Categoria na ordem, Saldo decrescente
+            ).drop(columns=['_cat_order'])
+
+            options_nested = create_chart(
+                data=df_outer_chart,
+                columns='Saldo',
+                x_column='Alias',  # Ativos individuais no anel externo
+                chart_type='nested_pie',
+                title='Alocação Hierárquica - Sub-Conjunto',
+                inner_data=df_inner_chart,
+                inner_y_column='Saldo',
+                inner_x_column='Classificação do Sub-Conjunto',  # Classes no anel interno
+                inner_series_name='Classes',
+                names='Ativos',
+                inner_size="55%",
+                outer_inner_size="55%",
+                center_hole_size="30%",
+                outer_parent_column='Classificação do Sub-Conjunto',  # Liga anel externo ao interno
                 enable_fullscreen_on_dblclick=True,
             )
 
