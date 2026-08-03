@@ -2,9 +2,8 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import streamlit_highcharts as hct
-from dateutil.relativedelta import relativedelta
 
-from utils.table import style_table
+from utils.table import style_table, get_performance_table
 from utils.chart_helpers import create_chart, render_chart
 
 from persevera_tools.data import get_funds_data, get_series
@@ -67,7 +66,7 @@ def load_fund_data(fund_name):
         return pd.DataFrame(), pd.DataFrame()
 
     # Map fund_name using peers DataFrame
-    df = df.swaplevel(axis=1).stack()
+    df = df.swaplevel(axis=1).stack(future_stack=True)
     df.columns = df.columns.map(peers.set_index('fund_cnpj')['short_name'].to_dict())
     df = df.unstack().swaplevel(axis=1)
 
@@ -76,12 +75,11 @@ def load_fund_data(fund_name):
         st.error("fund_nav column missing for NAV pivot.")
         nav = pd.DataFrame()
     else:
-        nav = df['fund_nav']
+        nav = df['fund_nav'].copy()
         if not nav.empty:
             persevera_cols_nav = nav.filter(like='Persevera').columns
             if not persevera_cols_nav.empty:
-                nav = nav.replace(0, np.nan)
-                nav = nav.dropna(subset=[persevera_cols_nav[0]])
+                nav.loc[:, persevera_cols_nav] = nav.loc[:, persevera_cols_nav].replace(0, np.nan)
             nav = nav.sort_index(axis=1)
 
     # Select Total Equity data
@@ -91,83 +89,82 @@ def load_fund_data(fund_name):
     else:
         total_equity = df['fund_total_equity']
         if not total_equity.empty:
-            persevera_cols_equity = total_equity.filter(like='Persevera').columns
-            if not persevera_cols_equity.empty:
-                total_equity = total_equity.dropna(subset=[persevera_cols_equity[0]])
             total_equity = total_equity.sort_index(axis=1)
     
     return nav, total_equity
 
+BENCHMARKS = ['CDI', 'Ibovespa', 'SMLL']
+RETURN_COLS = ['day', 'mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m', 'custom']
+
+
+def _normalize_nav_index(nav: pd.DataFrame) -> pd.DataFrame:
+    nav_levels = nav.copy()
+    if isinstance(nav_levels.index, pd.MultiIndex):
+        if 'date' not in nav_levels.index.names:
+            raise ValueError("MultiIndex must include a 'date' level")
+        nav_levels.index = pd.to_datetime(nav_levels.index.get_level_values('date'))
+    else:
+        nav_levels.index = pd.to_datetime(nav_levels.index)
+    return nav_levels.sort_index().ffill()
+
+
+def _custom_period_return(nav_levels: pd.DataFrame, start_date, end_date) -> pd.Series:
+    custom_period = nav_levels.loc[start_date:end_date]
+    if len(custom_period) <= 1:
+        return pd.Series(np.nan, index=nav_levels.columns)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        custom_ret = custom_period.iloc[-1] / custom_period.iloc[0] - 1.0
+    return custom_ret.where(np.isfinite(custom_ret)) * 100
+
+
+def _fund_type(name) -> str:
+    if 'Persevera' in str(name):
+        return 'Persevera'
+    if name in BENCHMARKS:
+        return 'Benchmark'
+    return 'Peer'
+
+
 @st.cache_data(ttl=3600)
-def get_performance_table(nav, total_equity, start_date, end_date):
-    df = nav.ffill()
-    if df.empty:
+def build_peer_performance_table(nav, total_equity, start_date, end_date):
+    """Enrich utils performance returns with peer-group ranks, PL and type."""
+    if nav is None or nav.empty:
         return pd.DataFrame()
 
-    gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
-    gp_monthly = df.groupby(pd.Grouper(level='date', freq="ME")).last()
-    gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
+    df_result = get_performance_table(nav)
+    if df_result.empty:
+        return pd.DataFrame()
 
-    benchmarks = ['CDI', 'Ibovespa', 'SMLL']
+    id_col = 'fund_name' if 'fund_name' in df_result.columns else df_result.columns[0]
+    df_result = (
+        df_result
+        .rename(columns={id_col: 'fund_name', '1d': 'day'})
+        .set_index('fund_name')
+    )
 
-    day_ret = gp_daily.dropna(how='all', axis='rows').pct_change(fill_method=None).iloc[-1]
-    mtd_ret = gp_monthly.pct_change(fill_method=None).iloc[-1]
-    ytd_ret = gp_yearly.pct_change(fill_method=None).iloc[-1]
-
-    def get_relative_return(months):
-        start_date_calc = df.index[-1] - relativedelta(months=months)
-        period_df = df.loc[start_date_calc:]
-        if len(period_df) > 1:
-            return df.iloc[-1] / period_df.iloc[0] - 1
-        return pd.Series(np.nan, index=df.columns)
-
-    ret_3m = get_relative_return(3)
-    ret_6m = get_relative_return(6)
-    ret_12m = get_relative_return(12)
-    ret_24m = get_relative_return(24)
-    ret_36m = get_relative_return(36)
-
-    custom_period_df = df.loc[start_date:end_date]
-    if len(custom_period_df) > 1:
-        custom_ret = custom_period_df.iloc[-1] / custom_period_df.iloc[0] - 1
-    else:
-        custom_ret = pd.Series(np.nan, index=df.columns)
-
-    returns = {
-        'day': day_ret,
-        'mtd': mtd_ret,
-        'ytd': ytd_ret,
-        '3m': ret_3m,
-        '6m': ret_6m,
-        '12m': ret_12m,
-        '24m': ret_24m,
-        '36m': ret_36m,
-        'custom': custom_ret,
-    }
+    nav_levels = _normalize_nav_index(nav)
+    df_result['custom'] = _custom_period_return(
+        nav_levels, start_date, end_date
+    ).reindex(df_result.index)
 
     ranks = {
-        f'{key}_rank': value.drop(benchmarks, errors='ignore').rank(ascending=False)
-        for key, value in returns.items()
+        f'{key}_rank': (
+            df_result[key]
+            .drop(labels=BENCHMARKS, errors='ignore')
+            .rank(ascending=False)
+        )
+        for key in RETURN_COLS
     }
 
-    time_frames = {**returns, **ranks}
-
-    df_result = pd.DataFrame(time_frames)
-    df_result = df_result.apply(lambda x: x * 100 if 'rank' not in x.name else x)
-    
     pl_series = pd.Series(np.nan, index=df_result.index)
-    if not total_equity.empty:
-        last_pl = total_equity.iloc[-1]
-        pl_series = last_pl.reindex(df_result.index)
+    if total_equity is not None and not total_equity.empty:
+        pl_series = total_equity.ffill().iloc[-1].reindex(df_result.index)
 
-    df_result = df_result.assign(PL=pl_series)
-    df_result['type'] = df_result.index.map(lambda x: 'Persevera' if 'Persevera' in x else ('Benchmark' if x in benchmarks else 'Peer'))
-    
-    col_order = ['type', 'PL'] + list(time_frames.keys())
-    df_result = df_result[col_order]
-    
-    df_result = df_result.reset_index().rename(columns={'index': 'fund_name'})
-    return df_result
+    df_result = df_result.assign(**ranks, PL=pl_series)
+    df_result['type'] = df_result.index.map(_fund_type)
+
+    col_order = ['type', 'PL'] + RETURN_COLS + [f'{key}_rank' for key in RETURN_COLS]
+    return df_result[col_order].reset_index()
 
 @st.cache_data(ttl=3600)
 def calculate_performance(df):
@@ -259,9 +256,17 @@ for col in benchmark_df.columns:
     if col in combined_nav_data:
         combined_nav_data[col] = combined_nav_data[col].ffill()
 
-# Date Range Selection
-min_date_val = combined_nav_data.index.min().date()
+# Date Range Selection — min date is the Persevera fund's first valid NAV
 max_date_val = combined_nav_data.index.max().date()
+if persevera_fund_col_name and persevera_fund_col_name in combined_nav_data.columns:
+    persevera_start = combined_nav_data[persevera_fund_col_name].first_valid_index()
+    min_date_val = (
+        pd.Timestamp(persevera_start).date()
+        if persevera_start is not None
+        else combined_nav_data.index.min().date()
+    )
+else:
+    min_date_val = combined_nav_data.index.min().date()
 
 # Initialize or validate st.session_state.start_date (as Timestamp)
 if 'start_date' not in st.session_state:
@@ -368,7 +373,7 @@ else:
 
 # Performance Table
 st.subheader("Tabela de Performance")
-performance_table_data = get_performance_table(
+performance_table_data = build_peer_performance_table(
     combined_nav_data,
     total_equity_data,
     st.session_state.start_date,
@@ -380,8 +385,8 @@ if not performance_table_data.empty:
         performance_table_data.set_index('fund_name'),
         rank_cols_identifier='rank',
         numeric_cols_format_as_int=['PL'],
-        numeric_cols_format_as_float=['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'],
-        highlight_quartile=['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom'],
+        numeric_cols_format_as_float=RETURN_COLS,
+        highlight_quartile=RETURN_COLS,
         quartile_exclude_row_by_column='type',
         quartile_exclude_row_if_value_is=['Benchmark'],
         highlight_row_by_column='type',
@@ -395,8 +400,7 @@ else:
 
 # Retorno x Patrimônio Líquido
 st.subheader("Retorno x Patrimônio Líquido")
-period_options = ['day', 'mtd', 'ytd', '3m', '6m', '12m', '24m', '36m', 'custom']
-period_selected = st.radio("Selecione o período:", period_options, index=0, horizontal=True)
+period_selected = st.radio("Selecione o período:", RETURN_COLS, index=0, horizontal=True)
 
 short_term_chart_options = create_chart(
     # data=performance_table_data.dropna(),

@@ -751,50 +751,68 @@ def style_table_aggrid(
 
 
 def get_performance_table(series):
-    df = series.ffill()
+    """Build a snapshot of period returns (%) from price/NAV levels.
+
+    Expects a Series or DataFrame of price/NAV levels (not returns), indexed by
+    date (DatetimeIndex or MultiIndex with a 'date' level).
+    """
+    df = series.to_frame() if isinstance(series, pd.Series) else series.copy()
     if df.empty:
         return pd.DataFrame()
 
-    gp_daily = df.groupby(pd.Grouper(level='date', freq="1D")).last()
-    gp_monthly = df.groupby(pd.Grouper(level='date', freq="ME")).last()
-    gp_yearly = df.groupby(pd.Grouper(level='date', freq="YE")).last()
+    if isinstance(df.index, pd.MultiIndex):
+        if 'date' not in df.index.names:
+            raise ValueError("MultiIndex must include a 'date' level")
+        df.index = pd.to_datetime(df.index.get_level_values('date'))
+    else:
+        df.index = pd.to_datetime(df.index)
 
-    day_ret = gp_daily.pct_change(fill_method=None).iloc[-1]
-    mtd_ret = gp_monthly.pct_change(fill_method=None).iloc[-1]
-    ytd_ret = gp_yearly.pct_change(fill_method=None).iloc[-1]
+    df = df.sort_index().ffill()
+    if df.empty:
+        return pd.DataFrame()
 
-    def get_relative_return(months):
-        start_date_calc = df.index[-1] - relativedelta(months=months)
-        period_df = df.loc[start_date_calc:]
-        if len(period_df) > 1:
-            return df.iloc[-1] / period_df.iloc[0] - 1
-        return pd.Series(np.nan, index=df.columns)
+    last = df.iloc[-1]
+    end_date = df.index[-1]
+    nan_row = pd.Series(np.nan, index=df.columns)
 
-    ret_1m = get_relative_return(1)
-    ret_3m = get_relative_return(3)
-    ret_6m = get_relative_return(6)
-    ret_12m = get_relative_return(12)
-    ret_24m = get_relative_return(24)
-    ret_36m = get_relative_return(36)
+    def _period_return(end: pd.Series, start) -> pd.Series:
+        if start is None:
+            return nan_row
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ret = end / start - 1.0
+        return ret.where(np.isfinite(ret))
+
+    def _asof_values(at: pd.Timestamp) -> pd.Series:
+        # Per-column asof: DataFrame.asof requires a fully non-NaN row, which
+        # fails when assets have staggered start dates (e.g. 36m lookback).
+        return pd.Series({col: df[col].asof(at) for col in df.columns}, index=df.columns)
+
+    def get_relative_return(months: int) -> pd.Series:
+        start_date_calc = end_date - relativedelta(months=months)
+        return _period_return(last, _asof_values(start_date_calc))
+
+    day_ret = _period_return(last, df.iloc[-2]) if len(df) >= 2 else nan_row
+
+    month_start = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    mtd_ret = _period_return(last, _asof_values(month_start - pd.Timedelta(days=1)))
+
+    year_start = end_date.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    ytd_ret = _period_return(last, _asof_values(year_start - pd.Timedelta(days=1)))
 
     returns = {
+        '1d': day_ret,
         'mtd': mtd_ret,
         'ytd': ytd_ret,
-        '1m': ret_1m,
-        '3m': ret_3m,
-        '6m': ret_6m,
-        '12m': ret_12m,
-        '24m': ret_24m,
-        '36m': ret_36m,
+        '1m': get_relative_return(1),
+        '3m': get_relative_return(3),
+        '6m': get_relative_return(6),
+        '12m': get_relative_return(12),
+        '24m': get_relative_return(24),
+        '36m': get_relative_return(36),
     }
 
-    time_frames = {**returns}
-
-    df_result = pd.DataFrame(time_frames)
-    df_result = df_result.apply(lambda x: x * 100)    
-    df_result = df_result.reset_index()
-    
-    return df_result
+    df_result = pd.DataFrame(returns) * 100
+    return df_result.reset_index()
 
 
 def get_monthly_returns_table(returns_series: pd.Series) -> pd.DataFrame:

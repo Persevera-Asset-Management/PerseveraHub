@@ -451,34 +451,19 @@ if selected_carteiras:
                 else:
                     st.caption("Duration média ponderada (RF): sem dados suficientes")
 
-                # st.dataframe(
-                #     style_table(
-                #         df_data_vencimento_rf_current[[
-                #             'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
-                #             'Data Vencimento', 'Duration', 'Duration Fonte',
-                #             'Quantidade', 'Valor Unitário', 'Saldo'
-                #         ]],
-                #         date_cols=['Data Vencimento'],
-                #         numeric_cols_format_as_float=['Valor Unitário', 'Saldo', 'Duration'],
-                #         numeric_cols_format_as_int=['Quantidade'],
-                #     )
-                # )
-
-                AgGrid(
-                    **style_table_aggrid(
+                st.dataframe(
+                    style_table(
                         df_data_vencimento_rf_current[[
                             'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
                             'Data Vencimento', 'Duration', 'Duration Fonte',
                             'Quantidade', 'Valor Unitário', 'Saldo'
-                        ]].reset_index(),
-                        pinned_left_cols=['Nome Ativo'],
+                        ]],
                         date_cols=['Data Vencimento'],
                         numeric_cols_format_as_float=['Valor Unitário', 'Saldo', 'Duration'],
                         numeric_cols_format_as_int=['Quantidade'],
-                        auto_size_columns='fit_cell_contents'
-                    ),
-                    key="data_vencimento_rf_current_grid",
+                    )
                 )
+                
             with cols[1]:
                 # Distribuição por vencimento
                 maturity_bins = [0, 1, 2, 3, 5, 7, 10, np.inf]
