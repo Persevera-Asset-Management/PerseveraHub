@@ -545,7 +545,7 @@ def load_active_carteiras_adm() -> list[str]:
         Lista de códigos de carteira (Chave Match).
     """
     df = read_fibery(
-        table_name="Inv-Asset Allocation/Codinome Relatório",
+        table_name="Inv-Asset Allocation/Série de Relatório",
         where_filter=["=", ["Inv-Asset Allocation/Mandato Ativo"], True],
         include_fibery_fields=False,
     )
