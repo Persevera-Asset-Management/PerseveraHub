@@ -17,6 +17,7 @@ from services.position_service import (
     load_accounts,
     load_instruments_fgc,
     load_issuers,
+    load_assets,
     get_latest_date_data,
     get_emissor_column,
     enrich_dataframe_with_duration,
@@ -27,23 +28,78 @@ from services.position_service import (
     INSTRUMENTOS_RF,
     ASSET_CLASSES_ORDER,
 )
+from services.external_positions_service import (
+    MATCH_AMBIGUOUS,
+    MATCH_MATCHED,
+    MATCH_UNMATCHED,
+    enrich_external_positions,
+    match_external_positions,
+    match_summary,
+    parse_external_positions_file,
+    template_csv_bytes,
+)
 
 EMISSOR_STATUS_ALERTAS = ("Não Aprovável", "Reprovado")
+ORIGEM_GESTAO = "Sob gestão (Fibery)"
+ORIGEM_EXTERNA = "Carteira externa"
 
 st.title("Controle de Posições")
 
 # Definição dos parâmetros
 with st.sidebar:
     st.header("Parâmetros")
-    selected_carteiras = st.multiselect(
-        "Carteiras selecionadas",
-        options=CODIGOS_CARTEIRAS_ADM,
-        default=None,
-        placeholder="Selecione uma ou mais carteiras..."
+    origem_carteira = st.radio(
+        "Origem da carteira",
+        options=[ORIGEM_GESTAO, ORIGEM_EXTERNA],
+        index=0,
     )
+    is_external = origem_carteira == ORIGEM_EXTERNA
+
+    selected_carteiras = []
+    uploaded_external = None
+    external_label = "EXTERNA"
+    external_date = datetime.now().date()
+    allow_partial_match = False
+
+    if is_external:
+        external_label = st.text_input(
+            "Nome da carteira",
+            value="EXTERNA",
+            placeholder="Ex.: Prospect Silva",
+        ).strip() or "EXTERNA"
+        external_date = st.date_input(
+            "Data da posição",
+            value=datetime.now().date(),
+            format="DD/MM/YYYY",
+        )
+        uploaded_external = st.file_uploader(
+            "Arquivo de posições (CSV ou Excel)",
+            type=["csv", "xlsx", "xls"],
+            help="Obrigatório: Ativo, Saldo. Opcionais: Quantidade, Valor Unitário, Data Posição, Custodiante, Portfolio.",
+        )
+        st.download_button(
+            "Baixar template",
+            data=template_csv_bytes(),
+            file_name="template_carteira_externa.csv",
+            mime="text/csv",
+            width="stretch",
+        )
+        allow_partial_match = st.checkbox(
+            "Analisar apenas ativos com match",
+            value=False,
+            help="Se marcado, ignora unmatched/ambiguous e segue só com os matched.",
+        )
+    else:
+        selected_carteiras = st.multiselect(
+            "Carteiras selecionadas",
+            options=CODIGOS_CARTEIRAS_ADM,
+            default=None,
+            placeholder="Selecione uma ou mais carteiras...",
+        )
+
 
 def load_data(carteiras):
-    """Carrega todos os dados necessários para a página."""
+    """Carrega todos os dados necessários para a página (modo sob gestão)."""
     with st.spinner("Carregando dados...", show_time=True):
         df_positions = load_positions()
         st.session_state.df_positions = df_positions
@@ -53,35 +109,125 @@ def load_data(carteiras):
         st.session_state.df_accounts = load_accounts()
         st.session_state.df = df_positions[df_positions['Portfolio'].isin(carteiras)]
 
-if selected_carteiras:
+
+def load_external_reference_data():
+    """Carrega taxonomia / FGC / emissores para enriquecer carteira externa."""
+    with st.spinner("Carregando taxonomia Fibery...", show_time=True):
+        st.session_state.df_assets = load_assets()
+        st.session_state.instruments_fgc = load_instruments_fgc()
+        st.session_state.df_issuers = load_issuers()
+
+
+ready = False
+df = None
+df_target_allocations = pd.DataFrame()
+df_accounts = pd.DataFrame()
+instruments_fgc = []
+df_issuers = pd.DataFrame()
+is_single_carteira = False
+
+if not is_external and selected_carteiras:
     load_data(selected_carteiras)
     show_data_freshness("positions", label="Posições", ttl_minutes=60)
-
     df = st.session_state.df
     df_target_allocations = st.session_state.df_target_allocations
     df_accounts = st.session_state.df_accounts
     instruments_fgc = st.session_state.instruments_fgc
     df_issuers = st.session_state.df_issuers
     is_single_carteira = len(selected_carteiras) == 1
+    ready = True
+elif is_external and uploaded_external is not None:
+    try:
+        df_upload = parse_external_positions_file(uploaded_external)
+    except ValueError as e:
+        st.error(str(e))
+        st.stop()
+
+    load_external_reference_data()
+    df_assets = st.session_state.df_assets
+    instruments_fgc = st.session_state.instruments_fgc
+    df_issuers = st.session_state.df_issuers
+
+    df_match_report = match_external_positions(df_upload, df_assets)
+    summary = match_summary(df_match_report)
+    has_match_issues = summary[MATCH_UNMATCHED] + summary[MATCH_AMBIGUOUS] > 0
+
+    with st.expander("Qualidade do match", expanded=has_match_issues):
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total", summary["total"])
+        m2.metric("Matched", summary[MATCH_MATCHED])
+        m3.metric("Ambiguous", summary[MATCH_AMBIGUOUS])
+        m4.metric("Unmatched", summary[MATCH_UNMATCHED])
+        st.dataframe(
+            style_table(
+                df_match_report.drop(columns=["_asset_idx"], errors="ignore"),
+                numeric_cols_format_as_float=["Saldo"],
+                left_align_cols=["Ativo", "Status Match", "Nome Ativo", "Alias", "Candidatos"],
+            ),
+            hide_index=True,
+        )
 
     try:
-        if is_single_carteira:
+        df_positions_ext, _ = enrich_external_positions(
+            df_upload,
+            df_assets,
+            portfolio_label=external_label,
+            position_date=datetime.combine(external_date, datetime.min.time()),
+            allow_partial=allow_partial_match,
+        )
+    except ValueError as e:
+        st.warning(str(e))
+        st.info(
+            "Corrija os códigos no arquivo, cadastre os ativos no Fibery, "
+            "ou marque **Analisar apenas ativos com match** na sidebar."
+        )
+        st.stop()
+
+    if df_positions_ext.empty:
+        st.error(
+            "Nenhuma posição enriquecida com Classificação do Conjunto. "
+            "Verifique o cadastro dos ativos."
+        )
+        st.stop()
+
+    df = df_positions_ext
+    selected_carteiras = [external_label]
+    is_single_carteira = True
+    ready = True
+elif is_external:
+    st.info("Envie um arquivo CSV/Excel com colunas **Ativo** e **Saldo** (use o template na sidebar).")
+else:
+    st.info("Selecione uma ou mais carteiras na sidebar.")
+
+if ready:
+    try:
+        if is_external:
+            st.subheader(f"{external_label} (externa)")
+        elif is_single_carteira:
             st.subheader(selected_carteiras[0])
         else:
             st.subheader("Consolidado: " + ", ".join(sorted(selected_carteiras)))
 
         # Informações Gerais
-        account_info = df_accounts[df_accounts['Portfolio'].isin(selected_carteiras)]
-        account_lines = []
-        for _portfolio in sorted(selected_carteiras):
-            info = account_info[account_info['Portfolio'] == _portfolio]
-            if len(info) > 0:
-                account_lines.append(
-                    f"{info['Nome Completo'].values[0]} ({_portfolio})\n\n"
-                    f"Conta(s): {', '.join(info['Nr Conta'].values)}\n"
-                    f"Custodiante(s): {', '.join(info['Custodiante'].values)}"
-                )
-        st.code("\n\n---\n\n".join(account_lines), language='markdown')
+        if is_external:
+            st.code(
+                f"{external_label}\n\n"
+                f"Origem: arquivo externo\n"
+                f"Data da posição: {external_date.strftime('%d/%m/%Y')}",
+                language="markdown",
+            )
+        else:
+            account_info = df_accounts[df_accounts['Portfolio'].isin(selected_carteiras)]
+            account_lines = []
+            for _portfolio in sorted(selected_carteiras):
+                info = account_info[account_info['Portfolio'] == _portfolio]
+                if len(info) > 0:
+                    account_lines.append(
+                        f"{info['Nome Completo'].values[0]} ({_portfolio})\n\n"
+                        f"Conta(s): {', '.join(info['Nr Conta'].values)}\n"
+                        f"Custodiante(s): {', '.join(info['Custodiante'].values)}"
+                    )
+            st.code("\n\n---\n\n".join(account_lines), language='markdown')
 
         # Composição Completa
         df_portfolio_positions = df.groupby(
@@ -114,12 +260,17 @@ if selected_carteiras:
                 )
             )
 
-        # Política de Investimentos
-        if not is_single_carteira:
+        # Política de Investimentos (apenas carteiras sob gestão no Fibery)
+        if is_external:
+            pass
+        elif not is_single_carteira:
             st.info("Política disponível apenas para carteira única.")
         else:
             df_policy_investments_current = pd.DataFrame()
-            if selected_carteiras[0] in df_target_allocations.index:
+            if (
+                not df_target_allocations.empty
+                and selected_carteiras[0] in df_target_allocations.index
+            ):
                 df_policy_investments_current = (
                     df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['PL Min', 'PL Max'])
                 )
@@ -270,11 +421,16 @@ if selected_carteiras:
                 hct.streamlit_highcharts(chart_portfolio_composition)
             
             with cols[1]:
-                if not is_single_carteira:
+                if is_external:
+                    st.info("Alocação alvo disponível apenas para carteiras sob gestão.")
+                elif not is_single_carteira:
                     st.info("Política disponível apenas para carteira única.")
                 else:
                     df_target_allocations_current = pd.DataFrame()
-                    if selected_carteiras[0] in df_target_allocations.index:
+                    if (
+                        not df_target_allocations.empty
+                        and selected_carteiras[0] in df_target_allocations.index
+                    ):
                         df_target_allocations_current = (
                             df_target_allocations.loc[selected_carteiras[0]].dropna(subset=['Target'])
                         )
