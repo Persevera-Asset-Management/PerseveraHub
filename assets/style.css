@@ -251,7 +251,9 @@ p {
 
 /* ===== BUTTON COMPONENTS ===== */
 .stButton > button,
-.stDownloadButton > button {
+.stDownloadButton > button,
+.stFormSubmitButton > button,
+[data-testid="stFormSubmitButton"] button {
     background-color: transparent !important;
     color: var(--color-primary-medium) !important;
     border-radius: var(--border-radius-md);
@@ -267,7 +269,9 @@ p {
 }
 
 .stButton > button:hover,
-.stDownloadButton > button:hover {
+.stDownloadButton > button:hover,
+.stFormSubmitButton > button:hover,
+[data-testid="stFormSubmitButton"] button:hover {
     background-color: var(--color-primary-light) !important;
     color: var(--color-primary-dark) !important;
     border-color: var(--color-primary-light) !important;
@@ -275,7 +279,9 @@ p {
 }
 
 .stButton > button:active,
-.stDownloadButton > button:active {
+.stDownloadButton > button:active,
+.stFormSubmitButton > button:active,
+[data-testid="stFormSubmitButton"] button:active {
     background-color: var(--color-primary-lighter) !important;
     color: var(--color-primary-dark) !important;
     border-color: var(--color-primary-lighter) !important;
@@ -283,7 +289,9 @@ p {
 }
 
 .stButton > button:disabled,
-.stDownloadButton > button:disabled {
+.stDownloadButton > button:disabled,
+.stFormSubmitButton > button:disabled,
+[data-testid="stFormSubmitButton"] button:disabled {
     background-color: transparent !important;
     color: var(--color-text-muted) !important;
     border-color: var(--color-border-dark) !important;
@@ -556,6 +564,8 @@ label[data-testid="stWidgetLabel"] {
 /* ===== PRINT STYLES ===== */
 @media print {
     .stButton,
+    .stFormSubmitButton,
+    [data-testid="stFormSubmitButton"],
     [data-testid="stSlider"] {
         display: none !important;
     }
