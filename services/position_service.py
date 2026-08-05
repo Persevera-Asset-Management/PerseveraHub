@@ -127,16 +127,18 @@ def get_latest_date_data(
     dates = df.index.get_level_values(level=level)
     groups = [df.index.get_level_values(level=g) for g in group_level]
 
-    temp = df.copy()
+    # Monta um DataFrame auxiliar — necessário porque Series.copy() + atribuição
+    # por chave adiciona entradas no índice, não colunas (quebra o groupby).
+    temp = pd.DataFrame(
+        {f'__grp_{i}__': g for i, g in enumerate(groups)},
+        index=df.index,
+    )
     temp['__date__'] = dates
-    for i, g in enumerate(groups):
-        temp[f'__grp_{i}__'] = g
     grp_cols = [f'__grp_{i}__' for i in range(len(groups))]
 
-    latest_per_group = temp.groupby(grp_cols)['__date__'].transform('max')
-    mask = temp['__date__'] == latest_per_group
-    result = df.loc[mask.values]
-    return result
+    latest_per_group = temp.groupby(grp_cols, sort=False)['__date__'].transform('max')
+    mask = temp['__date__'].to_numpy() == latest_per_group.to_numpy()
+    return df.loc[mask]
 
 
 def _normalize_positions_df(df: pd.DataFrame) -> pd.DataFrame:
