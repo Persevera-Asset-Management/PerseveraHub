@@ -29,6 +29,7 @@ CAPITAL_MARKET_ASSUMPTIONS = {
     },
     "Alternativos": {
         "anbima_ihfa": "Fundos Multimercado (IHFA)",
+        "persevera_anbima_ihfa_long_short": "Fundos Multimercado L&S (Sub-Índice IHFA)",
         "gold_100oz_futures": "Ouro (sem variação cambial)",
         "bitcoin_usd": "Bitcoin",
         "usd_brl": "Real (USD/BRL)",
