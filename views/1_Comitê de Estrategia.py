@@ -95,14 +95,17 @@ else:
 
         render_chart_group_with_context(data, chart_configs, "Moedas", "Performance", charts_by_context)
 
-        styled_performance_table = style_table(
-            get_performance_table(data_currencies),
-            numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
-            highlight_row_by_column='code',
-            highlight_row_if_value_equals='BRL',
-            highlight_color='lightblue'
+        styled_performance_table = st.dataframe(
+            style_table(
+                get_performance_table(data_currencies).drop(columns=['1d']),
+                numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
+                highlight_row_by_column='code',
+                highlight_row_if_value_equals='BRL',
+                highlight_color='lightblue'
+            ),
+            width='stretch',
+            hide_index=True
         )
-        st.dataframe(styled_performance_table, width='stretch', hide_index=True)
 
         render_chart_group_with_context(data, chart_configs, "Moedas", "Reservas Internacionais", charts_by_context)
 
@@ -113,11 +116,14 @@ else:
         data_commodities = data[list(commodities_codes.keys())].rename(columns=commodities_codes)
         render_chart_group_with_context(data, chart_configs, "Commodities", "Commodities", charts_by_context)
 
-        styled_performance_table = style_table(
-            get_performance_table(data_commodities),
-            numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
+        styled_performance_table = st.dataframe(
+            style_table(
+                get_performance_table(data_commodities).drop(columns=['1d']),
+                numeric_cols_format_as_float=['mtd', 'ytd', '1m', '3m', '6m', '12m', '24m', '36m'],
+            ),
+            width='stretch',
+            hide_index=True
         )
-        st.dataframe(styled_performance_table, width='stretch', hide_index=True)
 
     # Tab 4: Renda Variável
     with tabs[3]:
