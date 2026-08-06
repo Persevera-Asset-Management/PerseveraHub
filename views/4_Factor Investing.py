@@ -2,10 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-import streamlit_highcharts as hct
-
 from utils.table import style_table
-from utils.chart_helpers import create_chart
+from utils.tearsheet import render_tearsheet
 
 from persevera_tools.data import get_series
 from persevera_tools.quant_research.factor_investing import (
@@ -13,7 +11,6 @@ from persevera_tools.quant_research.factor_investing import (
     get_factor_options,
     run_backtest,
 )
-from persevera_tools.quant_research.factor_investing.result import build_summary
 
 STYLE_OPTIONS = ["Momentum", "Value", "Quality", "Risk", "Liquidity", "Custom"]
 
@@ -160,20 +157,6 @@ with st.sidebar:
     run_clicked = st.button("Rodar Backtest", type="primary", width="stretch")
 
 
-def _summary_to_series(name: str, summary: dict) -> pd.Series:
-    return pd.Series(
-        {
-            "Retorno Total": summary.get("total_return", float("nan")) * 100,
-            "Retorno Anualizado": summary.get("annualized_return", float("nan")) * 100,
-            "Volatilidade Anual": summary.get("annualized_volatility", float("nan")) * 100,
-            "Sharpe Ratio": summary.get("sharpe", float("nan")),
-            "Máx. Drawdown": summary.get("max_drawdown", float("nan")) * 100,
-            "Observações": summary.get("n_obs", 0),
-        },
-        name=name,
-    )
-
-
 def _holdings_for_date(
     weights: pd.DataFrame,
     scores: pd.DataFrame,
@@ -295,7 +278,6 @@ if nav.empty:
 # Normaliza para base 100 (visualização)
 nav_indexed = (nav / nav.iloc[0]) * 100
 chart_df = nav_indexed.to_frame(name="Estratégia")
-stats_series = [_summary_to_series("Estratégia", result.summary or {})]
 
 # Benchmarks (podem mudar sem re-rodar o backtest)
 if selected_benchmarks:
@@ -316,53 +298,13 @@ if selected_benchmarks:
             continue
 
         chart_df[bm_label] = bm_indexed
-        bm_raw = bm_prices[bm_ticker].reindex(nav.index).ffill().dropna()
-        stats_series.append(
-            _summary_to_series(
-                bm_label,
-                build_summary(bm_raw, risk_free_rate=float(risk_free_rate)),
-            )
-        )
 
-stats_df = pd.DataFrame(stats_series)
-
-row_1 = st.columns([1, 2, 2])
-with row_1[0]:
-    st.dataframe(
-        style_table(
-            stats_df.T,
-            numeric_cols_format_as_float=list(stats_df.T.columns),
-        ),
-        width="stretch",
-    )
-
-with row_1[1]:
-    chart = create_chart(
-        data=chart_df,
-        columns=list(chart_df.columns),
-        names=list(chart_df.columns),
-        chart_type="line",
-        title="Equity Curve",
-        y_axis_title="Índice (base 100)",
-    )
-    hct.streamlit_highcharts(chart, key="factor_equity_curve")
-
-with row_1[2]:
-    drawdown_df = pd.DataFrame(index=chart_df.index)
-    for col in chart_df.columns:
-        cumulative = chart_df[col]
-        running_max = cumulative.expanding().max()
-        drawdown_df[col] = (cumulative - running_max) / running_max * 100
-
-    chart_drawdown = create_chart(
-        data=drawdown_df,
-        columns=list(drawdown_df.columns),
-        names=list(drawdown_df.columns),
-        chart_type="area",
-        title="Drawdown",
-        y_axis_title="Drawdown (%)",
-    )
-    hct.streamlit_highcharts(chart_drawdown, key="factor_drawdown")
+render_tearsheet(
+    key_prefix="factor",
+    levels=chart_df,
+    risk_free_rate=float(risk_free_rate),
+    include_n_obs=True,
+)
 
 st.markdown("##### Holdings")
 weights = result.weights

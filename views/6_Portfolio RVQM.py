@@ -5,7 +5,8 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
 from utils.chart_helpers import create_chart
-from utils.table import style_table, get_monthly_returns_table, get_performance_table
+from utils.table import style_table, get_performance_table
+from utils.tearsheet import render_tearsheet
 
 from services.position_service import (
     load_assets,
@@ -23,7 +24,6 @@ from services.rvqm_adherence_service import (
 )
 
 from persevera_tools.data import get_descriptors, get_series
-from persevera_tools.quant_research.metrics import calculate_drawdown
 
 _CACHE_TTL = 10800  # 3h — alinhado a position_service
 
@@ -132,27 +132,6 @@ def build_adherence_payload(
         "client_period": client_period,
         "summary": summary,
     }
-
-# =============================================================================
-# Funções analíticas
-# =============================================================================
-
-def color_returns_cell(val):
-    if pd.isna(val):
-        return ''
-    if val > 0:
-        intensity = min(val / 8.0, 1.0)
-        r = int(198 * (1 - intensity) + 26 * intensity)
-        g = int(239 * (1 - intensity) + 122 * intensity)
-        b = int(198 * (1 - intensity) + 49 * intensity)
-        text = 'white' if intensity > 0.6 else 'black'
-    else:
-        intensity = min(abs(val) / 8.0, 1.0)
-        r = int(255 * (1 - intensity) + 192 * intensity)
-        g = int(199 * (1 - intensity) + 0 * intensity)
-        b = int(206 * (1 - intensity) + 0 * intensity)
-        text = 'white' if intensity > 0.6 else 'black'
-    return f'background-color: rgb({r},{g},{b}); color: {text}'
 
 # =============================================================================
 # Carregamento de dados
@@ -281,33 +260,40 @@ if show_weights_history:
     )
 
 # =============================================================================
-# Seleção de período
+# Seleção de período (sidebar — após load, para min/max válidos)
 # =============================================================================
 
 min_date_val = returns_df.index.min().date()
 max_date_val = returns_df.index.max().date()
 
-if 'start_date_picker' not in st.session_state:
-    st.session_state['start_date_picker'] = min_date_val
-if 'end_date_picker' not in st.session_state:
-    st.session_state['end_date_picker'] = max_date_val
+if "start_date_picker" not in st.session_state:
+    st.session_state["start_date_picker"] = min_date_val
+if "end_date_picker" not in st.session_state:
+    st.session_state["end_date_picker"] = max_date_val
 
-cols_date = st.columns(2)
-with cols_date[0]:
+# Clamp session values if the available range shrunk (e.g. strategy change).
+st.session_state["start_date_picker"] = max(
+    min_date_val, min(st.session_state["start_date_picker"], max_date_val)
+)
+st.session_state["end_date_picker"] = max(
+    min_date_val, min(st.session_state["end_date_picker"], max_date_val)
+)
+
+with st.sidebar:
+    st.header("Período")
     start_date_input = st.date_input(
         "Data Inicial",
         format="DD/MM/YYYY",
         min_value=min_date_val,
         max_value=max_date_val,
-        key='start_date_picker'
+        key="start_date_picker",
     )
-with cols_date[1]:
     end_date_input = st.date_input(
         "Data Final",
         format="DD/MM/YYYY",
         min_value=min_date_val,
         max_value=max_date_val,
-        key='end_date_picker'
+        key="end_date_picker",
     )
 
 if start_date_input > end_date_input:
@@ -319,61 +305,29 @@ end_ts = pd.to_datetime(end_date_input)
 
 mask = (returns_df.index >= start_ts) & (returns_df.index <= end_ts)
 returns_period = returns_df[mask]
-cumulative_period = (1 + returns_period).cumprod() - 1
 
 # =============================================================================
-# Performance Acumulada + Drawdown
+# Tearsheet de performance
 # =============================================================================
 
-col_charts = st.columns(2)
-with col_charts[0]:
-    hct.streamlit_highcharts(create_chart(
-        data=cumulative_period * 100,
-        columns=["Carteira", "Ibovespa", "SMLL", "CDI"],
-        names=["Carteira", "Ibovespa", "SMLL", "CDI"],
-        chart_type='line',
-        title="Performance Acumulada",
-        y_axis_title="Retorno (%)",
-        decimal_precision=2
-    ))
-
-with col_charts[1]:
-    dd_df = pd.DataFrame({
-        'Carteira': calculate_drawdown((1 + returns_period['Carteira']).cumprod()) * 100,
-        'Ibovespa': calculate_drawdown((1 + returns_period['Ibovespa']).cumprod()) * 100,
-    })
-    hct.streamlit_highcharts(create_chart(
-        data=dd_df,
-        columns=['Carteira', 'Ibovespa'],
-        names=['Carteira', 'Ibovespa'],
-        chart_type='area',
-        title="Drawdown",
-        y_axis_title="Drawdown (%)",
-        decimal_precision=2
-    ))
-
-# =============================================================================
-# Retorno Mensal
-# =============================================================================
-
-st.markdown("#### Retorno Mensal — Carteira (%)")
-monthly_table = get_monthly_returns_table(returns_df['Carteira'])
-performance_table = get_performance_table(cumulative_period.add(1)).set_index('index')
-
-styled_monthly = (
-    monthly_table.style
-    .map(color_returns_cell)
-    .format("{:.1f}%", na_rep="—")
+tearsheet_cols = [c for c in ["Carteira", "Ibovespa", "SMLL", "CDI"] if c in returns_period.columns]
+tearsheet_out = render_tearsheet(
+    key_prefix="rvqm",
+    returns=returns_period[tearsheet_cols],
+    drawdown_columns=[c for c in ["Carteira", "Ibovespa"] if c in returns_period.columns],
+    monthly_column="Carteira",
+    show_correlation=True,
+    correlation_returns=returns_period[["Carteira", "Ibovespa"]],
 )
-st.dataframe(styled_monthly, width="stretch")
 
+performance_table = get_performance_table(tearsheet_out["levels"]).set_index("index")
 st.dataframe(
     style_table(
         performance_table,
         numeric_cols_format_as_float=list(performance_table.columns),
-        highlight_quartile=list(performance_table.columns)
-        ),
-    width="stretch"
+        highlight_quartile=list(performance_table.columns),
+    ),
+    width="stretch",
 )
 
 # =============================================================================

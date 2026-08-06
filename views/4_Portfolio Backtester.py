@@ -4,19 +4,11 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import streamlit as st
-import streamlit_highcharts as hct
 
-from utils.chart_helpers import create_chart
-from utils.table import style_table
+from utils.tearsheet import compute_performance_stats, render_tearsheet
 from services.position_service import load_indicator_catalog, load_funds_catalog
 
 from persevera_tools.data import get_series, get_funds_data
-from persevera_tools.quant_research.metrics import (
-    calculate_annualized_return,
-    calculate_annualized_volatility,
-    calculate_sharpe_ratio,
-    calculate_max_drawdown,
-)
 
 # Edite este dicionário para adicionar/remover benchmarks disponíveis.
 # Formato: "Nome exibido no multiselect": "ticker_na_base"
@@ -27,7 +19,26 @@ BENCHMARK_OPTIONS: dict[str, str] = {
     "S&P 500 (USD)": "us_sp500",
 }
 
+# Pares FX para ajuste de ativos: preço_ajustado = preço_ativo × série_FX.
+# "—" = sem ajuste.
+FX_NONE = "—"
+FX_OPTIONS: dict[str, str | None] = {
+    FX_NONE: None,
+    "BRL/USD": "brl_usd",
+    "USD/BRL": "usd_brl",
+    "EUR/USD": "eur_usd",
+    "GBP/USD": "gbp_usd",
+    "JPY/USD": "jpy_usd",
+    "MXN/USD": "mxn_usd",
+    "AUD/USD": "aud_usd",
+    "CHF/USD": "chf_usd",
+    "CAD/USD": "cad_usd",
+    "CNH/USD": "cnh_usd",
+}
+
 RESULT_KEY = "pb_backtest_results"
+FX_COL = "Ajuste FX"
+_META_COLS = frozenset({"Ticker", FX_COL})
 _CNPJ_DIGITS_RE = re.compile(r"\D+")
 
 
@@ -97,6 +108,28 @@ def _ensure_range_index(df: pd.DataFrame) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
+def _ensure_fx_column(df: pd.DataFrame) -> pd.DataFrame:
+    """Guarantee Ticker | Ajuste FX | pesos column order and valid FX labels."""
+    out = df.copy()
+    if FX_COL not in out.columns:
+        insert_at = 1 if "Ticker" in out.columns else 0
+        out.insert(insert_at, FX_COL, FX_NONE)
+    out[FX_COL] = (
+        out[FX_COL]
+        .fillna(FX_NONE)
+        .astype(str)
+        .replace({"nan": FX_NONE, "": FX_NONE})
+    )
+    out.loc[~out[FX_COL].isin(FX_OPTIONS), FX_COL] = FX_NONE
+    weight_cols = [c for c in out.columns if c not in _META_COLS]
+    ordered = [c for c in ("Ticker", FX_COL) if c in out.columns] + weight_cols
+    return _ensure_range_index(out[ordered])
+
+
+def _fx_ticker(label: str) -> str | None:
+    return FX_OPTIONS.get(str(label).strip(), None)
+
+
 def _bump_table_editor() -> None:
     """Remount data_editor after external structural edits."""
     st.session_state["pb_table_editor_version"] = (
@@ -110,7 +143,7 @@ def _editor_key() -> str:
 
 def _append_assets_to_table(table: pd.DataFrame, selected_codes: list[str]) -> pd.DataFrame:
     """Append catalog codes (série/CNPJ) to the (already edited) portfolio table."""
-    table = _ensure_range_index(table.copy())
+    table = _ensure_fx_column(table)
     existing_codes = {
         _resolve_ticker(v) for v in table["Ticker"].tolist() if str(v).strip()
     }
@@ -119,16 +152,56 @@ def _append_assets_to_table(table: pd.DataFrame, selected_codes: list[str]) -> p
         code = _resolve_ticker(raw)
         if not code or code in existing_codes:
             continue
-        new_rows.append({col: (code if col == "Ticker" else 0.0) for col in table.columns})
+        new_rows.append(
+            {
+                col: (
+                    code if col == "Ticker"
+                    else FX_NONE if col == FX_COL
+                    else 0.0
+                )
+                for col in table.columns
+            }
+        )
         existing_codes.add(code)
 
     if not new_rows:
         return table
 
     non_empty = table[table["Ticker"].astype(str).str.strip() != ""]
-    return _ensure_range_index(
+    return _ensure_fx_column(
         pd.concat([non_empty, pd.DataFrame(new_rows)], ignore_index=True)
     )
+
+
+def _apply_fx_adjustment(
+    prices: pd.DataFrame,
+    data: pd.DataFrame,
+    fx_by_ticker: dict[str, str],
+) -> tuple[pd.DataFrame, list[str]]:
+    """Multiply each asset price series by its selected FX series (if any)."""
+    out = prices.copy()
+    warnings: list[str] = []
+    for ticker, fx_label in fx_by_ticker.items():
+        if ticker not in out.columns:
+            continue
+        fx_code = _fx_ticker(fx_label)
+        if not fx_code:
+            continue
+        if fx_code not in data.columns:
+            warnings.append(
+                f"Série FX '{fx_label}' ({fx_code}) indisponível — "
+                f"'{ticker}' sem ajuste cambial."
+            )
+            continue
+        fx_series = data[fx_code].reindex(out.index)
+        if fx_series.notna().sum() == 0:
+            warnings.append(
+                f"Série FX '{fx_label}' sem dados no período — "
+                f"'{ticker}' sem ajuste cambial."
+            )
+            continue
+        out[ticker] = out[ticker] * fx_series
+    return out, warnings
 
 
 def _align_data_columns(data: pd.DataFrame, codes: list[str]) -> pd.DataFrame:
@@ -245,22 +318,6 @@ def load_data(
     return data, tuple(warnings)
 
 
-def _compute_stats(index: pd.Series, returns: pd.Series, label: str, risk_free_rate: float) -> dict:
-    monthly_returns = returns.resample("ME").apply(lambda x: (1 + x).prod() - 1)
-    return {
-        "Portfólio": label,
-        "Retorno Total": (index.iloc[-1] / index.iloc[0] - 1) * 100,
-        "Retorno Anualizado": calculate_annualized_return(index) * 100,
-        "Volatilidade Anual": calculate_annualized_volatility(index, frequency="daily") * 100,
-        "Sharpe Ratio": calculate_sharpe_ratio(index, risk_free_rate=risk_free_rate),
-        "Máx. Drawdown": calculate_max_drawdown(index) * 100,
-        "Melhor Dia": returns.max() * 100,
-        "Pior Dia": returns.min() * 100,
-        "Melhor Mês": monthly_returns.max() * 100,
-        "Pior Mês": monthly_returns.min() * 100,
-    }
-
-
 def _format_date(ts) -> str:
     if ts is None or (isinstance(ts, float) and np.isnan(ts)) or pd.isna(ts):
         return "—"
@@ -272,6 +329,7 @@ def _build_coverage_table(
     asset_codes: list[str],
     benchmark_labels: list[str],
     code_to_label: dict[str, str] | None = None,
+    fx_labels: list[str] | None = None,
 ) -> tuple[pd.DataFrame, str | None, str | None]:
     """Build coverage table and identify the portfolio asset that starts latest."""
     code_to_label = code_to_label or {}
@@ -340,6 +398,39 @@ def _build_coverage_table(
             }
         )
 
+    seen_fx: set[str] = set()
+    for label in fx_labels or []:
+        fx_code = _fx_ticker(label)
+        if not fx_code or fx_code in seen_fx:
+            continue
+        seen_fx.add(fx_code)
+        if fx_code not in data.columns:
+            rows.append(
+                {
+                    "Ativo": label,
+                    "_code": fx_code,
+                    "Tipo": "FX",
+                    "Data mínima": "—",
+                    "Data máxima": "—",
+                    "Limitante": "",
+                    "_first": pd.Timestamp.max,
+                }
+            )
+            continue
+        series = data[fx_code]
+        first = series.first_valid_index()
+        rows.append(
+            {
+                "Ativo": label,
+                "_code": fx_code,
+                "Tipo": "FX",
+                "Data mínima": _format_date(first),
+                "Data máxima": _format_date(series.last_valid_index()),
+                "Limitante": "",
+                "_first": pd.Timestamp(first) if first is not None else pd.Timestamp.max,
+            }
+        )
+
     limiting_code: str | None = None
     limiting_date_str: str | None = None
     if asset_first_dates:
@@ -385,81 +476,18 @@ def _render_results(results: dict) -> None:
                 )
             st.dataframe(coverage_df, hide_index=True, width="stretch")
 
-    row_1 = st.columns(2)
-    with row_1[0]:
-        chart = create_chart(
-            data=chart_df,
-            columns=list(chart_df.columns),
-            names=list(chart_df.columns),
-            chart_type="line",
-            title="Equity Curve",
-            y_axis_title="Índice",
-        )
-        hct.streamlit_highcharts(chart, key="equity_curve")
+    corr_df = portfolio_returns_df.copy()
+    for bm_label, bm_rets in benchmark_returns_dict.items():
+        corr_df[bm_label] = bm_rets
 
-    with row_1[1]:
-        if portfolio_stats:
-            st.markdown("##### Estatísticas de Performance")
-            stats_df = pd.DataFrame(portfolio_stats).set_index("Portfólio")
-            st.dataframe(
-                style_table(
-                    stats_df,
-                    percent_cols=[
-                        "Retorno Total",
-                        "Retorno Anualizado",
-                        "Volatilidade Anual",
-                        "Máx. Drawdown",
-                        "Melhor Dia",
-                        "Pior Dia",
-                        "Melhor Mês",
-                        "Pior Mês",
-                    ],
-                    numeric_cols_format_as_float=["Sharpe Ratio"],
-                ),
-                width="stretch",
-            )
-        else:
-            st.warning("Nenhum portfólio foi calculado com sucesso.")
-
-    row_2 = st.columns(2)
-    with row_2[0]:
-        drawdown_df = pd.DataFrame(index=chart_df.index)
-        for col in chart_df.columns:
-            cumulative = chart_df[col]
-            running_max = cumulative.expanding().max()
-            drawdown_df[col] = (cumulative - running_max) / running_max * 100
-
-        chart_drawdown = create_chart(
-            data=drawdown_df,
-            columns=list(drawdown_df.columns),
-            names=list(drawdown_df.columns),
-            chart_type="area",
-            title="Drawdown",
-            y_axis_title="Drawdown (%)",
-        )
-        hct.streamlit_highcharts(chart_drawdown, key="drawdown")
-
-    with row_2[1]:
-        corr_df = portfolio_returns_df.copy()
-        for bm_label, bm_rets in benchmark_returns_dict.items():
-            corr_df[bm_label] = bm_rets
-
-        if len(corr_df.columns) > 1:
-            corr_matrix = corr_df.corr()
-            corr_matrix = corr_matrix.where(np.tril(np.ones(corr_matrix.shape)).astype(np.bool_))
-            chart_corr = create_chart(
-                data=corr_matrix,
-                columns=list(corr_matrix.columns),
-                names=list(corr_matrix.columns),
-                chart_type="heatmap",
-                title="Correlação",
-                y_axis_title="Portfólio",
-            )
-            hct.streamlit_highcharts(chart_corr, key="correlacao")
-        else:
-            st.warning(
-                "Há somente um portfólio e nenhum benchmark. Não é possível calcular a correlação."
-            )
+    render_tearsheet(
+        key_prefix="pb",
+        levels=chart_df,
+        stats=portfolio_stats,
+        show_correlation=True,
+        correlation_returns=corr_df,
+        rolling_window=21,
+    )
 
 
 st.title("Portfolio Backtester")
@@ -497,7 +525,8 @@ with st.sidebar:
 
 st.markdown(
     "Busque e selecione **séries** ou **fundos** do catálogo, defina os **pesos em %** "
-    "para cada portfólio. Pesos **positivos** são normalizados para somar 100%. "
+    "para cada portfólio. Em **Ajuste FX**, escolha um par para converter o ativo "
+    "(preço × série FX). Pesos **positivos** são normalizados para somar 100%. "
     "Use pesos **negativos** para posições vendidas — nesse caso os valores são usados como "
     "alocação absoluta (ex: −50, −50, +200)."
 )
@@ -509,9 +538,11 @@ if "num_portfolios" not in st.session_state:
     st.session_state["num_portfolios"] = 1
 
 if "portfolio_table" not in st.session_state:
-    st.session_state["portfolio_table"] = pd.DataFrame({"Ticker": [""], "Portfolio 1 (%)": [0.0]})
+    st.session_state["portfolio_table"] = pd.DataFrame(
+        {"Ticker": [""], FX_COL: [FX_NONE], "Portfolio 1 (%)": [0.0]}
+    )
 else:
-    st.session_state["portfolio_table"] = _ensure_range_index(st.session_state["portfolio_table"])
+    st.session_state["portfolio_table"] = _ensure_fx_column(st.session_state["portfolio_table"])
 
 if "pb_add_ms_version" not in st.session_state:
     st.session_state["pb_add_ms_version"] = 0
@@ -522,7 +553,7 @@ with col1:
         st.session_state["num_portfolios"] += 1
         new_col_name = f"Portfolio {st.session_state['num_portfolios']} (%)"
         st.session_state["portfolio_table"][new_col_name] = 0.0
-        st.session_state["portfolio_table"] = _ensure_range_index(
+        st.session_state["portfolio_table"] = _ensure_fx_column(
             st.session_state["portfolio_table"]
         )
         _bump_table_editor()
@@ -532,7 +563,7 @@ with col2:
     if st.button("➖ Remover Portfolio") and st.session_state["num_portfolios"] > 1:
         col_to_remove = f"Portfolio {st.session_state['num_portfolios']} (%)"
         if col_to_remove in st.session_state["portfolio_table"].columns:
-            st.session_state["portfolio_table"] = _ensure_range_index(
+            st.session_state["portfolio_table"] = _ensure_fx_column(
                 st.session_state["portfolio_table"].drop(columns=[col_to_remove])
             )
         st.session_state["num_portfolios"] -= 1
@@ -558,17 +589,25 @@ with st.form("portfolio_form"):
     weight_col_config = {
         col: st.column_config.NumberColumn(col, format="%.1f")
         for col in st.session_state["portfolio_table"].columns
-        if col != "Ticker"
+        if col not in _META_COLS
     }
     column_config = {
         "Ticker": st.column_config.TextColumn(
             "Ativo",
             help="Código da série ou CNPJ do fundo (como na base).",
         ),
+        FX_COL: st.column_config.SelectboxColumn(
+            FX_COL,
+            help="Multiplica o preço do ativo pela série FX escolhida. "
+            f"'{FX_NONE}' = sem ajuste.",
+            options=list(FX_OPTIONS.keys()),
+            required=True,
+            default=FX_NONE,
+        ),
         **weight_col_config,
     }
     edited_df = st.data_editor(
-        _ensure_range_index(st.session_state["portfolio_table"]),
+        _ensure_fx_column(st.session_state["portfolio_table"]),
         hide_index=True,
         column_config=column_config,
         width="stretch",
@@ -579,7 +618,7 @@ with st.form("portfolio_form"):
 
 # Só sincroniza a tabela quando o form é submetido — assim deletes entram no estado.
 if add_assets or run_backtest:
-    synced = _ensure_range_index(edited_df)
+    synced = _ensure_fx_column(edited_df)
     # Normaliza labels legados "Nome (CNPJ)" → CNPJ
     synced["Ticker"] = synced["Ticker"].map(_resolve_ticker)
     st.session_state["portfolio_table"] = synced
@@ -598,7 +637,7 @@ if run_backtest:
         st.error("A data final deve ser maior ou igual à data inicial.")
         st.stop()
 
-    df_input = st.session_state["portfolio_table"].copy()
+    df_input = _ensure_fx_column(st.session_state["portfolio_table"].copy())
     df_input["Ticker"] = df_input["Ticker"].map(_resolve_ticker)
     df_input = df_input[df_input["Ticker"] != ""]
 
@@ -606,15 +645,29 @@ if run_backtest:
         st.warning("Informe ao menos um ticker/CNPJ para rodar o backtest.")
         st.stop()
 
-    weight_columns = [col for col in df_input.columns if col != "Ticker"]
+    weight_columns = [col for col in df_input.columns if col not in _META_COLS]
     if not weight_columns:
         st.warning("Nenhum portfólio configurado.")
         st.stop()
 
     tickers = list(df_input["Ticker"].unique())
+    fx_by_ticker = (
+        df_input.drop_duplicates(subset=["Ticker"], keep="last")
+        .set_index("Ticker")[FX_COL]
+        .astype(str)
+        .to_dict()
+    )
+    fx_codes = [
+        code
+        for label in fx_by_ticker.values()
+        if (code := _fx_ticker(label)) is not None
+    ]
+    fx_labels_used = [
+        label for label in fx_by_ticker.values() if _fx_ticker(label) is not None
+    ]
     benchmark_tickers = [BENCHMARK_OPTIONS[label] for label in selected_benchmarks]
     asset_series, fund_cnpjs = _split_codes(tickers)
-    series_codes = list(dict.fromkeys(asset_series + benchmark_tickers))
+    series_codes = list(dict.fromkeys(asset_series + benchmark_tickers + fx_codes))
 
     run_warnings: list[str] = []
 
@@ -640,7 +693,7 @@ if run_backtest:
     if end_date_str:
         data = data.loc[:end_date_str]
 
-    data = _align_data_columns(data, tickers + benchmark_tickers)
+    data = _align_data_columns(data, tickers + benchmark_tickers + fx_codes)
 
     available_tickers = [t for t in tickers if t in data.columns]
     missing_tickers = [t for t in tickers if t not in data.columns]
@@ -651,16 +704,26 @@ if run_backtest:
             "Esses ativos serão ignorados no backtest."
         )
 
-    coverage_df, limiting_code, limiting_date = _build_coverage_table(
-        data, tickers, selected_benchmarks, code_to_label=code_to_label
-    )
-
     close_prices = data[available_tickers] if available_tickers else pd.DataFrame()
     if close_prices.empty:
         st.warning("Não há dados de preços disponíveis para os ativos informados.")
         for msg in run_warnings:
             st.warning(msg)
         st.stop()
+
+    close_prices, fx_warnings = _apply_fx_adjustment(close_prices, data, fx_by_ticker)
+    run_warnings.extend(fx_warnings)
+
+    # Cobertura dos ativos usa preços já ajustados (interseção ativo × FX).
+    data_for_coverage = data.copy()
+    data_for_coverage[close_prices.columns] = close_prices
+    coverage_df, limiting_code, limiting_date = _build_coverage_table(
+        data_for_coverage,
+        tickers,
+        selected_benchmarks,
+        code_to_label=code_to_label,
+        fx_labels=fx_labels_used,
+    )
 
     prices = close_prices.dropna(how="all")
     if prices.empty:
@@ -724,7 +787,12 @@ if run_backtest:
 
         try:
             portfolio_stats.append(
-                _compute_stats(portfolio_index, portfolio_returns, portfolio_name, risk_free_rate)
+                compute_performance_stats(
+                    portfolio_index,
+                    label=portfolio_name,
+                    risk_free_rate=risk_free_rate,
+                    returns=portfolio_returns,
+                )
             )
         except Exception as e:
             run_warnings.append(f"Erro ao calcular estatísticas para '{portfolio_name}': {e}")
@@ -757,7 +825,12 @@ if run_backtest:
 
         try:
             portfolio_stats.append(
-                _compute_stats(bm_index, bm_returns, label, risk_free_rate)
+                compute_performance_stats(
+                    bm_index,
+                    label=label,
+                    risk_free_rate=risk_free_rate,
+                    returns=bm_returns,
+                )
             )
         except Exception as e:
             run_warnings.append(f"Erro ao calcular estatísticas do benchmark '{label}': {e}")
