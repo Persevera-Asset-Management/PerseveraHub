@@ -164,48 +164,25 @@ def load_data():
     with st.spinner("Carregando dados...", show_time=True):
         st.session_state.df_assets = load_assets(instrumentos=("CRI", "CRA", "Debênture", "CDCA"))
         st.session_state.df_issuers = load_issuers()
+        st.session_state.xbridge_fibery_version = st.session_state.get("xbridge_fibery_version", 0) + 1
 
-for key in ("df_assets", "df_issuers"):
-    st.session_state.setdefault(key, None)
-
-with st.sidebar:
-    st.header("Parâmetros")
-    uploaded_file = st.file_uploader(
-        "Upload CSV XBridge",
-        type=["csv"],
-        help="Arquivo exportado da XBridge no layout padrão separado por ponto e vírgula.",
-    )
-    btn_run = st.button(
-        "Processar arquivo",
-        width="stretch",
-        disabled=uploaded_file is None,
+def upload_cache_key(uploaded_file) -> tuple:
+    """Identidade estável do upload para invalidar o cache do cruzamento."""
+    return (
+        uploaded_file.name,
+        uploaded_file.size,
+        getattr(uploaded_file, "file_id", None),
+        st.session_state.get("xbridge_fibery_version", 0),
     )
 
-if btn_run:
-    load_data()
-
-st.markdown(
-    "Faça upload do CSV exportado da XBridge para cruzar os tickers disponíveis "
-    "com o cadastro de ativos e emissores do Fibery."
-)
-
-if uploaded_file is None:
-    st.info("Envie um arquivo CSV para iniciar a análise.")
-    st.stop()
-
-try:
-    df_xbridge = read_xbridge_csv(uploaded_file)
-except Exception as exc:
-    st.error(f"Não foi possível ler o CSV da XBridge: {exc}")
-    st.stop()
-
-if st.session_state.df_assets is None or st.session_state.df_issuers is None:
-    st.warning("Clique em **Processar arquivo** para carregar os cadastros do Fibery e executar o cruzamento.")
-    st.stop()
-
-try:
-    df_assets = get_emissor_column(st.session_state.df_assets)
-    df_issuers = st.session_state.df_issuers[["Nome Emissor", "Status do Emissor"]].drop_duplicates(
+def build_xbridge_cross(
+    df_xbridge: pd.DataFrame,
+    df_assets_raw: pd.DataFrame,
+    df_issuers_raw: pd.DataFrame,
+) -> dict:
+    """Cruza CSV XBridge com cadastros Fibery e devolve frames prontos para exibição."""
+    df_assets = get_emissor_column(df_assets_raw)
+    df_issuers = df_issuers_raw[["Nome Emissor", "Status do Emissor"]].drop_duplicates(
         subset=["Nome Emissor"],
         keep="first",
     )
@@ -246,20 +223,90 @@ try:
         df["Status Cadastro"].eq("Cadastrado") & ~df["Aprovado"]
     ].copy()
 
-    total_assets = len(df)
-    total_registered = int(df["Name"].notna().sum())
-    total_approved = len(df_approved)
-    total_missing = len(df_missing)
+    return {
+        "df": df,
+        "df_approved": df_approved,
+        "df_missing": df_missing,
+        "df_registered_not_approved": df_registered_not_approved,
+        "total_assets": len(df),
+        "total_registered": int(df["Name"].notna().sum()),
+        "total_approved": len(df_approved),
+        "total_missing": len(df_missing),
+    }
+
+for key in ("df_assets", "df_issuers", "xbridge_cross", "xbridge_cross_key"):
+    st.session_state.setdefault(key, None)
+st.session_state.setdefault("xbridge_fibery_version", 0)
+
+with st.sidebar:
+    st.header("Parâmetros")
+    uploaded_file = st.file_uploader(
+        "Upload CSV XBridge",
+        type=["csv"],
+        help="Arquivo exportado da XBridge no layout padrão separado por ponto e vírgula.",
+    )
+    btn_run = st.button(
+        "Processar arquivo",
+        width="stretch",
+        disabled=uploaded_file is None,
+    )
+
+if btn_run:
+    load_data()
+    st.session_state.xbridge_cross = None
+    st.session_state.xbridge_cross_key = None
+
+st.markdown(
+    "Faça upload do CSV exportado da XBridge para cruzar os tickers disponíveis "
+    "com o cadastro de ativos e emissores do Fibery."
+)
+
+if uploaded_file is None:
+    st.info("Envie um arquivo CSV para iniciar a análise.")
+    st.stop()
+
+if st.session_state.df_assets is None or st.session_state.df_issuers is None:
+    st.warning("Clique em **Processar arquivo** para carregar os cadastros do Fibery e executar o cruzamento.")
+    st.stop()
+
+cache_key = upload_cache_key(uploaded_file)
+if st.session_state.xbridge_cross is None or st.session_state.xbridge_cross_key != cache_key:
+    try:
+        with st.spinner("Cruzando dados...", show_time=True):
+            df_xbridge = read_xbridge_csv(uploaded_file)
+            st.session_state.xbridge_cross = build_xbridge_cross(
+                df_xbridge,
+                st.session_state.df_assets,
+                st.session_state.df_issuers,
+            )
+            st.session_state.xbridge_cross_key = cache_key
+    except Exception as exc:
+        st.session_state.xbridge_cross = None
+        st.session_state.xbridge_cross_key = None
+        st.error(f"Não foi possível cruzar os dados da XBridge: {exc}")
+        st.stop()
+
+try:
+    cross = st.session_state.xbridge_cross
+    df = cross["df"]
+    df_approved = cross["df_approved"]
+    df_missing = cross["df_missing"]
+    df_registered_not_approved = cross["df_registered_not_approved"]
 
     cols = st.columns(4)
-    cols[0].metric("Tickers no CSV", total_assets)
-    cols[1].metric("Cadastrados no Fibery", total_registered)
-    cols[2].metric("Aprovados para negociação", total_approved)
-    cols[3].metric("Não cadastrados", total_missing)
+    cols[0].metric("Tickers no CSV", cross["total_assets"])
+    cols[1].metric("Cadastrados no Fibery", cross["total_registered"])
+    cols[2].metric("Aprovados para negociação", cross["total_approved"])
+    cols[3].metric("Não cadastrados", cross["total_missing"])
 
-    tabs = st.tabs(["Aprovados", "Não cadastrados", "Cadastrados não aprovados", "Base cruzada"])
+    selected_view = st.radio(
+        "Visão",
+        ["Aprovados", "Não cadastrados", "Cadastrados não aprovados", "Base cruzada"],
+        horizontal=True,
+        key="xbridge_main_view",
+    )
 
-    with tabs[0]:   # Aprovados
+    if selected_view == "Aprovados":
         only_with_offer = st.checkbox("Apenas com OFFER disponível", value=True)
         only_isentos = st.checkbox("Apenas Isentos", value=False)
         df_display = df_approved.copy()
@@ -290,31 +337,32 @@ try:
 
             st.divider()
 
-            tab_labels = ["Todos"] + summary["label"].tolist()
-            subtabs = st.tabs(tab_labels)
+            filter_labels = ["Todos"] + summary["label"].tolist()
+            selected_label = st.radio(
+                "Indexador",
+                filter_labels,
+                horizontal=True,
+                key="xbridge_approved_indexador_filter",
+            )
 
-            with subtabs[0]:
-                AgGrid(
-                    **display_table_aggrid(df_display, DISPLAY_COLUMNS),
-                    key="xbridge_approved_grid_all",
-                )
+            if selected_label == "Todos":
+                df_grid = df_display
+            else:
+                xbridge_val = summary.loc[
+                    summary["label"].eq(selected_label), "Indexador XBridge"
+                ].iloc[0]
+                if pd.isna(xbridge_val):
+                    mask = df_display["Indexador XBridge"].isna()
+                else:
+                    mask = df_display["Indexador XBridge"].astype(str).eq(str(xbridge_val))
+                df_grid = df_display[mask].sort_values("OFFER Mercado", ascending=False)
 
-            for i, label in enumerate(summary["label"].tolist(), start=1):
-                with subtabs[i]:
-                    xbridge_val = summary.iloc[i - 1]["Indexador XBridge"]
-                    if pd.isna(xbridge_val):
-                        mask = df_display["Indexador XBridge"].isna()
-                    else:
-                        mask = df_display["Indexador XBridge"].astype(str).eq(str(xbridge_val))
-                    AgGrid(
-                        **display_table_aggrid(
-                            df_display[mask].sort_values("OFFER Mercado", ascending=False),
-                            DISPLAY_COLUMNS,
-                        ),
-                        key=f"xbridge_approved_grid_{i}",
-                    )
+            AgGrid(
+                **display_table_aggrid(df_grid, DISPLAY_COLUMNS),
+                key=f"xbridge_approved_grid_{selected_label}",
+            )
 
-    with tabs[1]:   # Não cadastrados
+    elif selected_view == "Não cadastrados":
         missing_columns = [
             "Ticker",
             "Emissor / Risco",
@@ -335,13 +383,13 @@ try:
             key="xbridge_missing_grid",
         )
 
-    with tabs[2]:   # Cadastrados não aprovados
+    elif selected_view == "Cadastrados não aprovados":
         AgGrid(
             **display_table_aggrid(df_registered_not_approved, DISPLAY_COLUMNS),
             key="xbridge_registered_not_approved_grid",
         )
 
-    with tabs[3]:   # Base cruzada
+    else:  # Base cruzada
         cross_base_columns = [col for col in ["Status Cadastro", *DISPLAY_COLUMNS] if col in df.columns]
         cross_base_df = df[cross_base_columns]
 
@@ -357,9 +405,10 @@ try:
                 highlight_color="#ffc7ce",
                 left_align_cols=["Ticker", "Emissor / Risco", "Alias", "Emissor"],
                 pinned_left_cols=["Status Cadastro", "Ticker"],
+                auto_size_columns="fit_cell_contents",
             ),
             key="xbridge_cross_base_grid",
         )
 
 except Exception as exc:
-    st.error(f"Erro ao cruzar dados da XBridge com o Fibery: {exc}")
+    st.error(f"Erro ao exibir os dados da XBridge: {exc}")
