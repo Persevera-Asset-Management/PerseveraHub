@@ -61,6 +61,7 @@ MATCH_AMBIGUOUS = "ambiguous"
 MATCH_UNMATCHED = "unmatched"
 
 _TEMPLATE_COLUMNS = list(REQUIRED_UPLOAD_COLUMNS) + list(OPTIONAL_UPLOAD_COLUMNS)
+_RVQM_TEMPLATE_COLUMNS = ("Ativo", "Quantidade", "Saldo")
 
 
 def normalize_asset_key(value) -> str:
@@ -75,9 +76,48 @@ def build_external_positions_template() -> pd.DataFrame:
     return pd.DataFrame(columns=_TEMPLATE_COLUMNS)
 
 
-def template_csv_bytes() -> bytes:
-    """CSV do template para download na UI."""
-    return build_external_positions_template().to_csv(index=False).encode("utf-8-sig")
+def build_rvqm_positions_template() -> pd.DataFrame:
+    """Template do Rebalanceador RVQM: Ativo + Quantidade obrigatórios; Saldo recomendado."""
+    return pd.DataFrame(columns=list(_RVQM_TEMPLATE_COLUMNS))
+
+
+def template_csv_bytes(*, variant: str = "default") -> bytes:
+    """CSV do template para download na UI.
+
+    Args:
+        variant: ``\"default\"`` (Controle de Posições) ou ``\"rvqm\"`` (Rebalanceador).
+    """
+    if variant == "rvqm":
+        df = build_rvqm_positions_template()
+    else:
+        df = build_external_positions_template()
+    return df.to_csv(index=False).encode("utf-8-sig")
+
+
+def require_quantidade(df_upload: pd.DataFrame) -> pd.DataFrame:
+    """Garante coluna Quantidade numérica e preenchida em todas as linhas.
+
+    Raises:
+        ValueError: se a coluna estiver ausente ou houver linhas sem quantidade válida.
+    """
+    if "Quantidade" not in df_upload.columns:
+        raise ValueError(
+            "Coluna Quantidade é obrigatória. Use o template do Rebalanceador "
+            "(Ativo, Quantidade, Saldo)."
+        )
+
+    out = df_upload.copy()
+    out["Quantidade"] = pd.to_numeric(out["Quantidade"], errors="coerce")
+    missing_mask = out["Quantidade"].isna()
+    if missing_mask.any():
+        labels = out.loc[missing_mask, "Ativo"].astype(str).tolist()
+        preview = ", ".join(labels[:20])
+        suffix = "..." if len(labels) > 20 else ""
+        raise ValueError(
+            f"Quantidade ausente ou inválida para {int(missing_mask.sum())} ativo(s): "
+            f"{preview}{suffix}"
+        )
+    return out
 
 
 def _normalize_column_name(name) -> str:
@@ -150,9 +190,18 @@ def _read_csv_bytes(raw: bytes) -> pd.DataFrame:
     raise ValueError("Não foi possível ler o CSV.")
 
 
-def parse_external_positions_file(uploaded_file: BinaryIO | BytesIO) -> pd.DataFrame:
+def parse_external_positions_file(
+    uploaded_file: BinaryIO | BytesIO,
+    *,
+    require_saldo: bool = True,
+) -> pd.DataFrame:
     """
     Lê CSV ou Excel e normaliza colunas do template.
+
+    Args:
+        require_saldo: se True (padrão), exige coluna Saldo preenchida.
+            Se False (Rebalanceador RVQM), Saldo é opcional — linhas sem
+            saldo são mantidas para cálculo posterior via Override.
 
     Raises:
         ValueError: arquivo inválido ou colunas obrigatórias ausentes.
@@ -175,23 +224,32 @@ def parse_external_positions_file(uploaded_file: BinaryIO | BytesIO) -> pd.DataF
         raise ValueError("Arquivo sem linhas de dados.")
 
     df = _rename_upload_columns(df)
-    missing = [c for c in REQUIRED_UPLOAD_COLUMNS if c not in df.columns]
+    required = ("Ativo",) if not require_saldo else REQUIRED_UPLOAD_COLUMNS
+    missing = [c for c in required if c not in df.columns]
     if missing:
         found = ", ".join(map(str, df.columns.tolist())) or "(nenhuma)"
+        hint = "Ativo, Quantidade, Saldo" if not require_saldo else "Ativo, Saldo"
         raise ValueError(
             "Colunas obrigatórias ausentes: "
             + ", ".join(missing)
-            + f". Encontradas: {found}. Use o template (Ativo, Saldo)."
+            + f". Encontradas: {found}. Use o template ({hint})."
         )
 
     out = df.copy()
     out["Ativo"] = out["Ativo"].astype(str).str.strip()
     out = out[out["Ativo"].ne("") & out["Ativo"].str.casefold().ne("nan")]
-    out["Saldo"] = _coerce_saldo_series(out["Saldo"])
-    out = out[out["Saldo"].notna()]
+
+    if "Saldo" in out.columns:
+        out["Saldo"] = _coerce_saldo_series(out["Saldo"])
+        if require_saldo:
+            out = out[out["Saldo"].notna()]
+    elif require_saldo:
+        raise ValueError("Coluna Saldo é obrigatória.")
 
     if out.empty:
-        raise ValueError("Nenhuma linha válida com Ativo e Saldo.")
+        if require_saldo:
+            raise ValueError("Nenhuma linha válida com Ativo e Saldo.")
+        raise ValueError("Nenhuma linha válida com Ativo.")
 
     if "Quantidade" in out.columns:
         out["Quantidade"] = pd.to_numeric(out["Quantidade"], errors="coerce")
@@ -254,7 +312,7 @@ def match_external_positions(
         hits = key_index.get(key, [])
         base = {
             "Ativo": up["Ativo"],
-            "Saldo": up["Saldo"],
+            "Saldo": up["Saldo"] if "Saldo" in up.index else pd.NA,
             "Status Match": MATCH_UNMATCHED,
             "Nome Ativo": pd.NA,
             "Alias": pd.NA,
@@ -354,13 +412,21 @@ def enrich_external_positions(
                 return pd.NA
             return asset.get(col)
 
-        saldo = float(up["Saldo"])
+        if "Saldo" in up.index and pd.notna(up.get("Saldo")):
+            saldo = float(up["Saldo"])
+        else:
+            saldo = pd.NA
         quantidade = up["Quantidade"] if "Quantidade" in up.index and pd.notna(up.get("Quantidade")) else pd.NA
-        valor_unitario = (
-            up["Valor Unitário"]
-            if "Valor Unitário" in up.index and pd.notna(up.get("Valor Unitário"))
-            else (saldo / quantidade if pd.notna(quantidade) and quantidade else pd.NA)
-        )
+        if "Valor Unitário" in up.index and pd.notna(up.get("Valor Unitário")):
+            valor_unitario = up["Valor Unitário"]
+        elif (
+            pd.notna(saldo)
+            and pd.notna(quantidade)
+            and quantidade
+        ):
+            valor_unitario = float(saldo) / float(quantidade)
+        else:
+            valor_unitario = pd.NA
 
         if "Data Posição" in up.index and pd.notna(up.get("Data Posição")):
             data_pos = pd.Timestamp(up["Data Posição"])

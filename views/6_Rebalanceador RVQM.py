@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
@@ -14,10 +15,24 @@ from services.position_service import (
     load_positions,
     resolve_portfolio_strategy,
 )
+from services.external_positions_service import (
+    MATCH_AMBIGUOUS,
+    MATCH_MATCHED,
+    MATCH_UNMATCHED,
+    enrich_external_positions,
+    match_external_positions,
+    match_summary,
+    parse_external_positions_file,
+    require_quantidade,
+    template_csv_bytes,
+)
 
 RVQM_INSTRUMENTS = ("Ação", "BDR")
 STANDARD_LOT_SIZE = 100
 FRACTIONAL_LOT_SIZE = 1
+
+ORIGEM_FIBERY = "Fibery"
+ORIGEM_MANUAL = "Posição manual"
 
 st.title("RVQM · Rebalanceador")
 
@@ -73,6 +88,13 @@ def instrument_lot_size(instrument: object) -> int:
     if instrument == "BDR":
         return FRACTIONAL_LOT_SIZE
     return STANDARD_LOT_SIZE
+
+def safe_weight_pct(values: pd.Series) -> pd.Series:
+    """Convert absolute values to portfolio weights (%). Returns zeros if sum is 0."""
+    total = values.sum(skipna=True)
+    if pd.isna(total) or total == 0:
+        return pd.Series(0.0, index=values.index)
+    return values / total * 100
 
 def prepare_equity_positions(positions: pd.DataFrame) -> pd.DataFrame:
     _empty = pd.DataFrame(
@@ -240,6 +262,48 @@ with st.sidebar:
         index=None,
         placeholder="Selecione um portfolio...",
     )
+    origem_posicao = st.radio(
+        "Origem da posição",
+        options=[ORIGEM_FIBERY, ORIGEM_MANUAL],
+        index=0,
+        help=(
+            "Fibery: posição ingestada. Posição manual: upload CSV/Excel substitui "
+            "integralmente a posição do cliente (útil quando a ingestão está atrasada)."
+        ),
+    )
+    is_manual_position = origem_posicao == ORIGEM_MANUAL
+
+    uploaded_positions = None
+    manual_position_date = datetime.now().date()
+    allow_partial_match = False
+
+    if is_manual_position:
+        manual_position_date = st.date_input(
+            "Data da posição",
+            value=datetime.now().date(),
+            format="DD/MM/YYYY",
+        )
+        uploaded_positions = st.file_uploader(
+            "Arquivo de posições (CSV ou Excel)",
+            type=["csv", "xlsx", "xls"],
+            help=(
+                "Obrigatório: Ativo, Quantidade. "
+                "Saldo recomendado para calcular o PL; sem Saldo use Override Saldo Total."
+            ),
+        )
+        st.download_button(
+            "Baixar template",
+            data=template_csv_bytes(variant="rvqm"),
+            file_name="template_posicao_manual_rvqm.csv",
+            mime="text/csv",
+            width="stretch",
+        )
+        allow_partial_match = st.checkbox(
+            "Analisar apenas ativos com match",
+            value=False,
+            help="Se marcado, ignora unmatched/ambiguous e segue só com os matched.",
+        )
+
     portfolio_total_balance_override = st.number_input(
         "Override Saldo Total",
         min_value=0.0,
@@ -251,6 +315,13 @@ with st.sidebar:
 
 if not selected_portfolio:
     st.info("Selecione um portfolio na barra lateral.")
+    st.stop()
+
+if is_manual_position and uploaded_positions is None:
+    st.info(
+        "Envie um arquivo CSV/Excel com **Ativo** e **Quantidade** "
+        "(use o template na sidebar). A posição manual substitui integralmente o Fibery."
+    )
     st.stop()
 
 rvqm_row = portfolios_rvqm[portfolios_rvqm['Portfolio'] == selected_portfolio]
@@ -282,16 +353,74 @@ if st.button("Atualizar BLP Relay", type="primary"):
 with st.spinner(f"Carregando composição da carteira {strategy_tipo}..."):
     equities_portfolio = load_equities_portfolio(tipo=strategy_tipo)
 
-with st.spinner("Carregando posições..."):
-    df_positions = load_positions()
-
-with st.spinner("Carregando posições do portfolio..."):
-    positions_carteira = df_positions[df_positions["Portfolio"] == selected_portfolio]
-
 with st.spinner("Carregando taxonomia de ativos..."):
-    assets_taxonomy = load_assets()[["Name", "Classificação Instrumento"]].rename(
+    df_assets_full = load_assets()
+    assets_taxonomy = df_assets_full[["Name", "Classificação Instrumento"]].rename(
         columns={"Name": "code_key"}
     )
+
+if is_manual_position:
+    try:
+        df_upload = parse_external_positions_file(
+            uploaded_positions,
+            require_saldo=False,
+        )
+        df_upload = require_quantidade(df_upload)
+    except ValueError as e:
+        st.error(str(e))
+        st.stop()
+
+    df_match_report = match_external_positions(df_upload, df_assets_full)
+    summary = match_summary(df_match_report)
+    has_match_issues = summary[MATCH_UNMATCHED] + summary[MATCH_AMBIGUOUS] > 0
+
+    with st.expander("Qualidade do match", expanded=has_match_issues):
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total", summary["total"])
+        m2.metric("Matched", summary[MATCH_MATCHED])
+        m3.metric("Ambiguous", summary[MATCH_AMBIGUOUS])
+        m4.metric("Unmatched", summary[MATCH_UNMATCHED])
+        st.dataframe(
+            style_table(
+                df_match_report.drop(columns=["_asset_idx"], errors="ignore"),
+                numeric_cols_format_as_float=["Saldo"],
+                left_align_cols=["Ativo", "Status Match", "Nome Ativo", "Alias", "Candidatos"],
+            ),
+            hide_index=True,
+        )
+
+    try:
+        positions_carteira, _ = enrich_external_positions(
+            df_upload,
+            df_assets_full,
+            portfolio_label=selected_portfolio,
+            position_date=datetime.combine(manual_position_date, datetime.min.time()),
+            allow_partial=allow_partial_match,
+        )
+    except ValueError as e:
+        st.warning(str(e))
+        st.info(
+            "Corrija os códigos no arquivo, cadastre os ativos no Fibery, "
+            "ou marque **Analisar apenas ativos com match** na sidebar."
+        )
+        st.stop()
+
+    if positions_carteira.empty:
+        st.error(
+            "Nenhuma posição enriquecida com Classificação do Conjunto. "
+            "Verifique o cadastro dos ativos."
+        )
+        st.stop()
+
+    st.info(
+        f"**Posição manual** · {selected_portfolio} · "
+        f"data {manual_position_date.strftime('%d/%m/%Y')} · "
+        f"{len(positions_carteira)} linha(s) — substitui integralmente o Fibery."
+    )
+else:
+    with st.spinner("Carregando posições..."):
+        df_positions = load_positions()
+    positions_carteira = df_positions[df_positions["Portfolio"] == selected_portfolio]
 
 with st.spinner("Carregando dados de mercado do Google Sheets..."):
     try:
@@ -306,10 +435,6 @@ if equities_portfolio.empty:
 
 if market_data.empty:
     st.warning("Nenhum dado de mercado disponível no BLP Relay.")
-    st.stop()
-
-if positions_carteira.empty:
-    st.warning(f"Nenhuma posição disponível para o portfolio {selected_portfolio}.")
     st.stop()
 
 # =============================================================================
@@ -366,11 +491,32 @@ current_market_data = current_market_data.drop(
 )
 current_market_data["Lote"] = current_market_data["Classificação Instrumento"].map(instrument_lot_size)
 
+saldo_series = (
+    positions_carteira["Saldo"]
+    if not positions_carteira.empty and "Saldo" in positions_carteira.columns
+    else pd.Series(dtype=float)
+)
+saldo_completo = (
+    not positions_carteira.empty
+    and not saldo_series.empty
+    and bool(saldo_series.notna().all())
+)
+
 if positions_carteira.empty:
     if portfolio_total_balance_override == 0:
         st.error(
             f"O portfolio {selected_portfolio} não possui posições registradas. "
             "Informe o saldo total disponível no campo **Override Saldo Total** na barra lateral."
+        )
+        st.stop()
+    calculated_portfolio_total_balance = 0.0
+elif not saldo_completo:
+    if portfolio_total_balance_override == 0:
+        st.error(
+            "Há linhas sem **Saldo** na posição"
+            + (" manual" if is_manual_position else "")
+            + ". Inclua a coluna Saldo no arquivo ou informe o "
+            "**Override Saldo Total** na barra lateral."
         )
         st.stop()
     calculated_portfolio_total_balance = 0.0
@@ -392,7 +538,7 @@ target_equity_balance = portfolio_total_balance * equity_position_to_total_portf
 current_market_data["Quantidade"] = current_market_data["Quantidade"].fillna(0).astype(float)
 current_market_data["Nome Ativo"] = current_market_data["Nome Ativo"].fillna(current_market_data["code_key"])
 current_market_data["Saldo Atual"] = current_market_data["Quantidade"] * current_market_data["LAST_PRICE"]
-current_market_data["Peso Atual (%)"] = current_market_data["Saldo Atual"] / current_market_data["Saldo Atual"].sum() * 100
+current_market_data["Peso Atual (%)"] = safe_weight_pct(current_market_data["Saldo Atual"])
 current_market_data["Peso Alvo (%)"] = current_market_data["weight_pct"].fillna(0)
 current_market_data["Saldo Alvo"] = target_equity_balance * current_market_data["Peso Alvo (%)"] / 100
 current_market_data["Valor Compra/Venda"] = current_market_data["Saldo Alvo"] - current_market_data["Saldo Atual"]
@@ -415,7 +561,7 @@ qty_after = (
     + current_market_data["Quantidade Compra/Venda"].astype("float64")
 )
 saldo_after = qty_after * current_market_data["LAST_PRICE"]
-current_market_data["Peso Ex-Post (%)"] = saldo_after / saldo_after.sum() * 100
+current_market_data["Peso Ex-Post (%)"] = safe_weight_pct(saldo_after)
 
 current_market_data["Operação"] = np.select(
     [
@@ -427,6 +573,19 @@ current_market_data["Operação"] = np.select(
 )
 current_market_data = current_market_data.sort_values("Valor Compra/Venda", ascending=False)
 
+if positions_carteira.empty:
+    position_date_label = "sem posição registrada"
+elif is_manual_position:
+    position_date_label = (
+        f"posição manual em {manual_position_date.strftime('%d/%m/%Y')}"
+    )
+else:
+    position_date_label = (
+        f"posição em {positions_carteira['Data Posição'].max().strftime('%d/%m/%Y')}"
+    )
+
+origem_label = "manual" if is_manual_position else "Fibery"
+
 st.markdown(
     f"<p style='color:#888; font-size:0.85rem; margin-bottom:6px;'>"
     f"{selected_portfolio} &nbsp;·&nbsp; "
@@ -434,7 +593,8 @@ st.markdown(
     f"{equity_position_custodian} &nbsp;·&nbsp; "
     f"{equity_position_account} &nbsp;·&nbsp; "
     f"{len(equity_positions)} ativos &nbsp;·&nbsp; "
-    f"posição em {positions_carteira['Data Posição'].max().strftime('%d/%m/%Y')}"
+    f"{origem_label} &nbsp;·&nbsp; "
+    f"{position_date_label}"
     f"</p>",
     unsafe_allow_html=True,
 )
@@ -647,7 +807,10 @@ else:
             hide_index=True,
         )
 
-        position_date = positions_carteira["Data Posição"].max().strftime("%Y%m%d")
+        if positions_carteira.empty:
+            position_date = pd.Timestamp.today().strftime("%Y%m%d")
+        else:
+            position_date = positions_carteira["Data Posição"].max().strftime("%Y%m%d")
         filename = f"basket_{selected_portfolio}_{equity_position_custodian}_{position_date}.csv"
         csv_bytes = basket_df.to_csv(index=False, sep=";", encoding="utf-8-sig").encode("utf-8-sig")
 
