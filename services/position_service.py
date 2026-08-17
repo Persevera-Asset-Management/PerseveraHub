@@ -87,6 +87,46 @@ _POSITIONS_DEDUP_SUBSET = [
     'Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo',
 ]
 
+# Allowlists de `read_fibery(fields=...)`. Cada lista é a união das colunas
+# usadas pelos consumidores do loader (views + funções internas).
+_ASSETS_FIELDS = [
+    "Name",
+    "Alias",
+    "Nome Completo",
+    "Indexador",
+    "Data Vencimento",
+    "Nome Emissor",
+    "Nome Devedor",
+    "Identificador do Emissor",
+    "Identificador do Devedor",
+    "Classificação Instrumento",
+    "Classificação Conjunto",
+    "Classificação Sub-Conjunto",
+]
+_ISSUERS_FIELDS = ["Name", "Nome Emissor", "Status do Emissor"]
+_TARGET_ALLOCATIONS_BASE_FIELDS = [
+    "Name",
+    "Política de Investimento",
+    "Alocação Target",
+    "Target",
+]
+_TARGET_ALLOCATIONS_LIMIT_FIELDS = ["PL Min", "PL Max"]
+_ACCOUNTS_FIELDS = ["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]
+_INSTRUMENTS_FGC_FIELDS = ["Name", "Cobertura FGC"]
+_PORTFOLIO_INFO_FIELDS = ["Name", "Officer Atual", "Tipo Cliente"]
+_CARTEIRAS_ADM_OLD_FIELDS = ["state", "Name", "Data Início Gestão", "Data Fim Gestão"]
+_ACTIVE_CARTEIRAS_FIELDS = ["Chave Match"]
+_PORTFOLIOS_RVQM_FIELDS = [
+    "Carteira Ativa",
+    "Portfolio",
+    "Conta",
+    "Custodiante",
+    "Nr Conta",
+    "Percentual do PL",
+    "Tipo",
+]
+_EQUITIES_PORTFOLIO_FIELDS = ["Data de Implementação", "Ativo", "Peso", "Tipo"]
+
 
 # =============================================================================
 # Funções Utilitárias
@@ -330,6 +370,7 @@ def load_assets(
     read_kwargs: dict = {
         "table_name": "Inv-Taxonomia/Ativos",
         "include_fibery_fields": False,
+        "fields": _ASSETS_FIELDS,
     }
     if instrumentos:
         read_kwargs["where_filter"] = [
@@ -357,6 +398,7 @@ def load_issuers() -> pd.DataFrame:
     df = read_fibery(
         table_name="Inv-Taxonomia/Emissores e Devedores",
         include_fibery_fields=False,
+        fields=_ISSUERS_FIELDS,
     )
 
     df['Status do Emissor'] = df['Status do Emissor'].fillna('Sem Classificação')
@@ -383,6 +425,7 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
         where_filter=[">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
         params={"$dataRecente": data_recente},
         include_fibery_fields=False,
+        fields=_POSITIONS_COLUMNS,
     )
 
     track_data_load("positions")
@@ -405,6 +448,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
         where_filter=["=", ["Inv-Asset Allocation/Portfolio", "Ops-Portfolios/Name"], "$portfolio"],
         params={"$portfolio": portfolio},
         include_fibery_fields=False,
+        fields=_POSITIONS_COLUMNS,
     )
 
     track_data_load("positions_portfolio")
@@ -422,9 +466,14 @@ def load_target_allocations(include_limits: bool = False) -> pd.DataFrame:
     Returns:
         DataFrame com as alocações target indexado por Portfolio, Data e Name.
     """
+    fields = list(_TARGET_ALLOCATIONS_BASE_FIELDS)
+    if include_limits:
+        fields.extend(_TARGET_ALLOCATIONS_LIMIT_FIELDS)
+
     df = read_fibery(
         table_name="Ops-Portfolios/Parâmetro de PctPL Polinv",
-        include_fibery_fields=False
+        include_fibery_fields=False,
+        fields=fields,
     )
     
     source = df["Política de Investimento"].fillna(df["Alocação Target"])
@@ -463,6 +512,7 @@ def load_accounts() -> pd.DataFrame:
     df = read_fibery(
         table_name="Ops-InstFin/Conta",
         include_fibery_fields=False,
+        fields=_ACCOUNTS_FIELDS,
         where_filter=["=", ["Ops-InstFin/Status Habilitação", "enum/name"], "$status"],
         params={"$status": "Sob Gestão"},
     )
@@ -482,7 +532,8 @@ def load_instruments_fgc() -> list:
     """
     df = read_fibery(
         table_name="Inv-Taxonomia/Classificação Instrumento",
-        include_fibery_fields=False
+        include_fibery_fields=False,
+        fields=_INSTRUMENTS_FGC_FIELDS,
     )
     df = df[["Name", "Cobertura FGC"]]
     instruments_list = df[df["Cobertura FGC"]]["Name"].tolist()
@@ -500,7 +551,8 @@ def load_portfolio_info() -> pd.DataFrame:
     
     df = read_fibery(
         table_name="Ops-Portfolios/Portfolio",
-        include_fibery_fields=True,
+        include_fibery_fields=False,
+        fields=_PORTFOLIO_INFO_FIELDS,
     )
 
     track_data_load("portfolio_info")
@@ -521,6 +573,7 @@ def load_active_carteiras_adm_old() -> dict:
     df = read_fibery(
         table_name="Estr-CartAdm/Carteira Administrada",
         include_fibery_fields=False,
+        fields=_CARTEIRAS_ADM_OLD_FIELDS,
     )
     df = df[~np.isin(df["state"], FILTER_OUT_CARTEIRA_STATES)]
     df = df[["Name", "Data Início Gestão", "Data Fim Gestão"]]
@@ -550,6 +603,7 @@ def load_active_carteiras_adm() -> list[str]:
         table_name="Inv-Asset Allocation/Série de Relatório",
         where_filter=["=", ["Inv-Asset Allocation/Mandato Ativo"], True],
         include_fibery_fields=False,
+        fields=_ACTIVE_CARTEIRAS_FIELDS,
     )
 
     df.dropna(subset=["Chave Match"], inplace=True)
@@ -573,7 +627,8 @@ def load_portfolios_rvqm() -> pd.DataFrame:
     """
     df = read_fibery(
         table_name="Inv-Asset Allocation/Clientes com Carteira RVQM",
-        include_fibery_fields=False
+        include_fibery_fields=False,
+        fields=_PORTFOLIOS_RVQM_FIELDS,
     )
     df = df[df["Carteira Ativa"]].copy()
     df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL", "Tipo"]]
@@ -598,7 +653,11 @@ def load_equities_portfolio(tipo: str | None = None) -> pd.DataFrame:
     Returns:
         DataFrame com date, code, weight e tipo.
     """
-    df = read_fibery(table_name="Inv-Asset Allocation/Carteira RVQM", include_fibery_fields=False)
+    df = read_fibery(
+        table_name="Inv-Asset Allocation/Carteira RVQM",
+        include_fibery_fields=False,
+        fields=_EQUITIES_PORTFOLIO_FIELDS,
+    )
     df = df[["Data de Implementação", "Ativo", "Peso", "Tipo"]].copy()
     df["Data de Implementação"] = pd.to_datetime(df["Data de Implementação"])
     df = df.rename(
