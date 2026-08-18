@@ -45,6 +45,7 @@ INSTRUMENTOS_RF = [
     'CDB',
     'CRA',
     'CRI',
+    'CDCA',
     'LC',
     'LCA',
     'LCD',
