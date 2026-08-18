@@ -1,14 +1,14 @@
 import streamlit as st
 import streamlit_highcharts as hct
-from st_aggrid import AgGrid
 
 import pandas as pd
 import numpy as np
+import traceback
 from datetime import datetime
 
 from utils.chart_helpers import create_chart, render_chart
 from utils.ui import show_data_freshness
-from utils.table import style_table, style_table_aggrid
+from utils.table import style_table
 from configs.pages.carteiras_administradas import CODIGOS_CARTEIRAS_ADM
 
 from services.position_service import (
@@ -18,14 +18,19 @@ from services.position_service import (
     load_instruments_fgc,
     load_issuers,
     load_assets,
+    load_scheduled_events,
     get_latest_date_data,
     get_emissor_column,
     enrich_dataframe_with_duration,
     weighted_average_duration,
     weighted_average_duration_by_category,
+    build_cash_flow_schedule,
+    aggregate_cash_flow_by_month,
+    scheduled_events_coverage,
     RF_DURATION_CATEGORIES,
     RF_DURATION_CATEGORY_LABELS,
     INSTRUMENTOS_RF,
+    INSTRUMENTOS_EVENTOS_PROGRAMADOS,
     ASSET_CLASSES_ORDER,
 )
 from services.external_positions_service import (
@@ -98,6 +103,11 @@ with st.sidebar:
         )
 
 
+def _scheduled_events_start_date():
+    """Início do mês corrente: janela mínima do fluxo, com cache estável no mês."""
+    return datetime.now().replace(day=1).strftime('%Y-%m-%d')
+
+
 def load_data(carteiras):
     """Carrega todos os dados necessários para a página (modo sob gestão)."""
     with st.spinner("Carregando dados...", show_time=True):
@@ -107,6 +117,9 @@ def load_data(carteiras):
         st.session_state.df_issuers = load_issuers()
         st.session_state.df_target_allocations = load_target_allocations(include_limits=True)
         st.session_state.df_accounts = load_accounts()
+        st.session_state.df_scheduled_events = load_scheduled_events(
+            start_date=_scheduled_events_start_date()
+        )
         st.session_state.df = df_positions[df_positions['Portfolio'].isin(carteiras)]
 
 
@@ -116,6 +129,9 @@ def load_external_reference_data():
         st.session_state.df_assets = load_assets()
         st.session_state.instruments_fgc = load_instruments_fgc()
         st.session_state.df_issuers = load_issuers()
+        st.session_state.df_scheduled_events = load_scheduled_events(
+            start_date=_scheduled_events_start_date()
+        )
 
 
 ready = False
@@ -124,6 +140,7 @@ df_target_allocations = pd.DataFrame()
 df_accounts = pd.DataFrame()
 instruments_fgc = []
 df_issuers = pd.DataFrame()
+df_scheduled_events = pd.DataFrame()
 is_single_carteira = False
 
 if not is_external and selected_carteiras:
@@ -134,6 +151,7 @@ if not is_external and selected_carteiras:
     df_accounts = st.session_state.df_accounts
     instruments_fgc = st.session_state.instruments_fgc
     df_issuers = st.session_state.df_issuers
+    df_scheduled_events = st.session_state.df_scheduled_events
     is_single_carteira = len(selected_carteiras) == 1
     ready = True
 elif is_external and uploaded_external is not None:
@@ -147,6 +165,7 @@ elif is_external and uploaded_external is not None:
     df_assets = st.session_state.df_assets
     instruments_fgc = st.session_state.instruments_fgc
     df_issuers = st.session_state.df_issuers
+    df_scheduled_events = st.session_state.df_scheduled_events
 
     df_match_report = match_external_positions(df_upload, df_assets)
     summary = match_summary(df_match_report)
@@ -249,6 +268,61 @@ if ready:
             df_portfolio_positions_current['Saldo'] / df_portfolio_positions_current['Saldo'].sum() * 100
         )
 
+        position_date = df['Data Posição'].max()
+
+        # Agregações consumidas por mais de uma seção/aba. Ficam aqui para que
+        # nenhuma aba dependa de variável criada dentro de outra.
+        df_portfolio_composition = df.groupby(
+            [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Conjunto']
+        ).agg(**{'Saldo': ('Saldo', 'sum')})
+        df_portfolio_composition_current = get_latest_date_data(df_portfolio_composition)
+        df_portfolio_composition_current = df_portfolio_composition_current.reindex(ASSET_CLASSES_ORDER).dropna()
+
+        # dropna=False: 'Data Vencimento', 'Nome Emissor' e 'Indexador' são chaves
+        # de agrupamento e podem estar vazias no cadastro. Sem isso, o pandas
+        # descarta essas posições silenciosamente das análises abaixo.
+        df_maturity = df.groupby(
+            [
+                pd.Grouper(key='Data Posição', freq='D'),
+                'Nome Ativo', 'Alias', 'Classificação do Conjunto',
+                'Classificação Instrumento', 'Data Vencimento', 'Nome Emissor', 'Indexador',
+            ],
+            dropna=False,
+        ).agg(**{
+            'Quantidade': ('Quantidade', 'sum'),
+            'Valor Unitário': ('Valor Unitário', 'mean'),
+            'Saldo': ('Saldo', 'sum'),
+        })
+        df_maturity_current = get_latest_date_data(df_maturity).reset_index()
+        df_maturity_current = df_maturity_current[df_maturity_current['Saldo'] > 0]
+        df_maturity_current['Data Vencimento'] = pd.to_datetime(
+            df_maturity_current['Data Vencimento'], errors='coerce'
+        )
+        df_maturity_current = df_maturity_current.sort_values(
+            by='Data Vencimento', ascending=True
+        ).reset_index(drop=True)
+        df_maturity_current = enrich_dataframe_with_duration(
+            df_maturity_current,
+            settlement_date=position_date,
+        )
+
+        # Prazo residual medido na data da posição — mesma régua da duration.
+        has_maturity = df_maturity_current['Data Vencimento'].notna()
+        df_maturity_current['Anos para Vencimento'] = np.nan
+        if has_maturity.any():
+            df_maturity_current.loc[has_maturity, 'Anos para Vencimento'] = np.busday_count(
+                position_date.date(),
+                df_maturity_current.loc[has_maturity, 'Data Vencimento'].values.astype('datetime64[D]')
+            ) / 252
+
+        df_rf_duration_current = df_maturity_current[
+            df_maturity_current['Classificação Instrumento'].isin(INSTRUMENTOS_RF)
+        ]
+        duration_media_rf = weighted_average_duration(df_rf_duration_current)
+        duration_by_category_rf = weighted_average_duration_by_category(df_rf_duration_current)
+        n_duration_ok = int(df_rf_duration_current['Duration'].notna().sum())
+        n_duration_total = len(df_rf_duration_current)
+
         with st.expander("Resumo do Cliente", expanded=False):
             pass # TODO: Adicionar resumo do cliente
 
@@ -291,7 +365,7 @@ if ready:
                     )
 
         st.markdown("Saldo Total: **R$ {0:,.2f}**".format(df_portfolio_positions_current['Saldo'].sum()))
-        st.markdown(f"Data da Posição: `{df['Data Posição'].max().date()}`")
+        st.markdown(f"Data da Posição: `{position_date.date()}`")
 
         # =========================================================================
         # SEÇÃO 1 — Indicadores Chave
@@ -331,24 +405,6 @@ if ready:
                 maior_posicao_rf = 0.0
                 maior_posicao_rf_pct = 0.0
                 maior_posicao_rf_alias = ""
-
-            df_rf_duration = df_emissores_rf.groupby(
-                [
-                    pd.Grouper(key='Data Posição', freq='D'),
-                    'Nome Ativo', 'Alias', 'Classificação do Conjunto',
-                    'Classificação Instrumento', 'Data Vencimento', 'Indexador',
-                ]
-            ).agg(**{'Saldo': ('Saldo', 'sum')})
-            df_rf_duration_current = get_latest_date_data(df_rf_duration).reset_index()
-            df_rf_duration_current = df_rf_duration_current[df_rf_duration_current['Saldo'] > 0]
-            df_rf_duration_current = enrich_dataframe_with_duration(
-                df_rf_duration_current,
-                settlement_date=df['Data Posição'].max(),
-            )
-            duration_media_rf = weighted_average_duration(df_rf_duration_current)
-            duration_by_category = weighted_average_duration_by_category(df_rf_duration_current)
-            n_duration_ok = int(df_rf_duration_current['Duration'].notna().sum())
-            n_duration_total = len(df_rf_duration_current)
 
             kpi_cols = st.columns(5)
             with kpi_cols[0]:
@@ -398,18 +454,24 @@ if ready:
         # =========================================================================
         # SEÇÃO 2 — Gráficos
         # =========================================================================
-        tabs = st.tabs(["Alocação Atual", "Alocação Hierárquica", "Emissores", "Instrumentos", "Custodiantes", "Vencimentos & Duration", "Monitor de FGC", "Alertas"])
+        # Acesso por nome: inserir/reordenar abas não desloca os blocos abaixo.
+        tab_names = [
+            "Alocação Atual",
+            "Alocação Hierárquica",
+            "Emissores",
+            "Instrumentos",
+            "Custodiantes",
+            "Vencimentos & Duration",
+            "Fluxo de Caixa",
+            "Monitor de FGC",
+            "Alertas",
+        ]
+        tabs = dict(zip(tab_names, st.tabs(tab_names)))
 
-        with tabs[0]: # Alocação Atual
+        with tabs["Alocação Atual"]:
 
             cols = st.columns(2)
             with cols[0]:
-                df_portfolio_composition = df.groupby(
-                    [pd.Grouper(key='Data Posição', freq='D'), 'Classificação do Conjunto']
-                ).agg(**{'Saldo': ('Saldo', 'sum')})
-                df_portfolio_composition_current = get_latest_date_data(df_portfolio_composition)
-                df_portfolio_composition_current = df_portfolio_composition_current.reindex(ASSET_CLASSES_ORDER).dropna()
-
                 chart_portfolio_composition = create_chart(
                     data=df_portfolio_composition_current,
                     columns=['Saldo'],
@@ -452,7 +514,7 @@ if ready:
                         )
                         hct.streamlit_highcharts(chart_portfolio_composition_target)
 
-        with tabs[1]: # Alocação Hierárquica
+        with tabs["Alocação Hierárquica"]:
             df_inner_chart = df_portfolio_composition_current.reset_index()
             df_outer_chart = df_portfolio_positions_current.reset_index()
             category_order = {cat: i for i, cat in enumerate(df_inner_chart['Classificação do Conjunto'])}
@@ -519,7 +581,7 @@ if ready:
 
             render_chart(options_nested)
 
-        with tabs[2]: # Emissores
+        with tabs["Emissores"]:
             df_emissor = get_emissor_column(df)
             df_portfolio_positions_emissores = df_emissor.groupby(
                 [pd.Grouper(key='Data Posição', freq='D'), 'Emissor']
@@ -539,7 +601,7 @@ if ready:
             )
             hct.streamlit_highcharts(chart_portfolio_positions_emissores)
 
-        with tabs[3]: # Instrumentos
+        with tabs["Instrumentos"]:
             df_instrument = df.copy()
             df_instrument['Instrumento'] = df_instrument['Classificação Instrumento']
             df_portfolio_positions_instruments = df_instrument.groupby(
@@ -560,7 +622,7 @@ if ready:
             )
             hct.streamlit_highcharts(chart_portfolio_positions_instruments)
 
-        with tabs[4]: # Custodiantes
+        with tabs["Custodiantes"]:
             df_custodiante = df.copy()
             df_portfolio_positions_custodiante = df_custodiante.groupby(
                 [pd.Grouper(key='Data Posição', freq='D'), 'Custodiante Acronimo']
@@ -580,62 +642,44 @@ if ready:
             )
             hct.streamlit_highcharts(chart_portfolio_positions_custodiante)
 
-        with tabs[5]: # Vencimentos & Duration
+        with tabs["Vencimentos & Duration"]:
+            df_com_vencimento = df_maturity_current[df_maturity_current['Data Vencimento'].notna()]
+            df_rf_sem_vencimento = df_rf_duration_current[
+                df_rf_duration_current['Data Vencimento'].isna()
+            ]
+
             cols = st.columns(2)
             with cols[0]:
-                df_data_vencimento_rf = df.copy()
-                df_data_vencimento_rf = df_data_vencimento_rf.groupby(
-                    [pd.Grouper(key='Data Posição', freq='D'), 'Nome Ativo', 'Alias',
-                    'Classificação do Conjunto', 'Classificação Instrumento',
-                    'Data Vencimento', 'Nome Emissor', 'Indexador']
-                ).agg(**{
-                    'Quantidade': ('Quantidade', 'sum'),
-                    'Valor Unitário': ('Valor Unitário', 'mean'),
-                    'Saldo': ('Saldo', 'sum')
-                })
-                df_data_vencimento_rf_current = get_latest_date_data(df_data_vencimento_rf).copy()
-                df_data_vencimento_rf_current = df_data_vencimento_rf_current.reset_index().set_index(['Nome Ativo'])
-                df_data_vencimento_rf_current['Data Vencimento'] = pd.to_datetime(df_data_vencimento_rf_current['Data Vencimento'])
-                df_data_vencimento_rf_current = df_data_vencimento_rf_current.sort_values(by='Data Vencimento', ascending=True)
-                df_data_vencimento_rf_current = df_data_vencimento_rf_current[df_data_vencimento_rf_current['Saldo'] > 0]
-                df_data_vencimento_rf_current['Anos para Vencimento'] = np.busday_count(
-                    datetime.now().date(),
-                    df_data_vencimento_rf_current['Data Vencimento'].values.astype('datetime64[D]')
-                ) / 252
-
-                df_data_vencimento_rf_current = enrich_dataframe_with_duration(
-                    df_data_vencimento_rf_current.reset_index(),
-                    settlement_date=df['Data Posição'].max(),
-                ).set_index('Nome Ativo')
-
-                duration_media_tab = weighted_average_duration(df_data_vencimento_rf_current)
-                duration_by_cat_tab = weighted_average_duration_by_category(df_data_vencimento_rf_current)
-                n_ok = int(df_data_vencimento_rf_current['Duration'].notna().sum())
-                n_total = len(
-                    df_data_vencimento_rf_current[
-                        df_data_vencimento_rf_current['Classificação Instrumento'].isin(INSTRUMENTOS_RF)
-                    ]
-                )
-                if duration_media_tab is not None:
+                if duration_media_rf is not None:
                     by_cat_parts = []
                     for category in RF_DURATION_CATEGORIES:
-                        value = duration_by_cat_tab.get(category)
+                        value = duration_by_category_rf.get(category)
                         label = RF_DURATION_CATEGORY_LABELS[category]
                         if pd.notna(value):
                             by_cat_parts.append(f"{label}: **{value:.2f}**")
                         else:
                             by_cat_parts.append(f"{label}: —")
                     st.caption(
-                        f"Duration média ponderada (RF): **{duration_media_tab:.2f} anos** "
-                        f"· {n_ok}/{n_total} ativos com duration"
+                        f"Duration média ponderada (RF): **{duration_media_rf:.2f} anos** "
+                        f"· {n_duration_ok}/{n_duration_total} ativos com duration"
                     )
                     st.caption(" · ".join(by_cat_parts) + " (anos)")
                 else:
                     st.caption("Duration média ponderada (RF): sem dados suficientes")
 
+                if not df_rf_sem_vencimento.empty:
+                    aliases_sem_vencimento = ", ".join(
+                        sorted(df_rf_sem_vencimento['Alias'].dropna().astype(str).unique())
+                    )
+                    st.warning(
+                        f"{len(df_rf_sem_vencimento)} posição(ões) de Renda Fixa sem Data de "
+                        f"Vencimento cadastrada, fora da tabela e do histograma: "
+                        f"{aliases_sem_vencimento}"
+                    )
+
                 st.dataframe(
                     style_table(
-                        df_data_vencimento_rf_current[[
+                        df_com_vencimento.set_index('Nome Ativo')[[
                             'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
                             'Data Vencimento', 'Duration', 'Duration Fonte',
                             'Quantidade', 'Valor Unitário', 'Saldo'
@@ -675,7 +719,7 @@ if ready:
 
                 for sub_tab, filter_val, stack_by in zip(sub_tabs, tab_filters, tab_stack_by):
                     with sub_tab:
-                        df_tab = df_data_vencimento_rf_current.copy()
+                        df_tab = df_com_vencimento.copy()
                         if filter_val:
                             df_tab = df_tab[df_tab['Classificação do Conjunto'] == filter_val]
                         if len(df_tab) > 0:
@@ -696,16 +740,222 @@ if ready:
                         else:
                             st.info("Sem dados para este filtro")                
 
-        with tabs[6]: # Monitor de FGC
-            df_data_vencimento_rf_current_fgc = df_data_vencimento_rf_current[np.isin(df_data_vencimento_rf_current['Classificação Instrumento'], instruments_fgc)]
-            
+        with tabs["Fluxo de Caixa"]:
+            # A projeção parte de hoje (e não da data da posição) porque a
+            # pergunta é o que ainda está por receber.
+            cash_flow_reference = pd.Timestamp(datetime.now()).normalize()
+            horizon_options = {"6 meses": 6, "12 meses": 12, "24 meses": 24, "36 meses": 36}
+            horizon_label = st.radio(
+                "Horizonte de projeção",
+                options=list(horizon_options),
+                index=1,
+                horizontal=True,
+                key="cash_flow_horizon",
+            )
+            horizon_months = horizon_options[horizon_label]
+
+            df_cash_flow = build_cash_flow_schedule(
+                df,
+                df_scheduled_events,
+                reference_date=cash_flow_reference,
+                horizon_months=horizon_months,
+            )
+            df_cash_flow_coverage = scheduled_events_coverage(
+                df,
+                df_scheduled_events,
+                reference_date=cash_flow_reference,
+                horizon_months=horizon_months,
+            )
+
+            ultimo_mes = (cash_flow_reference.to_period('M') + horizon_months - 1)
+            st.caption(
+                f"Eventos de {cash_flow_reference:%d/%m/%Y} até {ultimo_mes.strftime('%m/%Y')}, "
+                f"valorizados pelas quantidades da posição de {position_date.date()}. "
+                f"O cronograma no Fibery cobre apenas "
+                f"{', '.join(INSTRUMENTOS_EVENTOS_PROGRAMADOS)}."
+            )
+
+            if not df_cash_flow_coverage.empty:
+                df_sem_cronograma = df_cash_flow_coverage[
+                    df_cash_flow_coverage['Eventos Futuros'] == 0
+                ]
+                saldo_elegivel = df_cash_flow_coverage['Saldo'].sum()
+                saldo_sem_cronograma = df_sem_cronograma['Saldo'].sum()
+                if not df_sem_cronograma.empty:
+                    pct_sem_cronograma = (
+                        saldo_sem_cronograma / saldo_elegivel * 100 if saldo_elegivel > 0 else 0
+                    )
+                    st.warning(
+                        f"{len(df_sem_cronograma)} de {len(df_cash_flow_coverage)} ativos com "
+                        f"cronograma esperado não têm eventos cadastrados no período "
+                        f"(R$ {saldo_sem_cronograma:,.2f}, {pct_sem_cronograma:.1f}% do saldo "
+                        f"em {', '.join(INSTRUMENTOS_EVENTOS_PROGRAMADOS)}). "
+                        f"O fluxo abaixo é um piso, não o total a receber."
+                    )
+                    with st.expander("Ativos sem eventos cadastrados no período", expanded=False):
+                        st.dataframe(
+                            style_table(
+                                df_sem_cronograma[[
+                                    'Nome Ativo', 'Alias', 'Classificação Instrumento',
+                                    'Quantidade', 'Saldo',
+                                ]],
+                                numeric_cols_format_as_float=['Saldo'],
+                                numeric_cols_format_as_int=['Quantidade'],
+                                left_align_cols=['Nome Ativo', 'Alias'],
+                            ),
+                            hide_index=True,
+                        )
+
+                # O fluxo é Quantidade × valor unitário do evento, então posição
+                # sem quantidade (comum em carteira externa) não pode ser valorizada.
+                # A máscara é explícita para que quantidade nula (NA) entre no aviso.
+                quantidade_coverage = pd.to_numeric(
+                    df_cash_flow_coverage['Quantidade'], errors='coerce'
+                ).fillna(0)
+                df_sem_quantidade = df_cash_flow_coverage[
+                    (df_cash_flow_coverage['Eventos Futuros'] > 0)
+                    & ~(quantidade_coverage > 0)
+                ]
+                if not df_sem_quantidade.empty:
+                    st.warning(
+                        f"{len(df_sem_quantidade)} ativo(s) têm cronograma cadastrado mas estão "
+                        f"sem quantidade na posição, então ficam fora do fluxo: "
+                        + ", ".join(sorted(df_sem_quantidade['Alias'].dropna().astype(str)))
+                    )
+
+            if df_cash_flow.empty:
+                st.info(
+                    "Nenhum evento programado para as posições desta carteira no período. "
+                    "Verifique o cadastro em Inv-Taxonomia/Evento Programado."
+                )
+            else:
+                total_periodo = df_cash_flow['Valor'].sum()
+                total_saldo_carteira = df_portfolio_positions_current['Saldo'].sum()
+                pct_pl_periodo = (
+                    total_periodo / total_saldo_carteira * 100 if total_saldo_carteira > 0 else 0
+                )
+
+                total_30d = df_cash_flow[
+                    df_cash_flow['Data do Pagamento'] < cash_flow_reference + pd.Timedelta(days=30)
+                ]['Valor'].sum()
+
+                proxima_data = df_cash_flow['Data do Pagamento'].min()
+                valor_proxima_data = df_cash_flow[
+                    df_cash_flow['Data do Pagamento'] == proxima_data
+                ]['Valor'].sum()
+
+                cash_flow_kpis = st.columns(4)
+                with cash_flow_kpis[0]:
+                    st.metric(
+                        f"A receber em {horizon_label}",
+                        f"R$ {total_periodo:,.2f}",
+                        height="stretch",
+                        delta=f"{pct_pl_periodo:.1f}% do PL",
+                        delta_color="off",
+                        delta_arrow="off",
+                    )
+                with cash_flow_kpis[1]:
+                    st.metric(
+                        "Próximos 30 dias",
+                        f"R$ {total_30d:,.2f}",
+                        height="stretch",
+                        delta_color="off",
+                        delta_arrow="off",
+                    )
+                with cash_flow_kpis[2]:
+                    st.metric(
+                        "Média mensal",
+                        f"R$ {total_periodo / horizon_months:,.2f}",
+                        height="stretch",
+                        delta_color="off",
+                        delta_arrow="off",
+                    )
+                with cash_flow_kpis[3]:
+                    st.metric(
+                        f"Próximo pagamento: **{proxima_data:%d/%m/%Y}**",
+                        f"R$ {valor_proxima_data:,.2f}",
+                        height="stretch",
+                        delta=f"{len(df_cash_flow)} eventos no período",
+                        delta_color="off",
+                        delta_arrow="off",
+                    )
+
+                df_cash_flow_monthly = aggregate_cash_flow_by_month(df_cash_flow)
+                monthly_series_cols = [
+                    col for col in df_cash_flow_monthly.columns if col != 'Mês'
+                ]
+                chart_cash_flow = create_chart(
+                    data=df_cash_flow_monthly,
+                    chart_type='column',
+                    title="Fluxo Projetado por Mês",
+                    columns=monthly_series_cols,
+                    names=monthly_series_cols,
+                    x_column='Mês',
+                    y_axis_title="Valor (R$)",
+                    x_axis_title="Mês do Pagamento",
+                    stacking='normal',
+                )
+                hct.streamlit_highcharts(chart_cash_flow)
+
+                cols = st.columns(2)
+                with cols[0]:
+                    st.markdown("**Eventos**")
+                    # Índice oculto: o mesmo ativo repete em várias datas e o
+                    # Styler do pandas não aceita índice duplicado.
+                    st.dataframe(
+                        style_table(
+                            df_cash_flow[[
+                                'Data do Pagamento', 'Alias', 'Tipo do Evento', 'Quantidade',
+                                'Valor Unitário Evento', 'Valor',
+                            ]],
+                            date_cols=['Data do Pagamento'],
+                            numeric_cols_format_as_float=['Valor Unitário Evento', 'Valor'],
+                            numeric_cols_format_as_int=['Quantidade'],
+                            left_align_cols=['Alias', 'Tipo do Evento'],
+                        ),
+                        hide_index=True,
+                    )
+                with cols[1]:
+                    st.markdown("**Total por ativo no período**")
+                    df_cash_flow_por_ativo = (
+                        df_cash_flow
+                        .groupby(['Alias', 'Classificação Instrumento'], dropna=False)
+                        .agg(**{
+                            'Valor': ('Valor', 'sum'),
+                            'Eventos': ('Valor', 'size'),
+                        })
+                        .reset_index()
+                        .sort_values(by='Valor', ascending=False)
+                    )
+                    df_cash_flow_por_ativo['% do Fluxo'] = (
+                        df_cash_flow_por_ativo['Valor'] / total_periodo * 100
+                        if total_periodo > 0 else 0
+                    )
+                    st.dataframe(
+                        style_table(
+                            df_cash_flow_por_ativo,
+                            numeric_cols_format_as_float=['Valor', '% do Fluxo'],
+                            numeric_cols_format_as_int=['Eventos'],
+                            left_align_cols=['Alias', 'Classificação Instrumento'],
+                        ),
+                        hide_index=True,
+                    )
+
+        with tabs["Monitor de FGC"]:
+            df_fgc = df_maturity_current[
+                np.isin(df_maturity_current['Classificação Instrumento'], instruments_fgc)
+            ].copy()
+            # Emissor em branco no cadastro sairia do groupby e sumiria da
+            # cobertura; explicitar mantém o saldo visível no gráfico.
+            df_fgc['Nome Emissor'] = df_fgc['Nome Emissor'].fillna('Não Identificado')
+
             cols = st.columns(2)
 
-            if len(df_data_vencimento_rf_current_fgc) > 0:
+            if len(df_fgc) > 0:
                 with cols[0]:
                     st.dataframe(
                         style_table(
-                            df_data_vencimento_rf_current_fgc[[
+                            df_fgc.set_index('Nome Ativo')[[
                                 'Alias', 'Classificação do Conjunto', 'Classificação Instrumento',
                                 'Data Vencimento', 'Quantidade', 'Valor Unitário', 'Saldo'
                             ]],
@@ -715,7 +965,7 @@ if ready:
                         )
                     )
                 with cols[1]:
-                    df_fgc_total = df_data_vencimento_rf_current_fgc.groupby(
+                    df_fgc_total = df_fgc.groupby(
                         ['Nome Emissor']
                     ).agg(**{'Saldo': ('Saldo', 'sum')})
 
@@ -739,16 +989,20 @@ if ready:
             else:
                 st.info("Cliente não possui ativos cobertos pelo FGC")
 
-        with tabs[7]: # Alertas
+        with tabs["Alertas"]:
             df_alertas_rf = df[df['Classificação Instrumento'].isin(INSTRUMENTOS_RF)].copy()
             df_alertas_rf = get_emissor_column(df_alertas_rf)
+            # Sem emissor a posição não casa com a tabela de status (fica como
+            # 'Sem Classificação'), mas não pode desaparecer do monitoramento.
+            df_alertas_rf['Emissor'] = df_alertas_rf['Emissor'].fillna('Não Identificado')
 
             df_alertas_posicoes = df_alertas_rf.groupby(
                 [
                     pd.Grouper(key='Data Posição', freq='D'),
                     'Nome Ativo', 'Alias', 'Classificação do Conjunto',
                     'Classificação Instrumento', 'Data Vencimento', 'Emissor',
-                ]
+                ],
+                dropna=False,
             ).agg(**{
                 'Quantidade': ('Quantidade', 'sum'),
                 'Valor Unitário': ('Valor Unitário', 'mean'),
@@ -825,7 +1079,13 @@ if ready:
 
     except KeyError as e:
         st.error(f"Erro ao acessar dados: campo {e} não encontrado")
+        with st.expander("Detalhes técnicos"):
+            st.code(traceback.format_exc())
     except IndexError as e:
         st.error(f"Erro ao acessar dados: índice inválido - {e}")
+        with st.expander("Detalhes técnicos"):
+            st.code(traceback.format_exc())
     except Exception as e:
         st.error(f"Ocorreu um erro ao carregar os dados: {e}")
+        with st.expander("Detalhes técnicos"):
+            st.code(traceback.format_exc())

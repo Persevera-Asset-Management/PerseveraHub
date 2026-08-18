@@ -57,6 +57,15 @@ INSTRUMENTOS_RF = [
     'Debênture',
 ]
 
+# Instrumentos cujo cronograma de pagamentos está cadastrado em
+# 'Inv-Taxonomia/Evento Programado' (alimentado pelas securitizadoras).
+# Demais instrumentos de RF não têm eventos e ficam fora do fluxo projetado.
+INSTRUMENTOS_EVENTOS_PROGRAMADOS = [
+    'CRA',
+    'CRI',
+    'Debênture',
+]
+
 # Instrumentos tipicamente bullet (juros + principal no vencimento).
 INSTRUMENTOS_RF_BULLET = {
     'CDB',
@@ -113,6 +122,36 @@ _TARGET_ALLOCATIONS_BASE_FIELDS = [
 _TARGET_ALLOCATIONS_LIMIT_FIELDS = ["PL Min", "PL Max"]
 _ACCOUNTS_FIELDS = ["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]
 _INSTRUMENTS_FGC_FIELDS = ["Name", "Cobertura FGC"]
+_SCHEDULED_EVENTS_FIELDS = [
+    "Ativo",
+    "Data do Pagamento",
+    "Tipo do Evento",
+    "Fonte",
+    "Valor Unitário",
+]
+
+# Schema devolvido por `load_scheduled_events`.
+_SCHEDULED_EVENT_COLUMNS = [
+    "Ativo",
+    "Data do Pagamento",
+    "Tipo do Evento",
+    "Fonte",
+    "Valor Unitário Evento",
+]
+
+# Schema devolvido por `build_cash_flow_schedule`.
+CASH_FLOW_SCHEDULE_COLUMNS = [
+    "Data do Pagamento",
+    "Mês",
+    "Nome Ativo",
+    "Alias",
+    "Classificação Instrumento",
+    "Tipo do Evento",
+    "Fonte",
+    "Quantidade",
+    "Valor Unitário Evento",
+    "Valor",
+]
 _PORTFOLIO_INFO_FIELDS = ["Name", "Officer Atual", "Tipo Cliente"]
 _CARTEIRAS_ADM_OLD_FIELDS = ["state", "Name", "Data Início Gestão", "Data Fim Gestão"]
 _ACTIVE_CARTEIRAS_FIELDS = ["Chave Match"]
@@ -538,6 +577,53 @@ def load_instruments_fgc() -> list:
     df = df[["Name", "Cobertura FGC"]]
     instruments_list = df[df["Cobertura FGC"]]["Name"].tolist()
     return instruments_list
+
+
+@st.cache_data(ttl=_CACHE_TTL)
+def load_scheduled_events(start_date: Optional[str] = None) -> pd.DataFrame:
+    """
+    Carrega o cronograma de eventos programados (juros, amortizações) do Fibery.
+
+    O cadastro cobre apenas os instrumentos de ``INSTRUMENTOS_EVENTOS_PROGRAMADOS``
+    e guarda o valor **por unidade** do ativo, não o valor a receber.
+
+    Args:
+        start_date: Data mínima de pagamento no formato ``YYYY-MM-DD``. Quando
+            informada, filtra no servidor. ``None`` traz todo o histórico.
+
+    Returns:
+        DataFrame com Ativo, Data do Pagamento, Tipo do Evento, Fonte e
+        Valor Unitário Evento (renomeado para não colidir com o preço unitário
+        das posições).
+    """
+    read_kwargs: dict = {
+        "table_name": "Inv-Taxonomia/Evento Programado",
+        "include_fibery_fields": False,
+        "fields": _SCHEDULED_EVENTS_FIELDS,
+    }
+    if start_date:
+        read_kwargs["where_filter"] = [
+            ">=", ["Inv-Taxonomia/Data do Pagamento"], "$startDate",
+        ]
+        read_kwargs["params"] = {"$startDate": start_date}
+
+    df = read_fibery(**read_kwargs)
+    track_data_load("scheduled_events")
+
+    if df.empty:
+        return pd.DataFrame(columns=_SCHEDULED_EVENT_COLUMNS)
+
+    df = df.rename(columns={"Valor Unitário": "Valor Unitário Evento"})
+    for column in _SCHEDULED_EVENT_COLUMNS:
+        if column not in df.columns:
+            df[column] = pd.NA
+
+    df["Data do Pagamento"] = pd.to_datetime(df["Data do Pagamento"], errors="coerce")
+    df["Valor Unitário Evento"] = pd.to_numeric(
+        df["Valor Unitário Evento"], errors="coerce"
+    )
+    df = df.dropna(subset=["Ativo", "Data do Pagamento", "Valor Unitário Evento"])
+    return df[_SCHEDULED_EVENT_COLUMNS].reset_index(drop=True)
 
 
 @st.cache_data(ttl=_CACHE_TTL)
@@ -1030,6 +1116,182 @@ def weighted_average_duration_by_category(
             weight_col=weight_col,
         )
     return result
+
+
+# =============================================================================
+# Fluxo de Caixa (Eventos Programados)
+# =============================================================================
+
+def _latest_positions_by_asset(df_positions: pd.DataFrame) -> pd.DataFrame:
+    """
+    Consolida quantidade e saldo por ativo na data de posição mais recente.
+
+    Soma as linhas do mesmo ativo em custodiantes/carteiras diferentes, já que
+    o fluxo a receber é o total do recorte selecionado.
+    """
+    columns = ['Nome Ativo', 'Alias', 'Classificação Instrumento', 'Quantidade', 'Saldo']
+    if df_positions.empty:
+        return pd.DataFrame(columns=columns)
+
+    latest_date = df_positions['Data Posição'].max()
+    df_latest = df_positions[df_positions['Data Posição'] == latest_date]
+
+    return (
+        df_latest
+        .groupby(['Nome Ativo', 'Alias', 'Classificação Instrumento'], dropna=False)
+        .agg(**{
+            'Quantidade': ('Quantidade', 'sum'),
+            'Saldo': ('Saldo', 'sum'),
+        })
+        .reset_index()
+    )
+
+
+def _cash_flow_window(reference_date, horizon_months: int) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """
+    Janela ``[início, fim)`` do fluxo projetado.
+
+    O fim é o primeiro dia do mês após ``horizon_months`` meses, de modo que o
+    último mês do horizonte apareça completo no gráfico (o mês corrente entra
+    parcial, apenas com o que ainda está por vir).
+    """
+    start = pd.Timestamp(reference_date or datetime.now()).normalize()
+    end = (start.to_period('M') + horizon_months).to_timestamp()
+    return start, end
+
+
+def build_cash_flow_schedule(
+    df_positions: pd.DataFrame,
+    df_events: pd.DataFrame,
+    *,
+    reference_date=None,
+    horizon_months: int = 12,
+) -> pd.DataFrame:
+    """
+    Projeta os recebimentos futuros das posições a partir dos eventos programados.
+
+    O cadastro guarda o valor por unidade do ativo, então o valor a receber é
+    ``Quantidade`` da posição × ``Valor Unitário Evento``. Posições sem
+    quantidade (comum em carteiras externas) não geram fluxo e ficam de fora;
+    use ``scheduled_events_coverage`` para saber o que foi ignorado.
+
+    Args:
+        df_positions: Posições normalizadas (usa a data mais recente).
+        df_events: Saída de ``load_scheduled_events``.
+        reference_date: Início da projeção (padrão: hoje).
+        horizon_months: Número de meses à frente (padrão: 12).
+
+    Returns:
+        DataFrame com uma linha por evento e ativo, ordenado por data de
+        pagamento, no schema ``CASH_FLOW_SCHEDULE_COLUMNS``.
+    """
+    empty = pd.DataFrame(columns=CASH_FLOW_SCHEDULE_COLUMNS)
+    if df_positions.empty or df_events.empty:
+        return empty
+
+    df_assets = _latest_positions_by_asset(df_positions)
+    # Máscara explícita: com dtypes nullable, `NA > 0` vira NA e o filtro
+    # passa a depender de como o pandas trata NA em máscara booleana.
+    quantidade = pd.to_numeric(df_assets['Quantidade'], errors='coerce').fillna(0)
+    df_assets = df_assets[quantidade > 0]
+    if df_assets.empty:
+        return empty
+
+    start, end = _cash_flow_window(reference_date, horizon_months)
+
+    df = df_assets.merge(
+        df_events,
+        left_on='Nome Ativo',
+        right_on='Ativo',
+        how='inner',
+    )
+    df = df[(df['Data do Pagamento'] >= start) & (df['Data do Pagamento'] < end)]
+    if df.empty:
+        return empty
+
+    df['Valor'] = df['Quantidade'] * df['Valor Unitário Evento']
+    df['Mês'] = df['Data do Pagamento'].dt.to_period('M').dt.to_timestamp()
+    df = df.sort_values(['Data do Pagamento', 'Nome Ativo', 'Tipo do Evento'])
+    return df[CASH_FLOW_SCHEDULE_COLUMNS].reset_index(drop=True)
+
+
+def aggregate_cash_flow_by_month(
+    df_schedule: pd.DataFrame,
+    *,
+    group_by: str = 'Tipo do Evento',
+) -> pd.DataFrame:
+    """
+    Soma o fluxo por mês, com uma coluna por categoria de ``group_by``.
+
+    Returns:
+        DataFrame largo (pronto para gráfico de barras empilhadas) com 'Mês'
+        formatado como ``mm/aaaa`` e já ordenado cronologicamente.
+    """
+    if df_schedule.empty:
+        return pd.DataFrame()
+
+    pivot = (
+        df_schedule
+        .groupby(['Mês', group_by], dropna=False)['Valor']
+        .sum()
+        .unstack(level=group_by)
+        .fillna(0)
+        .sort_index()
+    )
+    out = pivot.reset_index()
+    out['Mês'] = out['Mês'].dt.strftime('%m/%Y')
+    return out
+
+
+def scheduled_events_coverage(
+    df_positions: pd.DataFrame,
+    df_events: pd.DataFrame,
+    *,
+    reference_date=None,
+    horizon_months: int = 12,
+    instrumentos: Optional[list] = None,
+) -> pd.DataFrame:
+    """
+    Diagnostica a cobertura do cronograma nas posições que deveriam ter eventos.
+
+    Considera apenas os instrumentos de ``INSTRUMENTOS_EVENTOS_PROGRAMADOS``
+    (ou ``instrumentos``, se informado) e conta quantos eventos cada ativo tem
+    na janela projetada. Ativos com zero eventos ou sem quantidade indicam
+    cadastro incompleto, não ausência de fluxo.
+
+    Returns:
+        DataFrame com Nome Ativo, Alias, Classificação Instrumento, Quantidade,
+        Saldo e Eventos Futuros, ordenado por saldo decrescente.
+    """
+    columns = [
+        'Nome Ativo', 'Alias', 'Classificação Instrumento',
+        'Quantidade', 'Saldo', 'Eventos Futuros',
+    ]
+    if df_positions.empty:
+        return pd.DataFrame(columns=columns)
+
+    esperados = instrumentos if instrumentos is not None else INSTRUMENTOS_EVENTOS_PROGRAMADOS
+    df_assets = _latest_positions_by_asset(df_positions)
+    df_assets = df_assets[df_assets['Classificação Instrumento'].isin(esperados)]
+    saldo = pd.to_numeric(df_assets['Saldo'], errors='coerce').fillna(0)
+    df_assets = df_assets[saldo > 0]
+    if df_assets.empty:
+        return pd.DataFrame(columns=columns)
+
+    if df_events.empty:
+        df_assets['Eventos Futuros'] = 0
+        return df_assets[columns].sort_values(by='Saldo', ascending=False).reset_index(drop=True)
+
+    start, end = _cash_flow_window(reference_date, horizon_months)
+    df_window = df_events[
+        (df_events['Data do Pagamento'] >= start) & (df_events['Data do Pagamento'] < end)
+    ]
+    event_counts = df_window.groupby('Ativo').size()
+
+    df_assets['Eventos Futuros'] = (
+        df_assets['Nome Ativo'].map(event_counts).fillna(0).astype(int)
+    )
+    return df_assets[columns].sort_values(by='Saldo', ascending=False).reset_index(drop=True)
 
 
 @st.cache_data(ttl=_CACHE_TTL)
