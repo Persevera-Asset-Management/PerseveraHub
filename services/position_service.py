@@ -81,17 +81,45 @@ INSTRUMENTOS_RF_BULLET = {
     'Título Público',    # Por enquanto, não tem duration
 }
 
+# Fields lidos de Inv-Asset Allocation/Posição. Lookups de taxonomia saíram
+# da database; o cruzamento com Inv-Taxonomia/Ativos reconstitui o schema.
+_POSITIONS_QUERY_FIELDS = [
+    "Data Posição", "Portfolio", "Custodiante Acronimo",
+    "Nome Ativo", "Ativo",
+    "Quantidade", "Valor Unitário", "Saldo",
+    "Data Vencimento",
+    "Dias Úteis", "creation-date",
+]
+
+# Schema canônico devolvido por load_positions* (Posição ⋉ Ativos).
 _POSITIONS_COLUMNS = [
     "Data Posição", "Portfolio", "Custodiante Acronimo",
     "Nome Ativo", "Nome Ativo Completo", "Alias",
-    "Classificação do Conjunto", "Classificação do Sub-Conjunto", 
-    "Classificação Instrumento-Relation",
+    "Classificação do Conjunto", "Classificação do Sub-Conjunto",
+    "Classificação Instrumento",
     "Nome Emissor", "Nome Devedor",
     "Quantidade", "Valor Unitário", "Saldo",
     "Indexador",
-    "Dias Úteis", "creation-date",
     "Data Vencimento",
 ]
+
+_ASSET_TO_POSITION_SOURCES = {
+    "Nome Ativo Completo": ("Nome Completo",),
+    "Alias": ("Alias",),
+    "Classificação do Conjunto": ("Classificação Conjunto", "Classificação do Conjunto"),
+    "Classificação do Sub-Conjunto": (
+        "Classificação Sub-Conjunto",
+        "Classificação do Sub-Conjunto",
+    ),
+    "Classificação Instrumento": (
+        "Classificação Instrumento",
+        "Classificação Instrumento-Relation",
+    ),
+    "Nome Emissor": ("Nome Emissor",),
+    "Nome Devedor": ("Nome Devedor",),
+    "Indexador": ("Indexador",),
+    "_Data Vencimento Ativo": ("Data Vencimento",),
+}
 
 _POSITIONS_DEDUP_SUBSET = [
     'Data Posição', 'Portfolio', 'Nome Ativo', 'Custodiante Acronimo', 'Saldo',
@@ -221,18 +249,97 @@ def get_latest_date_data(
     return df.loc[mask]
 
 
-def _normalize_positions_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Normaliza DataFrame bruto de posições do Fibery."""
-    df = df[_POSITIONS_COLUMNS].copy()
+def _taxonomy_frame_for_positions(df_assets: pd.DataFrame) -> pd.DataFrame:
+    """Seleciona e renomeia colunas de Ativos para o schema canônico de posições."""
+    if "Name" not in df_assets.columns:
+        return pd.DataFrame(columns=["Name"])
+
+    tax = pd.DataFrame({"Name": df_assets["Name"].to_numpy()}, index=df_assets.index)
+    for dest, sources in _ASSET_TO_POSITION_SOURCES.items():
+        for src in sources:
+            if src in df_assets.columns:
+                tax[dest] = df_assets[src].to_numpy()
+                break
+    return tax.drop_duplicates(subset=["Name"])
+
+
+def _enrich_positions_with_assets(
+    df: pd.DataFrame,
+    df_assets: pd.DataFrame,
+) -> pd.DataFrame:
+    """Cruza posições com Inv-Taxonomia/Ativos pelo código do ativo.
+
+    Chave: ``Ativo`` (relação) com fallback em ``Nome Ativo``. Data Vencimento
+    prefere o cadastro; o lookup residual em Posição só entra se o cadastro
+    estiver vazio.
+    """
+    tax = _taxonomy_frame_for_positions(df_assets)
+    if "Ativo" in df.columns:
+        join_key = df["Ativo"].fillna(df["Nome Ativo"])
+    else:
+        join_key = df["Nome Ativo"]
+
+    df = df.copy()
+    df["_join_key"] = join_key
+    df = df.merge(tax, how="left", left_on="_join_key", right_on="Name")
+
+    if "_Data Vencimento Ativo" in df.columns:
+        maturity_pos = (
+            df["Data Vencimento"]
+            if "Data Vencimento" in df.columns
+            else pd.Series(pd.NA, index=df.index)
+        )
+        df["Data Vencimento"] = df["_Data Vencimento Ativo"].fillna(maturity_pos)
+        df = df.drop(columns=["_Data Vencimento Ativo"])
+
+    nome = df["Nome Ativo"] if "Nome Ativo" in df.columns else pd.Series(pd.NA, index=df.index)
+    if "Ativo" in df.columns:
+        nome = nome.fillna(df["Ativo"])
+    if "Name" in df.columns:
+        nome = nome.fillna(df["Name"])
+    df["Nome Ativo"] = nome
+
+    drop_cols = [col for col in ("Ativo", "_join_key", "Name") if col in df.columns]
+    return df.drop(columns=drop_cols)
+
+
+def _ensure_canonical_position_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Garante o schema canônico mesmo quando o cruzamento não preenche colunas."""
+    out = df.copy()
+    for col in _POSITIONS_COLUMNS:
+        if col not in out.columns:
+            out[col] = pd.NA
+    return out[_POSITIONS_COLUMNS]
+
+
+def _normalize_positions_df(
+    df: pd.DataFrame,
+    df_assets: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Normaliza DataFrame bruto de posições do Fibery e cruza com a taxonomia."""
+    if df.empty:
+        return pd.DataFrame(columns=_POSITIONS_COLUMNS)
+
+    df = df.copy()
+    for col in _POSITIONS_QUERY_FIELDS:
+        if col not in df.columns:
+            df[col] = pd.NA
+    df = df[_POSITIONS_QUERY_FIELDS]
+    df["Nome Ativo"] = df["Nome Ativo"].fillna(df["Ativo"])
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])
     df['creation-date'] = pd.to_datetime(df['creation-date'])
     df = df[df['Dias Úteis'].notna()]
     df = df.drop(columns=['Dias Úteis'])
     df = df.drop_duplicates(subset=_POSITIONS_DEDUP_SUBSET, keep='last')
     df = df.drop(columns=['creation-date'])
+
+    if df_assets is None:
+        df_assets = load_assets()
+    df = _enrich_positions_with_assets(df, df_assets)
+    df = _ensure_canonical_position_columns(df)
+
     df = df.dropna(subset=['Classificação do Conjunto'])
     df['Classificação do Sub-Conjunto'] = df['Classificação do Sub-Conjunto'].fillna('Sem Classificação')
-    df = df.rename(columns={'Classificação Instrumento-Relation': 'Classificação Instrumento'})
     return df
 
 
@@ -450,13 +557,13 @@ def load_issuers() -> pd.DataFrame:
 @st.cache_data(ttl=_CACHE_TTL)
 def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     """
-    Carrega posições do Fibery.
-    
+    Carrega posições do Fibery e cruza com Inv-Taxonomia/Ativos.
+
     Args:
         days_lookback: Número de dias para buscar posições (padrão: 4).
-    
+
     Returns:
-        DataFrame com as posições.
+        DataFrame no schema canônico de posições.
     """
     data_recente = (datetime.now() - timedelta(days=days_lookback)).strftime('%Y-%m-%dT00:00:00Z')
     
@@ -465,34 +572,35 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
         where_filter=[">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
         params={"$dataRecente": data_recente},
         include_fibery_fields=False,
-        fields=_POSITIONS_COLUMNS,
+        fields=_POSITIONS_QUERY_FIELDS,
     )
 
     track_data_load("positions")
-    return _normalize_positions_df(df)
+    return _normalize_positions_df(df, load_assets())
 
 
 @st.cache_data(ttl=_CACHE_TTL)
 def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     """
-    Carrega todo o histórico disponível de posições para um único portfolio.
+    Carrega todo o histórico disponível de posições para um único portfolio
+    e cruza com Inv-Taxonomia/Ativos.
 
     Args:
         portfolio: Código do portfolio (ex: 'ABCD').
 
     Returns:
-        DataFrame com todas as posições históricas do portfolio.
+        DataFrame no schema canônico de posições.
     """
     df = read_fibery(
         table_name="Inv-Asset Allocation/Posição",
         where_filter=["=", ["Inv-Asset Allocation/Portfolio", "Ops-Portfolios/Name"], "$portfolio"],
         params={"$portfolio": portfolio},
         include_fibery_fields=False,
-        fields=_POSITIONS_COLUMNS,
+        fields=_POSITIONS_QUERY_FIELDS,
     )
 
     track_data_load("positions_portfolio")
-    return _normalize_positions_df(df)
+    return _normalize_positions_df(df, load_assets())
 
 
 @st.cache_data(ttl=_CACHE_TTL)
