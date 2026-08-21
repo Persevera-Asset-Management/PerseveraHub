@@ -81,14 +81,13 @@ INSTRUMENTOS_RF_BULLET = {
     'Título Público',    # Por enquanto, não tem duration
 }
 
-# Fields lidos de Inv-Asset Allocation/Posição. Lookups de taxonomia saíram
-# da database; o cruzamento com Inv-Taxonomia/Ativos reconstitui o schema.
+# Fields lidos de Inv-Asset Allocation/Posição. Taxonomia e calendário
+# de dias úteis vêm de cruzamento (Ativos e Ops-Portfolios/Dias Úteis).
 _POSITIONS_QUERY_FIELDS = [
     "Data Posição", "Portfolio", "Custodiante Acronimo",
     "Nome Ativo", "Ativo",
     "Quantidade", "Valor Unitário", "Saldo",
-    "Data Vencimento",
-    "Dias Úteis", "creation-date",
+    "creation-date",
 ]
 
 # Schema canônico devolvido por load_positions* (Posição ⋉ Ativos).
@@ -151,6 +150,7 @@ _TARGET_ALLOCATIONS_BASE_FIELDS = [
 _TARGET_ALLOCATIONS_LIMIT_FIELDS = ["PL Min", "PL Max"]
 _ACCOUNTS_FIELDS = ["Portfolio", "Titularidade Principal", "Custodiante", "Nr Conta"]
 _INSTRUMENTS_FGC_FIELDS = ["Name", "Cobertura FGC"]
+_BUSINESS_DAYS_FIELDS = ["Data"]
 _SCHEDULED_EVENTS_FIELDS = [
     "Ativo",
     "Data do Pagamento",
@@ -270,8 +270,8 @@ def _enrich_positions_with_assets(
     """Cruza posições com Inv-Taxonomia/Ativos pelo código do ativo.
 
     Chave: ``Ativo`` (relação) com fallback em ``Nome Ativo``. Data Vencimento
-    prefere o cadastro; o lookup residual em Posição só entra se o cadastro
-    estiver vazio.
+    vem do cadastro; se a posição ainda trouxer o campo, ele só entra como
+    fallback.
     """
     tax = _taxonomy_frame_for_positions(df_assets)
     if "Ativo" in df.columns:
@@ -312,9 +312,23 @@ def _ensure_canonical_position_columns(df: pd.DataFrame) -> pd.DataFrame:
     return out[_POSITIONS_COLUMNS]
 
 
+def _filter_positions_to_business_days(
+    df: pd.DataFrame,
+    business_days: pd.DatetimeIndex | None = None,
+) -> pd.DataFrame:
+    """Mantém apenas posições cuja data está em Ops-Portfolios/Dias Úteis."""
+    if business_days is None:
+        business_days = load_business_days()
+    if business_days.empty:
+        return df
+    dates = pd.to_datetime(df["Data Posição"]).dt.normalize()
+    return df.loc[dates.isin(business_days)]
+
+
 def _normalize_positions_df(
     df: pd.DataFrame,
     df_assets: pd.DataFrame | None = None,
+    business_days: pd.DatetimeIndex | None = None,
 ) -> pd.DataFrame:
     """Normaliza DataFrame bruto de posições do Fibery e cruza com a taxonomia."""
     if df.empty:
@@ -328,8 +342,7 @@ def _normalize_positions_df(
     df["Nome Ativo"] = df["Nome Ativo"].fillna(df["Ativo"])
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])
     df['creation-date'] = pd.to_datetime(df['creation-date'])
-    df = df[df['Dias Úteis'].notna()]
-    df = df.drop(columns=['Dias Úteis'])
+    df = _filter_positions_to_business_days(df, business_days)
     df = df.drop_duplicates(subset=_POSITIONS_DEDUP_SUBSET, keep='last')
     df = df.drop(columns=['creation-date'])
 
@@ -534,6 +547,19 @@ def load_assets(
 
 
 @st.cache_data(ttl=_CACHE_TTL)
+def load_business_days() -> pd.DatetimeIndex:
+    """Carrega o calendário de dias úteis (Brasil) do Fibery."""
+    df = read_fibery(
+        table_name="Ops-Portfolios/Dias Úteis",
+        include_fibery_fields=False,
+        fields=_BUSINESS_DAYS_FIELDS,
+    )
+    dates = pd.to_datetime(df["Data"], errors="coerce").dropna().dt.normalize()
+    track_data_load("business_days")
+    return pd.DatetimeIndex(dates.unique()).sort_values()
+
+
+@st.cache_data(ttl=_CACHE_TTL)
 def load_issuers() -> pd.DataFrame:
     """
     Carrega emissores e devedores do Fibery.
@@ -576,7 +602,7 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     )
 
     track_data_load("positions")
-    return _normalize_positions_df(df, load_assets())
+    return _normalize_positions_df(df, load_assets(), load_business_days())
 
 
 @st.cache_data(ttl=_CACHE_TTL)
@@ -600,7 +626,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
     )
 
     track_data_load("positions_portfolio")
-    return _normalize_positions_df(df, load_assets())
+    return _normalize_positions_df(df, load_assets(), load_business_days())
 
 
 @st.cache_data(ttl=_CACHE_TTL)
