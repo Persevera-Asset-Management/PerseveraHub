@@ -81,16 +81,19 @@ INSTRUMENTOS_RF_BULLET = {
     'Título Público',    # Por enquanto, não tem duration
 }
 
-# Fields lidos de Inv-Asset Allocation/Posição. Taxonomia e calendário
-# de dias úteis vêm de cruzamento (Ativos e Ops-Portfolios/Dias Úteis).
+_POSITIONS_TABLE = "Inv-Asset Allocation/Posição Consolidada"
+
+# Fields lidos de Posição Consolidada. Name (título) substitui Nome Ativo
+# da database antiga; o normalize promove Name → Nome Ativo. Taxonomia e
+# calendário de dias úteis vêm de cruzamento (Ativos e Dias Úteis).
 _POSITIONS_QUERY_FIELDS = [
     "Data Posição", "Portfolio", "Custodiante Acronimo",
-    "Nome Ativo", "Ativo",
+    "Name", "Ativo",
     "Quantidade", "Valor Unitário", "Saldo",
     "creation-date",
 ]
 
-# Schema canônico devolvido por load_positions* (Posição ⋉ Ativos).
+# Schema canônico devolvido por load_positions* (Posição Consolidada ⋉ Ativos).
 _POSITIONS_COLUMNS = [
     "Data Posição", "Portfolio", "Custodiante Acronimo",
     "Nome Ativo", "Nome Ativo Completo", "Alias",
@@ -330,7 +333,7 @@ def _normalize_positions_df(
     df_assets: pd.DataFrame | None = None,
     business_days: pd.DatetimeIndex | None = None,
 ) -> pd.DataFrame:
-    """Normaliza DataFrame bruto de posições do Fibery e cruza com a taxonomia."""
+    """Normaliza DataFrame bruto de Posição Consolidada e cruza com a taxonomia."""
     if df.empty:
         return pd.DataFrame(columns=_POSITIONS_COLUMNS)
 
@@ -339,7 +342,8 @@ def _normalize_positions_df(
         if col not in df.columns:
             df[col] = pd.NA
     df = df[_POSITIONS_QUERY_FIELDS]
-    df["Nome Ativo"] = df["Nome Ativo"].fillna(df["Ativo"])
+    df["Nome Ativo"] = df["Name"].fillna(df["Ativo"])
+    df = df.drop(columns=["Name"])
     df['Data Posição'] = pd.to_datetime(df['Data Posição'])
     df['creation-date'] = pd.to_datetime(df['creation-date'])
     df = _filter_positions_to_business_days(df, business_days)
@@ -594,7 +598,7 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     data_recente = (datetime.now() - timedelta(days=days_lookback)).strftime('%Y-%m-%dT00:00:00Z')
     
     df = read_fibery(
-        table_name="Inv-Asset Allocation/Posição",
+        table_name=_POSITIONS_TABLE,
         where_filter=[">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
         params={"$dataRecente": data_recente},
         include_fibery_fields=False,
@@ -618,7 +622,7 @@ def load_positions_for_portfolio(portfolio: str) -> pd.DataFrame:
         DataFrame no schema canônico de posições.
     """
     df = read_fibery(
-        table_name="Inv-Asset Allocation/Posição",
+        table_name=_POSITIONS_TABLE,
         where_filter=["=", ["Inv-Asset Allocation/Portfolio", "Ops-Portfolios/Name"], "$portfolio"],
         params={"$portfolio": portfolio},
         include_fibery_fields=False,
