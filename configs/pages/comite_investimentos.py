@@ -46,7 +46,7 @@ CHARTS_INVESTIMENTOS_BR = {
         },
         "width": 6,
         "context": "Crescimento",
-        "group": "IBC-Br",
+        "group": "PIB",
         "block_title": "IBC-Br"
     },
     "br_ibcbr_var": {
@@ -63,7 +63,7 @@ CHARTS_INVESTIMENTOS_BR = {
         ],
         "width": 6,
         "context": "Crescimento",
-        "group": "IBC-Br",
+        "group": "PIB",
         "block_title": "IBC-Br"
     },
     "br_ibcbr_components": {
@@ -84,7 +84,7 @@ CHARTS_INVESTIMENTOS_BR = {
             ],
         "width": 6,
         "context": "Crescimento",
-        "group": "IBC-Br",
+        "group": "PIB",
         "block_title": "IBC-Br"
     },
 
