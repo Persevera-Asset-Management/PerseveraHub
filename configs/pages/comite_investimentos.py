@@ -51,14 +51,14 @@ CHARTS_INVESTIMENTOS_BR = {
     },
     "br_ibcbr_var": {
         "chart_config": {
-            "columns": ["br_ibcbr_nsa_index", "br_ibcbr_index"],
+            "columns": ["br_ibcbr_index_nsa", "br_ibcbr_index"],
             "names": ["var. Anual", "var. Mensal"],
             "chart_type": "dual_axis_line_column",
             "title": "IBC-Br (var. Mensal e Anual)",
             "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
         },
         "transformations": [
-            {"type": "yearly_variation", "column": "br_ibcbr_nsa_index", "frequency": "MS"},
+            {"type": "yearly_variation", "column": "br_ibcbr_index_nsa", "frequency": "MS"},
             {"type": "monthly_variation", "column": "br_ibcbr_index", "frequency": "MS"}
         ],
         "width": 6,
@@ -105,26 +105,15 @@ CHARTS_INVESTIMENTOS_BR = {
     "br_industrial_production_yoy": {
         "chart_config": {
             "columns": "br_industrial_production",
-            "names": "Índice",
-            "chart_type": "line",
-            "title": "Produção Industrial (var. Anual %)",
-            "y_axis_title": "Var. (%)",
+            "names": ["var. Anual (%)", "var. Mensal (%)"],
+            "chart_type": "dual_axis_line_column",
+            "title": "Produção Industrial (var. Mensal e Anual)",
+            "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
         },
-        "transformations": [{"type": "yearly_variation", "column": "br_industrial_production", "frequency": "MS"}],
-        "width": 6,
-        "context": "Crescimento",
-        "group": "Indústria",
-        "block_title": "Pesquisa Industrial Mensal (PIM)"
-    },
-    "br_industrial_production_mom": {
-        "chart_config": {
-            "columns": "br_industrial_production",
-            "names": "Índice",
-            "chart_type": "column",
-            "title": "Produção Industrial (var. Mensal %)",
-            "y_axis_title": "Var. (%)",
-        },
-        "transformations": [{"type": "monthly_variation", "column": "br_industrial_production", "frequency": "MS"}],
+        "transformations": [
+            {"type": "yearly_variation", "column": "br_industrial_production", "frequency": "MS"},
+            {"type": "monthly_variation", "column": "br_industrial_production", "frequency": "MS"},
+        ],
         "width": 6,
         "context": "Crescimento",
         "group": "Indústria",
@@ -148,26 +137,15 @@ CHARTS_INVESTIMENTOS_BR = {
     "br_pms_services_volume_yoy": {
         "chart_config": {
             "columns": "br_pms_services_volume_total_index",
-            "names": "Índice",
-            "chart_type": "line",
-            "title": "Volume de Serviços (var. Anual %)",
-            "y_axis_title": "Var. (%)",
+            "names": ["var. Anual (%)", "var. Mensal (%)"],
+            "chart_type": "dual_axis_line_column",
+            "title": "Volume de Serviços (var. Mensal e Anual)",
+            "y_axis_title": ("var. Anual (%)", "var. Mensal (%)"),
         },
-        "transformations": [{"type": "yearly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}],
-        "width": 6,
-        "context": "Crescimento",
-        "group": "Serviços",
-        "block_title": "Pesquisa Mensal de Serviços (PMS)"
-    },
-    "br_pms_services_volume_mom": {
-        "chart_config": {
-            "columns": "br_pms_services_volume_total_index",
-            "names": "Índice",
-            "chart_type": "column",
-            "title": "Volume de Serviços (var. Mensal %)",
-            "y_axis_title": "Var. (%)",
-        },
-        "transformations": [{"type": "monthly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}],
+        "transformations": [
+            {"type": "yearly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"},
+            {"type": "monthly_variation", "column": "br_pms_services_volume_total_index", "frequency": "MS"}
+        ],
         "width": 6,
         "context": "Crescimento",
         "group": "Serviços",
