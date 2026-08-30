@@ -210,7 +210,7 @@ else:
                     color=[HIST_NEG_COLOR, HIST_POS_COLOR],
                     chart_type='column',
                     stacking='normal',
-                    title=f"Retornos em {int(horizon)}d | {conditions_label} — {selected_index}",
+                    title=f"Retornos em {int(horizon)}d · {conditions_label} · {selected_index}",
                     y_axis_title="Frequência",
                     x_axis_title="Retorno (%)",
                     decimal_precision=0,
