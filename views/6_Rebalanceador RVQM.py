@@ -13,7 +13,6 @@ from services.position_service import (
     load_equities_portfolio,
     load_portfolios_rvqm,
     load_positions,
-    resolve_portfolio_strategy,
 )
 from services.external_positions_service import (
     MATCH_AMBIGUOUS,
@@ -250,18 +249,48 @@ def load_google_sheet_market_data() -> pd.DataFrame:
     return df
 
 # =============================================================================
-# Sidebar — seleção de portfolio
+# Sidebar — seleção de portfolio e carteira-modelo
 # =============================================================================
-portfolios_rvqm = load_portfolios_rvqm()
+try:
+    portfolios_rvqm = load_portfolios_rvqm()
+except Exception as e:
+    st.error(f"Erro ao carregar clientes com carteira-modelo: {e}")
+    st.stop()
+
+if portfolios_rvqm.empty:
+    st.warning("Nenhum cliente com carteira-modelo ativa no Fibery.")
+    st.stop()
+
+portfolio_options = sorted(portfolios_rvqm["Portfolio"].dropna().unique().tolist())
 
 with st.sidebar:
     st.header("Parâmetros")
     selected_portfolio = st.selectbox(
         "Portfolio",
-        options=sorted(portfolios_rvqm['Portfolio'].unique().tolist()),
+        options=portfolio_options,
         index=None,
         placeholder="Selecione um portfolio...",
     )
+
+    selected_client_row = None
+    if selected_portfolio:
+        rvqm_row = portfolios_rvqm[portfolios_rvqm["Portfolio"] == selected_portfolio]
+        if len(rvqm_row) == 1:
+            selected_client_row = rvqm_row.iloc[0]
+            st.caption(f"Carteira-modelo: **{selected_client_row['Tipo']}**")
+        elif len(rvqm_row) > 1:
+            model_labels = {
+                idx: f"{row['Tipo']} · {row['Custodiante']} · {row['Nr Conta']}"
+                for idx, row in rvqm_row.iterrows()
+            }
+            chosen_idx = st.selectbox(
+                "Carteira-modelo",
+                options=list(model_labels),
+                format_func=model_labels.__getitem__,
+                help="Este portfolio possui mais de uma carteira-modelo aderida.",
+            )
+            selected_client_row = rvqm_row.loc[chosen_idx]
+
     origem_posicao = st.radio(
         "Origem da posição",
         options=[ORIGEM_FIBERY, ORIGEM_MANUAL],
@@ -324,23 +353,26 @@ if is_manual_position and uploaded_positions is None:
     )
     st.stop()
 
-rvqm_row = portfolios_rvqm[portfolios_rvqm['Portfolio'] == selected_portfolio]
-if rvqm_row.empty:
-    st.error(f"Portfolio '{selected_portfolio}' não encontrado na tabela de clientes.")
+if selected_client_row is None:
+    st.error(
+        f"Portfolio '{selected_portfolio}' não encontrado em Cliente com Carteira Modelo."
+    )
     st.stop()
 
-try:
-    strategy_tipo = resolve_portfolio_strategy(selected_portfolio, portfolios_rvqm)
-except ValueError as e:
-    st.error(str(e))
+strategy_tipo = str(selected_client_row["Tipo"]).strip()
+if (
+    pd.isna(selected_client_row["Tipo"])
+    or not strategy_tipo
+    or strategy_tipo.lower() in {"nan", "none", "<na>"}
+):
+    st.error(
+        f"Portfolio '{selected_portfolio}' sem Carteira Modelo definida no Fibery."
+    )
     st.stop()
 
-equity_position_to_total_portfolio = rvqm_row['Percentual do PL'].iloc[0]
-equity_position_custodian = rvqm_row['Custodiante'].iloc[0]
-equity_position_account = rvqm_row['Nr Conta'].iloc[0]
-
-with st.sidebar:
-    st.caption(f"Estratégia: **{strategy_tipo}**")
+equity_position_to_total_portfolio = selected_client_row["Percentual do PL"]
+equity_position_custodian = selected_client_row["Custodiante"]
+equity_position_account = selected_client_row["Nr Conta"]
 
 # =============================================================================
 # Carregamento de dados

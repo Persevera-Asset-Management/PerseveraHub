@@ -65,7 +65,7 @@ def build_adherence_payload(
 ) -> dict:
     """Processa raw ComDinheiro → pesos, retornos e summary (cacheável).
 
-    Cada carteira é comparada à estratégia do seu próprio Tipo (RVQM/MAGO).
+    Cada carteira é comparada à carteira-modelo aderida (ex.: RVQM, MAGO).
     """
     RVQM_INSTRUMENTS = ("Ação", "BDR")
     hist_positions = prepare_comdinheiro_historical_positions_df(raw_hist)
@@ -153,7 +153,7 @@ with st.sidebar:
         "Carteira-modelo",
         options=strategy_options,
         index=default_strategy_idx,
-        help="Define qual estratégia é exibida na análise de composição e performance.",
+        help="Define qual carteira-modelo é exibida na análise de composição e performance.",
     )
 
 equities_portfolio = equities_all[equities_all["tipo"] == selected_strategy].copy()
@@ -354,7 +354,7 @@ st.divider()
 st.markdown("### Aderência · Carteiras Investidas")
 st.caption(
     "TWR diário ponderado por saldo da sleeve de ações/BDRs, com pesos de t−1. "
-    "Cada carteira é comparada automaticamente à estratégia do seu Tipo (RVQM/MAGO)."
+    "Cada carteira é comparada automaticamente à carteira-modelo aderida."
 )
 
 for key in (
@@ -511,7 +511,7 @@ elif status == "missing_strategy":
     missing_portfolio = (result or {}).get("portfolio", "?")
     missing_tipo = (result or {}).get("tipo") or "não definido"
     st.warning(
-        f"Carteira {missing_portfolio} com Tipo '{missing_tipo}' sem carteira-modelo correspondente."
+        f"Carteira {missing_portfolio} com carteira-modelo '{missing_tipo}' sem composição correspondente."
     )
 elif status != "ok":
     st.warning("Não foi possível calcular a aderência.")

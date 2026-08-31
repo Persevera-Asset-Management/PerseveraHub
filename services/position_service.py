@@ -187,8 +187,22 @@ CASH_FLOW_SCHEDULE_COLUMNS = [
 _PORTFOLIO_INFO_FIELDS = ["Name", "Officer Atual", "Tipo Cliente"]
 _CARTEIRAS_ADM_OLD_FIELDS = ["state", "Name", "Data Início Gestão", "Data Fim Gestão"]
 _ACTIVE_CARTEIRAS_FIELDS = ["Chave Match"]
-_PORTFOLIOS_RVQM_FIELDS = [
-    "Carteira Ativa",
+_CLIENTES_CARTEIRA_MODELO_FIELDS = [
+    "Ativa",
+    "Carteira Modelo",
+    "Conta",
+    "Custodiante",
+    "Nr Conta",
+    "Percentual do PL",
+]
+_CONTA_PORTFOLIO_FIELDS = ["Name", "Portfolio Texto"]
+_COMPOSICAO_CARTEIRA_FIELDS = ["Ativo", "Peso", "Evento"]
+_EVENTO_REBALANCEAMENTO_FIELDS = [
+    "Name",
+    "Data de Implementação",
+    "Carteira Modelo",
+]
+_PORTFOLIOS_RVQM_COLUMNS = [
     "Portfolio",
     "Conta",
     "Custodiante",
@@ -196,7 +210,7 @@ _PORTFOLIOS_RVQM_FIELDS = [
     "Percentual do PL",
     "Tipo",
 ]
-_EQUITIES_PORTFOLIO_FIELDS = ["Data de Implementação", "Ativo", "Peso", "Tipo"]
+_EQUITIES_PORTFOLIO_COLUMNS = ["date", "code", "weight", "tipo"]
 
 
 # =============================================================================
@@ -599,8 +613,12 @@ def load_positions(days_lookback: int = 4) -> pd.DataFrame:
     
     df = read_fibery(
         table_name=_POSITIONS_TABLE,
-        where_filter=[">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
-        params={"$dataRecente": data_recente},
+        where_filter=[
+            "q/and",
+            [">=", ["Inv-Asset Allocation/Data Posição"], "$dataRecente"],
+            ["q/not-equals-ignoring-case?", ["Inv-Asset Allocation/Fonte"], "$fonteExcluida"],
+        ],
+        params={"$dataRecente": data_recente, "$fonteExcluida": "ProventosXP"},
         include_fibery_fields=False,
         fields=_POSITIONS_QUERY_FIELDS,
     )
@@ -842,66 +860,107 @@ def active_carteira_codes() -> set[str]:
     return set(load_active_carteiras_adm())
 
 
-@st.cache_data(ttl=_CACHE_TTL)
-def load_portfolios_rvqm() -> pd.DataFrame:
-    """
-    Carrega portfólios com carteira de equities ativa do Fibery (RVQM/MAGO).
-
-    Returns:
-        DataFrame com Portfolio, conta, custodiante e Tipo da estratégia.
-    """
-    df = read_fibery(
-        table_name="Inv-Asset Allocation/Clientes com Carteira RVQM",
-        include_fibery_fields=False,
-        fields=_PORTFOLIOS_RVQM_FIELDS,
-    )
-    df = df[df["Carteira Ativa"]].copy()
-    df = df[["Portfolio", "Conta", "Custodiante", "Nr Conta", "Percentual do PL", "Tipo"]]
-    df["Tipo"] = (
-        df["Tipo"]
-        .astype("string")
+def _normalize_strategy_name(series: pd.Series) -> pd.Series:
+    """Normaliza o Name da Carteira Modelo (ex.: RVQM, MAGO) para join/filtro."""
+    return (
+        series.astype("string")
         .str.strip()
         .replace({"": pd.NA, "nan": pd.NA, "None": pd.NA, "<NA>": pd.NA})
     )
-    return df
+
+
+@st.cache_data(ttl=_CACHE_TTL)
+def load_portfolios_rvqm() -> pd.DataFrame:
+    """
+    Carrega portfólios com carteira-modelo de equities ativa no Fibery.
+
+    Lê ``Cliente com Carteira Modelo`` e resolve o código do portfolio via
+    ``Ops-InstFin/Conta`` (a tabela nova não tem o campo fórmula Portfolio).
+
+    Returns:
+        DataFrame com Portfolio, conta, custodiante e Tipo (Name da Carteira Modelo).
+    """
+    empty = pd.DataFrame(columns=_PORTFOLIOS_RVQM_COLUMNS)
+    clientes = read_fibery(
+        table_name="Inv-Asset Allocation/Cliente com Carteira Modelo",
+        include_fibery_fields=False,
+        fields=_CLIENTES_CARTEIRA_MODELO_FIELDS,
+    )
+    if clientes.empty or "Ativa" not in clientes.columns:
+        return empty
+
+    clientes = clientes.loc[clientes["Ativa"].fillna(False).astype(bool)].copy()
+    if clientes.empty:
+        return empty
+
+    contas = read_fibery(
+        table_name="Ops-InstFin/Conta",
+        include_fibery_fields=False,
+        fields=_CONTA_PORTFOLIO_FIELDS,
+    )
+    if contas.empty:
+        return empty
+
+    contas = contas.rename(columns={"Name": "Conta", "Portfolio Texto": "Portfolio"})
+    df = clientes.merge(contas[["Conta", "Portfolio"]], on="Conta", how="left")
+    df = df.rename(columns={"Carteira Modelo": "Tipo"})
+    df["Tipo"] = _normalize_strategy_name(df["Tipo"])
+    df = df.dropna(subset=["Portfolio"])
+    missing = [col for col in _PORTFOLIOS_RVQM_COLUMNS if col not in df.columns]
+    if missing:
+        return empty
+    return df[_PORTFOLIOS_RVQM_COLUMNS].copy()
 
 
 @st.cache_data(ttl=_CACHE_TTL)
 def load_equities_portfolio(tipo: str | None = None) -> pd.DataFrame:
     """
-    Carrega carteira-modelo de equities do Fibery (RVQM/MAGO).
+    Carrega a composição histórica das carteiras-modelo de equities do Fibery.
+
+    Combina ``Composição de Carteira`` (ativo × peso) com ``Evento de
+    Rebalanceamento`` (data de implementação e Carteira Modelo).
 
     Args:
-        tipo: Se informado (ex.: ``"RVQM"`` ou ``"MAGO"``), filtra pela estratégia.
-            ``None`` retorna todas as composições, com a coluna ``tipo``.
+        tipo: Se informado (ex.: ``"RVQM"`` ou ``"MAGO"``), filtra pela
+            Carteira Modelo. ``None`` retorna todas as composições, com a
+            coluna ``tipo``.
 
     Returns:
         DataFrame com date, code, weight e tipo.
     """
-    df = read_fibery(
-        table_name="Inv-Asset Allocation/Carteira RVQM",
+    empty = pd.DataFrame(columns=_EQUITIES_PORTFOLIO_COLUMNS)
+    composicao = read_fibery(
+        table_name="Inv-Asset Allocation/Composição de Carteira",
         include_fibery_fields=False,
-        fields=_EQUITIES_PORTFOLIO_FIELDS,
+        fields=_COMPOSICAO_CARTEIRA_FIELDS,
     )
-    df = df[["Data de Implementação", "Ativo", "Peso", "Tipo"]].copy()
-    df["Data de Implementação"] = pd.to_datetime(df["Data de Implementação"])
-    df = df.rename(
+    eventos = read_fibery(
+        table_name="Inv-Asset Allocation/Evento de Rebalanceamento",
+        include_fibery_fields=False,
+        fields=_EVENTO_REBALANCEAMENTO_FIELDS,
+    )
+    if composicao.empty or eventos.empty:
+        return empty
+
+    eventos = eventos.rename(
         columns={
-            "Ativo": "code",
+            "Name": "Evento",
             "Data de Implementação": "date",
-            "Peso": "weight",
-            "Tipo": "tipo",
+            "Carteira Modelo": "tipo",
         }
     )
-    df["tipo"] = (
-        df["tipo"]
-        .astype("string")
-        .str.strip()
-        .replace({"": pd.NA, "nan": pd.NA, "None": pd.NA, "<NA>": pd.NA})
-    )
+    df = composicao.merge(eventos[["Evento", "date", "tipo"]], on="Evento", how="inner")
+    if df.empty:
+        return empty
+
+    df = df.rename(columns={"Ativo": "code", "Peso": "weight"})
+    df["date"] = pd.to_datetime(df["date"])
+    df["tipo"] = _normalize_strategy_name(df["tipo"])
+    df = df.dropna(subset=["date", "code", "weight", "tipo"])
+    df = df.drop_duplicates(subset=["date", "code", "tipo"], keep="last")
     if tipo is not None:
         df = df[df["tipo"] == str(tipo).strip()].copy()
-    return df
+    return df[_EQUITIES_PORTFOLIO_COLUMNS].copy()
 
 
 def resolve_portfolio_strategy(
@@ -909,10 +968,10 @@ def resolve_portfolio_strategy(
     portfolios_rvqm: pd.DataFrame | None = None,
 ) -> str:
     """
-    Infere a estratégia (RVQM/MAGO) aderida pelo portfolio/cliente.
+    Infere a carteira-modelo aderida pelo portfolio/cliente.
 
     Raises:
-        ValueError: Se o portfolio não existir ou não tiver Tipo preenchido.
+        ValueError: Se o portfolio não existir ou não tiver Carteira Modelo preenchida.
     """
     clients = portfolios_rvqm if portfolios_rvqm is not None else load_portfolios_rvqm()
     row = clients.loc[clients["Portfolio"] == portfolio]
@@ -920,7 +979,9 @@ def resolve_portfolio_strategy(
         raise ValueError(f"Portfolio '{portfolio}' não encontrado na tabela de clientes.")
     tipo = row["Tipo"].iloc[0]
     if pd.isna(tipo) or not str(tipo).strip() or str(tipo).strip().lower() in {"nan", "none", "<na>"}:
-        raise ValueError(f"Portfolio '{portfolio}' sem Tipo de estratégia definido no Fibery.")
+        raise ValueError(
+            f"Portfolio '{portfolio}' sem Carteira Modelo definida no Fibery."
+        )
     return str(tipo).strip()
 
 

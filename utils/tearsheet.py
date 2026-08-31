@@ -391,7 +391,7 @@ def _render_rolling_returns_chart(
             columns=list(rolling_df.columns),
             names=list(rolling_df.columns),
             chart_type="line",
-            title=f"Retorno Móvel ({window_label})",
+            title=f"Retorno Móvel · {window_label}",
             y_axis_title="Retorno (%)",
             decimal_precision=decimal_precision,
         ),
