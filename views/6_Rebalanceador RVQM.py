@@ -95,6 +95,62 @@ def safe_weight_pct(values: pd.Series) -> pd.Series:
         return pd.Series(0.0, index=values.index)
     return values / total * 100
 
+
+def compute_rebalance_columns(
+    df: pd.DataFrame,
+    target_equity_balance: float,
+) -> pd.DataFrame:
+    """Calcula pesos, saldos-alvo e ordens em lote para a sleeve negociável."""
+    out = df.copy()
+    out["Saldo Atual"] = out["Quantidade"] * out["LAST_PRICE"]
+    out["Peso Atual (%)"] = safe_weight_pct(out["Saldo Atual"])
+    target_w = out["weight_pct"].fillna(0.0)
+    weight_sum = float(target_w.sum(skipna=True))
+    if weight_sum > 0:
+        target_w = target_w / weight_sum * 100
+    out["Peso Alvo (%)"] = target_w
+    out["Saldo Alvo"] = target_equity_balance * out["Peso Alvo (%)"] / 100
+    out["Valor Compra/Venda"] = out["Saldo Alvo"] - out["Saldo Atual"]
+    qty_raw = pd.Series(
+        np.where(
+            out["LAST_PRICE"].gt(0),
+            out["Valor Compra/Venda"] / out["LAST_PRICE"],
+            np.nan,
+        ),
+        index=out.index,
+    )
+    out["Quantidade Compra/Venda"] = compute_lot_orders(
+        qty_raw,
+        out["LAST_PRICE"],
+        out["Lote"],
+        full_exit=out["Peso Alvo (%)"].eq(0),
+    )
+    qty_after = out["Quantidade"] + out["Quantidade Compra/Venda"].astype("float64")
+    out["Peso Ex-Post (%)"] = safe_weight_pct(qty_after * out["LAST_PRICE"])
+    out["Operação"] = np.select(
+        [
+            out["Quantidade Compra/Venda"].gt(0).fillna(False),
+            out["Quantidade Compra/Venda"].lt(0).fillna(False),
+        ],
+        ["C", "V"],
+        default="Manter",
+    )
+    return out
+
+
+def mark_ignored_assets(df: pd.DataFrame) -> pd.DataFrame:
+    """Mantém a posição visível, sem ordem e fora da sleeve negociável."""
+    out = df.copy()
+    out["Saldo Atual"] = out["Quantidade"] * out["LAST_PRICE"]
+    out["Peso Atual (%)"] = np.nan
+    out["Peso Alvo (%)"] = 0.0
+    out["Peso Ex-Post (%)"] = np.nan
+    out["Saldo Alvo"] = np.nan
+    out["Valor Compra/Venda"] = 0.0
+    out["Quantidade Compra/Venda"] = pd.Series(0, index=out.index, dtype="Int64")
+    out["Operação"] = "Ignorar"
+    return out
+
 def prepare_equity_positions(positions: pd.DataFrame) -> pd.DataFrame:
     _empty = pd.DataFrame(
         columns=["Ativo", "code_key", "Nome Ativo", "Quantidade", "Classificação Instrumento"]
@@ -567,44 +623,6 @@ portfolio_total_balance = (
 )
 target_equity_balance = portfolio_total_balance * equity_position_to_total_portfolio
 
-current_market_data["Quantidade"] = current_market_data["Quantidade"].fillna(0).astype(float)
-current_market_data["Nome Ativo"] = current_market_data["Nome Ativo"].fillna(current_market_data["code_key"])
-current_market_data["Saldo Atual"] = current_market_data["Quantidade"] * current_market_data["LAST_PRICE"]
-current_market_data["Peso Atual (%)"] = safe_weight_pct(current_market_data["Saldo Atual"])
-current_market_data["Peso Alvo (%)"] = current_market_data["weight_pct"].fillna(0)
-current_market_data["Saldo Alvo"] = target_equity_balance * current_market_data["Peso Alvo (%)"] / 100
-current_market_data["Valor Compra/Venda"] = current_market_data["Saldo Alvo"] - current_market_data["Saldo Atual"]
-qty_raw = pd.Series(
-    np.where(
-        current_market_data["LAST_PRICE"].gt(0),
-        current_market_data["Valor Compra/Venda"] / current_market_data["LAST_PRICE"],
-        np.nan,
-    ),
-    index=current_market_data.index,
-)
-current_market_data["Quantidade Compra/Venda"] = compute_lot_orders(
-    qty_raw,
-    current_market_data["LAST_PRICE"],
-    current_market_data["Lote"],
-    full_exit=current_market_data["Peso Alvo (%)"].eq(0),
-)
-qty_after = (
-    current_market_data["Quantidade"]
-    + current_market_data["Quantidade Compra/Venda"].astype("float64")
-)
-saldo_after = qty_after * current_market_data["LAST_PRICE"]
-current_market_data["Peso Ex-Post (%)"] = safe_weight_pct(saldo_after)
-
-current_market_data["Operação"] = np.select(
-    [
-        current_market_data["Quantidade Compra/Venda"].gt(0).fillna(False),
-        current_market_data["Quantidade Compra/Venda"].lt(0).fillna(False),
-    ],
-    ["C", "V"],
-    default="Manter",
-)
-current_market_data = current_market_data.sort_values("Valor Compra/Venda", ascending=False)
-
 if positions_carteira.empty:
     position_date_label = "sem posição registrada"
 elif is_manual_position:
@@ -639,6 +657,71 @@ metric_cols[1].metric(
 )
 metric_cols[2].metric("Percentual do PL", f"{equity_position_to_total_portfolio*100:.1f}%")
 metric_cols[3].metric(f"Saldo Alvo {strategy_tipo}", f"R$ {target_equity_balance:,.0f}")
+
+current_market_data["Quantidade"] = current_market_data["Quantidade"].fillna(0).astype(float)
+current_market_data["Nome Ativo"] = current_market_data["Nome Ativo"].fillna(
+    current_market_data["code_key"]
+)
+
+ignore_options = sorted(
+    code
+    for code in current_market_data["code_key"].dropna().astype(str).str.strip().unique()
+    if code
+)
+model_codes = set(
+    current_portfolio["code_key"].dropna().astype(str).str.strip().tolist()
+)
+ignore_labels = {
+    code: f"{code} · fora da carteira-modelo" if code not in model_codes else code
+    for code in ignore_options
+}
+
+ignored_codes = st.multiselect(
+    "Ignorar ativos",
+    options=ignore_options,
+    format_func=ignore_labels.__getitem__,
+    key=f"rvqm_ignore_{selected_portfolio}_{strategy_tipo}",
+    help=(
+        "Posições excluídas da sleeve negociável: não geram compra/venda e o "
+        "saldo atual é abatido do alvo da carteira-modelo. Use para papéis que "
+        "não podem ser negociados."
+    ),
+)
+
+ignored_mask = current_market_data["code_key"].astype(str).isin(ignored_codes)
+ignored_holdings = current_market_data.loc[ignored_mask].copy()
+tradable = current_market_data.loc[~ignored_mask].copy()
+
+ignored_saldo = float(
+    (ignored_holdings["Quantidade"] * ignored_holdings["LAST_PRICE"]).sum(skipna=True)
+)
+if pd.isna(ignored_saldo):
+    ignored_saldo = 0.0
+effective_target_equity_balance = max(float(target_equity_balance) - ignored_saldo, 0.0)
+
+if tradable.empty:
+    st.warning(
+        "Todos os ativos foram ignorados. Desmarque algum para calcular o rebalanceamento."
+    )
+    st.stop()
+
+tradable = compute_rebalance_columns(tradable, effective_target_equity_balance)
+tradable = tradable.sort_values("Valor Compra/Venda", ascending=False)
+if ignored_holdings.empty:
+    current_market_data = tradable
+else:
+    ignored_holdings = mark_ignored_assets(ignored_holdings).sort_values("Nome Ativo")
+    current_market_data = pd.concat(
+        [tradable, ignored_holdings],
+        ignore_index=True,
+    )
+
+if ignored_codes:
+    st.caption(
+        f"{len(ignored_codes)} ativo(s) ignorado(s) · "
+        f"R$ {ignored_saldo:,.0f} fora da sleeve · "
+        f"saldo alvo negociável R$ {effective_target_equity_balance:,.0f}."
+    )
 
 display_columns = [
     "TIME",
@@ -691,7 +774,11 @@ if missing_prices:
         + ", ".join(missing_prices)
     )
 
-missing_targets = current_market_data[current_market_data["weight_pct"].isna()]["Nome Ativo"].tolist()
+missing_targets = current_market_data.loc[
+    current_market_data["weight_pct"].isna()
+    & ~current_market_data["code_key"].astype(str).isin(ignored_codes),
+    "Nome Ativo",
+].tolist()
 if missing_targets:
     st.info(
         f"Ativos sem peso alvo na carteira {strategy_tipo} atual: "
