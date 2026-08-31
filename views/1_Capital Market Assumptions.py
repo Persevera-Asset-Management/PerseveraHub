@@ -8,8 +8,10 @@ from utils.chart_helpers import create_chart
 from utils.table import style_table, get_performance_table
 
 from configs.pages.capital_market_assumptions import (
-    CAPITAL_MARKET_ASSUMPTIONS,
+    CMA_ASSET_PRICES,
+    CMA_ASSET_YIELDS,
     BUCKET_ORDER,
+    YIELD_BUCKET_ORDER,
     BUCKET_COLORS,
 )
 
@@ -76,21 +78,38 @@ def calculate_custom_return(df, start, end):
         return pd.Series(np.nan, index=df.columns)
     return (period_df.iloc[-1] / period_df.iloc[0] - 1) * 100
 
-def attach_bucket_index(df, asset_names, asset_buckets):
-    """Replace a code-indexed DataFrame with a (Bucket, Classe de Ativos)
-    MultiIndex, sorted by canonical bucket order then by name."""
+def calculate_custom_yield_change(df, start, end):
+    """Absolute yield change in bps (levels quoted in percent)."""
+    period_df = df.loc[start:end].ffill()
+    if len(period_df) < 2:
+        return pd.Series(np.nan, index=df.columns)
+    return (period_df.iloc[-1] - period_df.iloc[0]) * 100
+
+def _codes_as_index(table):
+    for col in ('code', 'index'):
+        if col in table.columns:
+            return table.set_index(col)
+    return table
+
+def attach_bucket_index(df, asset_names, asset_buckets, bucket_order=None, index_names=None):
+    """Replace a code-indexed DataFrame with a (Bucket, name) MultiIndex,
+    sorted by canonical bucket order then by name."""
     df = df.copy()
-    bucket_rank = {b: i for i, b in enumerate(BUCKET_ORDER)}
+    if bucket_order is None:
+        bucket_order = BUCKET_ORDER
+    if index_names is None:
+        index_names = ['Bucket', 'Classe de Ativos']
+    bucket_rank = {b: i for i, b in enumerate(bucket_order)}
     codes = df.index.tolist()
     buckets = [asset_buckets.get(c, '') for c in codes]
     names = [asset_names.get(c, c) for c in codes]
-    df['__rank'] = [bucket_rank.get(b, len(BUCKET_ORDER)) for b in buckets]
+    df['__rank'] = [bucket_rank.get(b, len(bucket_order)) for b in buckets]
     df['__bucket'] = buckets
     df['__name'] = names
     df = df.sort_values(['__rank', '__name'])
     df.index = pd.MultiIndex.from_arrays(
         [df['__bucket'].tolist(), df['__name'].tolist()],
-        names=['Bucket', 'Classe de Ativos'],
+        names=index_names,
     )
     return df.drop(columns=['__rank', '__bucket', '__name'])
 
@@ -128,17 +147,33 @@ def scatter_data_by_bucket(stats_df, x_col, y_col):
 # ---------------------------------------------------------------------------
 codes = [
     code
-    for bucket_codes in CAPITAL_MARKET_ASSUMPTIONS.values()
+    for bucket_codes in CMA_ASSET_PRICES.values()
     for code in bucket_codes.keys()
 ]
 asset_names = {
     code: name
-    for bucket_codes in CAPITAL_MARKET_ASSUMPTIONS.values()
+    for bucket_codes in CMA_ASSET_PRICES.values()
     for code, name in bucket_codes.items()
 }
 asset_buckets = {
     code: bucket
-    for bucket, bucket_codes in CAPITAL_MARKET_ASSUMPTIONS.items()
+    for bucket, bucket_codes in CMA_ASSET_PRICES.items()
+    for code in bucket_codes.keys()
+}
+
+yield_codes = [
+    code
+    for bucket_codes in CMA_ASSET_YIELDS.values()
+    for code in bucket_codes.keys()
+]
+yield_names = {
+    code: name
+    for bucket_codes in CMA_ASSET_YIELDS.values()
+    for code, name in bucket_codes.items()
+}
+yield_buckets = {
+    code: bucket
+    for bucket, bucket_codes in CMA_ASSET_YIELDS.items()
     for code in bucket_codes.keys()
 }
 
@@ -147,7 +182,9 @@ with st.sidebar:
 
 with st.spinner(f"Carregando {lookback_years} anos de dados..."):
     start_date = pd.to_datetime(date.today() - timedelta(days=lookback_years * 365))
-    data = load_data(codes, start_date.strftime('%Y-%m-%d'))
+    start_date_str = start_date.strftime('%Y-%m-%d')
+    data = load_data(codes, start_date_str)
+    yield_data = load_data(yield_codes, start_date_str)
 
 if data.empty:
     st.warning("Sem dados carregados.")
@@ -156,9 +193,7 @@ if data.empty:
 # ---------------------------------------------------------------------------
 # Compute stats / performance
 # ---------------------------------------------------------------------------
-performance_table = get_performance_table(data)
-if 'code' in performance_table.columns:
-    performance_table = performance_table.set_index('code')
+performance_table = _codes_as_index(get_performance_table(data))
 
 stats = compute_long_term_stats(data)
 
@@ -221,9 +256,36 @@ custom_end = st.session_state.custom_end
 # ---------------------------------------------------------------------------
 # Custom period column (added before bucket attachment so we can align by code)
 # ---------------------------------------------------------------------------
+custom_col_label = None
 if custom_start < custom_end:
     custom_col_label = f"Custom ({custom_start:%d/%m/%y} – {custom_end:%d/%m/%y})"
     performance_table[custom_col_label] = calculate_custom_return(data, custom_start, custom_end)
+
+# ---------------------------------------------------------------------------
+# Yield variation table (Performance Acumulada only)
+# ---------------------------------------------------------------------------
+yield_table = pd.DataFrame()
+if not yield_data.empty:
+    available_yield_codes = [c for c in yield_codes if c in yield_data.columns]
+    if available_yield_codes:
+        yield_levels = yield_data[available_yield_codes]
+        raw_yield_table = get_performance_table(yield_levels, change='abs', multiplier=100)
+        if not raw_yield_table.empty:
+            yield_table = _codes_as_index(raw_yield_table)
+            yield_table.insert(
+                0, 'Último (%)', yield_levels.ffill().iloc[-1].reindex(yield_table.index)
+            )
+            if custom_col_label is not None:
+                yield_table[custom_col_label] = calculate_custom_yield_change(
+                    yield_levels, custom_start, custom_end
+                )
+            yield_table = attach_bucket_index(
+                yield_table,
+                yield_names,
+                yield_buckets,
+                bucket_order=YIELD_BUCKET_ORDER,
+                index_names=['Bucket', 'Vértice'],
+            )
 
 # ---------------------------------------------------------------------------
 # Attach bucket / sort tables
@@ -257,6 +319,22 @@ with tabs[0]:   # Performance Acumulada
         ),
         height="content",
     )
+
+    st.subheader("Variação dos Yields")
+    if yield_table.empty:
+        st.warning("Sem dados de yields carregados.")
+    else:
+        yield_level_col = 'Último (%)'
+        yield_change_cols = [c for c in yield_table.columns if c != yield_level_col]
+        st.caption("Último em % a.a. Demais colunas: variação em pontos-base (bps).")
+        st.dataframe(
+            style_table(
+                yield_table,
+                numeric_cols_format_as_float=[yield_level_col] + yield_change_cols,
+                color_negative_positive_cols=yield_change_cols,
+            ),
+            height="content",
+        )
 
 with tabs[1]:   # Longo Prazo
     stats_float_cols = ['Retorno (a.a.)', 'Volatilidade (a.a.)', 'Assimetria', 'Curtose', 'Anos']

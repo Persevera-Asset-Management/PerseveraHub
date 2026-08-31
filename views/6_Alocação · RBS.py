@@ -14,7 +14,7 @@ from persevera_tools.quant_research.risk_budgeting_spectrum import (
 )
 from persevera_tools.quant_research.risk_budgeting_spectrum.loaders import load_from_fibery
 
-from configs.pages.capital_market_assumptions import BUCKET_COLORS
+from configs.pages.CMA_ASSET_PRICES import BUCKET_COLORS
 
 # ---------------------------------------------------------------------------
 # Page setup

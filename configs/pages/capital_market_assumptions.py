@@ -1,4 +1,4 @@
-CAPITAL_MARKET_ASSUMPTIONS = {
+CMA_ASSET_PRICES = {
     "Renda Fixa": {
         "br_cdi_index": "Caixa e Equivalentes (CDI)",
 
@@ -11,12 +11,8 @@ CAPITAL_MARKET_ASSUMPTIONS = {
         
         "anbima_ida_di": "Debêntures DI (IDA DI)",
         "anbima_ida_liq_di": "Debêntures DI Liquidez (IDA LIQ DI)",
-        "br_b3_corporate_bond_di_aaa_index": "Debêntures AAA DI (B3)",
-        "br_b3_corporate_bond_di_ultra_quality_index": "Debêntures Ultra Quality DI (B3)",
         
         "anbima_ida_ipca": "Debêntures IPCA (IDA IPCA)",
-        "br_b3_corporate_bond_incentivized_ipca_aaa_index": "Debêntures Incentivadas AAA IPCA (B3)",
-        "br_b3_corporate_bond_incentivized_ipca_ultra_quality_index": "Debêntures Incentivadas Ultra Quality IPCA (B3)",
 
         "br_teva_fii_papel_index": "FII Papel (Teva)",
     },
@@ -37,7 +33,23 @@ CAPITAL_MARKET_ASSUMPTIONS = {
     },
 }
 
-BUCKET_ORDER = list(CAPITAL_MARKET_ASSUMPTIONS.keys())
+CMA_ASSET_YIELDS = {
+    "Juros Nominais": {
+        "br_pre_1y": "Pré 1 Ano",
+        "br_pre_5y": "Pré 5 Anos",
+        "br_pre_10y": "Pré 10 Anos",
+    },
+    "Juros Reais": {
+        "br_ipca_1y": "IPCA 1 Ano",
+        "br_ipca_5y": "IPCA 5 Anos",
+        "br_ipca_10y": "IPCA 10 Anos",
+        "br_ipca_20y": "IPCA 20 Anos",
+        "br_ipca_30y": "IPCA 30 Anos",
+    },
+}
+
+BUCKET_ORDER = list(CMA_ASSET_PRICES.keys())
+YIELD_BUCKET_ORDER = list(CMA_ASSET_YIELDS.keys())
 
 BUCKET_COLORS = {
     "Renda Fixa":     "#4682B4",

@@ -750,11 +750,20 @@ def style_table_aggrid(
     }
 
 
-def get_performance_table(series):
-    """Build a snapshot of period returns (%) from price/NAV levels.
+def get_performance_table(
+    series,
+    change: Literal['pct', 'abs'] = 'pct',
+    multiplier: Optional[float] = None,
+):
+    """Build a snapshot of period changes from price/NAV or yield levels.
 
-    Expects a Series or DataFrame of price/NAV levels (not returns), indexed by
-    date (DatetimeIndex or MultiIndex with a 'date' level).
+    Expects a Series or DataFrame of levels (not returns), indexed by date
+    (DatetimeIndex or MultiIndex with a 'date' level).
+
+    change='pct' (default): period return, scaled by 100 (percent) unless
+    `multiplier` is set.
+    change='abs': period difference (end − start). Use multiplier=100 to
+    convert percent-quoted yields into basis points.
     """
     df = series.to_frame() if isinstance(series, pd.Series) else series.copy()
     if df.empty:
@@ -775,43 +784,48 @@ def get_performance_table(series):
     end_date = df.index[-1]
     nan_row = pd.Series(np.nan, index=df.columns)
 
-    def _period_return(end: pd.Series, start) -> pd.Series:
+    def _period_change(end: pd.Series, start) -> pd.Series:
         if start is None:
             return nan_row
-        with np.errstate(divide='ignore', invalid='ignore'):
-            ret = end / start - 1.0
-        return ret.where(np.isfinite(ret))
+        if change == 'pct':
+            with np.errstate(divide='ignore', invalid='ignore'):
+                ret = end / start - 1.0
+            return ret.where(np.isfinite(ret))
+        diff = end - start
+        return diff.where(np.isfinite(diff))
 
     def _asof_values(at: pd.Timestamp) -> pd.Series:
         # Per-column asof: DataFrame.asof requires a fully non-NaN row, which
         # fails when assets have staggered start dates (e.g. 36m lookback).
         return pd.Series({col: df[col].asof(at) for col in df.columns}, index=df.columns)
 
-    def get_relative_return(months: int) -> pd.Series:
+    def get_relative_change(months: int) -> pd.Series:
         start_date_calc = end_date - relativedelta(months=months)
-        return _period_return(last, _asof_values(start_date_calc))
+        return _period_change(last, _asof_values(start_date_calc))
 
-    day_ret = _period_return(last, df.iloc[-2]) if len(df) >= 2 else nan_row
+    day_ret = _period_change(last, df.iloc[-2]) if len(df) >= 2 else nan_row
 
     month_start = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    mtd_ret = _period_return(last, _asof_values(month_start - pd.Timedelta(days=1)))
+    mtd_ret = _period_change(last, _asof_values(month_start - pd.Timedelta(days=1)))
 
     year_start = end_date.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-    ytd_ret = _period_return(last, _asof_values(year_start - pd.Timedelta(days=1)))
+    ytd_ret = _period_change(last, _asof_values(year_start - pd.Timedelta(days=1)))
 
-    returns = {
+    changes = {
         '1d': day_ret,
         'mtd': mtd_ret,
         'ytd': ytd_ret,
-        '1m': get_relative_return(1),
-        '3m': get_relative_return(3),
-        '6m': get_relative_return(6),
-        '12m': get_relative_return(12),
-        '24m': get_relative_return(24),
-        '36m': get_relative_return(36),
+        '1m': get_relative_change(1),
+        '3m': get_relative_change(3),
+        '6m': get_relative_change(6),
+        '12m': get_relative_change(12),
+        '24m': get_relative_change(24),
+        '36m': get_relative_change(36),
     }
 
-    df_result = pd.DataFrame(returns) * 100
+    if multiplier is None:
+        multiplier = 100.0 if change == 'pct' else 1.0
+    df_result = pd.DataFrame(changes) * multiplier
     return df_result.reset_index()
 
 
