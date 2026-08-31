@@ -1,4 +1,5 @@
 import io
+import time
 
 import pandas as pd
 import streamlit as st
@@ -35,8 +36,101 @@ def format_cnpj(cnpj: str) -> str:
 def is_valid_cnpj(cnpj: str) -> bool:
     return len(adjust_cnpj(cnpj)) == 14
 
+def _safe_text(value) -> str:
+    if value is None:
+        return ''
+    try:
+        if bool(pd.isna(value)):
+            return ''
+    except (ValueError, TypeError):
+        pass
+    if isinstance(value, float):
+        value = f'{value:.0f}'
+    text = str(value).strip()
+    if text.lower() in {'nan', 'none', 'nat', '<na>'}:
+        return ''
+    return text
+
+
+def _digits_only(value) -> str:
+    return ''.join(ch for ch in _safe_text(value) if ch.isdigit())
+
+
 def format_btg_account(nr_conta: str) -> str:
-    return str(nr_conta).strip().zfill(9)
+    digits = _digits_only(nr_conta)
+    return digits.zfill(9) if digits else ''
+
+
+def _sum_numeric(df: pd.DataFrame, column: str) -> float:
+    if df is None or df.empty or column not in df.columns:
+        return 0.0
+    total = pd.to_numeric(df[column], errors='coerce').sum(skipna=True)
+    if pd.isna(total):
+        return 0.0
+    return float(total)
+
+
+def _as_dataframe(value) -> pd.DataFrame:
+    if isinstance(value, pd.DataFrame):
+        return value
+    return pd.DataFrame()
+
+
+def _btg_balance_row(
+    row,
+    account_number: str,
+    balance_col: str,
+    *,
+    cash_balance: float = 0.0,
+    fund_balance: float = 0.0,
+    fund_cge_code: str = '',
+    error: str = '',
+) -> dict:
+    return {
+        'Portfolio': _safe_text(row.get('Portfolio', '')),
+        'Custodiante': _safe_text(row.get('Custodiante', '')),
+        'Conta': account_number,
+        'Código Fundo (CGE)': fund_cge_code,
+        'Saldo Disponível': cash_balance,
+        balance_col: fund_balance,
+        'Erro consulta': error,
+    }
+
+
+def _empty_btg_balance_df(balance_col: str) -> pd.DataFrame:
+    return pd.DataFrame(columns=[
+        'Portfolio',
+        'Custodiante',
+        'Conta',
+        'Código Fundo (CGE)',
+        'Saldo Disponível',
+        balance_col,
+        'Erro consulta',
+    ])
+
+
+def _extract_btg_cash_balance(summary_df: pd.DataFrame) -> float:
+    if summary_df.empty or 'MarketAbbreviation' not in summary_df.columns:
+        return 0.0
+    market = summary_df['MarketAbbreviation'].map(_safe_text).str.upper()
+    cc_rows = summary_df[market == 'CC']
+    return _sum_numeric(cc_rows, 'EndPositionValue')
+
+
+def _extract_btg_fund_position(
+    funds_df: pd.DataFrame,
+    cnpj_digits: str,
+) -> tuple[float, str]:
+    if funds_df.empty or not cnpj_digits or 'FundCNPJCode' not in funds_df.columns:
+        return 0.0, ''
+    matching = funds_df[funds_df['FundCNPJCode'].map(_digits_only) == cnpj_digits]
+    if matching.empty:
+        return 0.0, ''
+    fund_balance = _sum_numeric(matching, 'Acquisition_GrossAssetValue')
+    cge_col = 'FundCGECode' if 'FundCGECode' in matching.columns else 'CGECode'
+    fund_cge_code = _safe_text(matching.iloc[0][cge_col]) if cge_col in matching.columns else ''
+    return fund_balance, fund_cge_code
+
 
 def get_balance_xp(accounts: pd.DataFrame, cnpj: str, balance_col: str) -> pd.DataFrame:
     provider = XPWSProvider()
@@ -63,39 +157,54 @@ def get_balance_xp(accounts: pd.DataFrame, cnpj: str, balance_col: str) -> pd.Da
     return pd.DataFrame(rows)
 
 def get_balance_btg(accounts: pd.DataFrame, cnpj: str, balance_col: str) -> pd.DataFrame:
+    if accounts is None or accounts.empty:
+        return _empty_btg_balance_df(balance_col)
+
     provider = BTGWSProvider()
-    cnpj_digits = adjust_cnpj(cnpj)
+    cnpj_digits = _digits_only(cnpj)
     rows = []
 
-    for _, row in accounts.iterrows():
-        account_number = format_btg_account(row['Nr Conta'])
+    for i, (_, row) in enumerate(accounts.iterrows()):
+        account_number = format_btg_account(row.get('Nr Conta'))
+        if not account_number:
+            rows.append(_btg_balance_row(
+                row, '', balance_col, error='Número de conta inválido',
+            ))
+            continue
 
-        summary_df = provider.get_position_by_asset_class(account_number, 'SummaryAccounts')
+        if i > 0 and getattr(provider, 'request_delay', 0):
+            time.sleep(provider.request_delay)
+
         cash_balance = 0.0
-        if not summary_df.empty and 'MarketAbbreviation' in summary_df.columns:
-            cc_rows = summary_df[summary_df['MarketAbbreviation'] == 'CC']
-            if not cc_rows.empty:
-                cash_balance = float(cc_rows['EndPositionValue'].astype(float).sum())
-
-        funds_df = provider.get_position_by_asset_class(account_number, 'InvestmentFund')
         fund_balance = 0.0
         fund_cge_code = ''
-        if not funds_df.empty and 'FundCNPJCode' in funds_df.columns:
-            matching = funds_df[funds_df['FundCNPJCode'].astype(str) == cnpj_digits]
-            if not matching.empty:
-                if 'Acquisition_GrossAssetValue' in matching.columns:
-                    fund_balance = float(matching['Acquisition_GrossAssetValue'].astype(float).sum())
-                if 'FundCGECode' in matching.columns:
-                    fund_cge_code = str(matching.iloc[0]['FundCGECode']).strip()
+        errors = []
 
-        rows.append({
-            'Portfolio': row['Portfolio'],
-            'Custodiante': row['Custodiante'],
-            'Conta': account_number,
-            'Código Fundo (CGE)': fund_cge_code,
-            'Saldo Disponível': cash_balance,
-            balance_col: fund_balance,
-        })
+        try:
+            summary_df = _as_dataframe(
+                provider.get_position_by_asset_class(account_number, 'SummaryAccounts')
+            )
+            cash_balance = _extract_btg_cash_balance(summary_df)
+        except Exception as exc:  # noqa: BLE001 — uma conta não deve abortar o lote
+            errors.append(f'caixa: {exc}')
+
+        try:
+            funds_df = _as_dataframe(
+                provider.get_position_by_asset_class(account_number, 'InvestmentFund')
+            )
+            fund_balance, fund_cge_code = _extract_btg_fund_position(funds_df, cnpj_digits)
+        except Exception as exc:  # noqa: BLE001 — uma conta não deve abortar o lote
+            errors.append(f'fundo: {exc}')
+
+        rows.append(_btg_balance_row(
+            row,
+            account_number,
+            balance_col,
+            cash_balance=cash_balance,
+            fund_balance=fund_balance,
+            fund_cge_code=fund_cge_code,
+            error=' | '.join(errors),
+        ))
 
     return pd.DataFrame(rows)
 
@@ -109,7 +218,7 @@ def finalize_balance_df(
     df = df.copy()
     eligible = (df['Saldo Disponível'] > 100) & (df[balance_col] > 0)
     if require_fund_cge and 'Código Fundo (CGE)' in df.columns:
-        eligible &= df['Código Fundo (CGE)'].astype(str).str.strip().ne('')
+        eligible &= df['Código Fundo (CGE)'].map(_safe_text).ne('')
     df['Elegivel para Zeragem'] = eligible
     df['CNPJ do Fundo'] = fund_cnpj
     return df.sort_values(
@@ -119,7 +228,7 @@ def finalize_balance_df(
 
 def balance_cache_key(custodian: str, fund_cnpj: str) -> str:
     slug = custodian.lower().replace(' ', '_')
-    version = 'v3' if custodian == 'BTG CTVM' else 'v2'
+    version = 'v4' if custodian == 'BTG CTVM' else 'v2'
     return f'zeragem_balance_{slug}_{version}_{fund_cnpj}'
 
 if 'df_accounts' not in st.session_state or st.session_state.df_accounts is None:
@@ -198,12 +307,15 @@ if btn_update_xp and not df_xp_accounts.empty:
 
 if btn_update_btg and not df_btg_accounts.empty:
     with st.spinner('Carregando saldos BTG CTVM...', show_time=True):
-        st.session_state[btg_cache_key] = finalize_balance_df(
-            get_balance_btg(df_btg_accounts, fund_cnpj, balance_col),
-            fund_cnpj,
-            balance_col,
-            require_fund_cge=True,
-        )
+        try:
+            st.session_state[btg_cache_key] = finalize_balance_df(
+                get_balance_btg(df_btg_accounts, fund_cnpj, balance_col),
+                fund_cnpj,
+                balance_col,
+                require_fund_cge=True,
+            )
+        except Exception as exc:  # noqa: BLE001 — falha global da API BTG não deve derrubar a página
+            st.error(f'Não foi possível carregar os saldos BTG: {exc}')
 
 loaded_parts = []
 loaded_labels = []
@@ -243,6 +355,20 @@ if pending_labels:
     )
 else:
     st.caption(f'Saldos carregados: {", ".join(loaded_labels)}.')
+
+if 'Erro consulta' in df_accounts_data.columns:
+    consulta_erros = df_accounts_data['Erro consulta'].fillna('').astype(str).str.strip()
+    failed_rows = df_accounts_data[consulta_erros.ne('')]
+    if not failed_rows.empty:
+        preview = ', '.join(
+            f"{row['Portfolio']} ({row['Conta']})"
+            for _, row in failed_rows.head(10).iterrows()
+        )
+        extra = f' e mais {len(failed_rows) - 10}' if len(failed_rows) > 10 else ''
+        st.warning(
+            f'{len(failed_rows)} conta(s) BTG não puderam ser consultadas: {preview}{extra}. '
+            'Elas entram com saldo zero e não ficam elegíveis para zeragem.'
+        )
 
 display_cols = ['Portfolio', 'Custodiante', 'Conta', 'CNPJ do Fundo']
 if (df_accounts_data['Custodiante'] == 'BTG CTVM').any():
